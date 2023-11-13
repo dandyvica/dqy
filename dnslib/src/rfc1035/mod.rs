@@ -1,0 +1,12 @@
+pub mod char_string;
+pub mod domain;
+pub mod flags;
+pub mod header;
+pub mod message;
+pub mod opcode;
+pub mod packet_type;
+pub mod qclass;
+pub mod qtype;
+pub mod question;
+pub mod resource_record;
+pub mod response_code;
