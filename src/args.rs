@@ -12,7 +12,7 @@ use log::debug;
 
 use dnslib::{
     error::DNSResult,
-    rfc1035::{qclass::QClass, qtype::QType, domain::DomainName},
+    rfc1035::{domain::DomainName, qclass::QClass, qtype::QType},
 };
 
 use crate::resolver::Resolver;
@@ -28,34 +28,39 @@ pub struct CliOptions {
     //pub debug: bool,
 }
 
-/// This is where the + options of dig are handled
-#[derive(Debug, Default)]
-pub struct PlusArgs {
-    pub aaonly: bool,
-    pub additional: bool,
-}
-
 impl CliOptions {
-    pub fn options(args: &mut Vec<String>) -> DNSResult<Self> {
+    pub fn options(args: &[String]) -> DNSResult<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
 
         options.resolvers = Resolver::servers(None)?;
-        debug!("found resolvers: {:?}", options.resolvers);       
+        debug!("found resolvers: {:?}", options.resolvers);
 
-        // preprocess arguments: split those having a starting - and others
-        let (with_dash, wihtout_dash): (Vec<&String>, Vec<&String>) = args.iter().partition(|arg| arg.starts_with("-"));
+        // split arguments into 2 sets: those not starting with a '-' which should be first
+        // and the others
+        let dash_pos = args.iter().position(|arg| arg.starts_with("-"));
+        println!("dash_pos={:?}", dash_pos);
 
-        for arg in wihtout_dash {
-            // check if this is a domain (should include a dot)
-            if arg.contains(".") {
-                options.domain = arg.to_string();
+        let (without_dash, with_dash) = match dash_pos {
+            Some(pos) => (&args[0..pos], &args[pos..]),
+            None => (&args[..], &[] as &[String])
+        };
+
+
+        println!("without_dash={:?}", without_dash);
+        println!("with_dash={:?}", with_dash);
+
+        // process the arguments not starting with a '-'
+        for arg in without_dash {
+            // check if it's a name server
+            if arg.starts_with('@') {
+                options.resolvers = vec![IpAddr::from_str(&arg[1..])?];
                 continue;
             }
 
-            // check if it's a name server
-            if arg.starts_with('@') {
-                options.resolvers.push(IpAddr::from_str(&arg[1..])?);
+            // check if this is a domain (should include a dot)
+            if arg.contains(".") {
+                options.domain = arg.to_string();
                 continue;
             }
 
@@ -65,20 +70,44 @@ impl CliOptions {
             }
         }
 
-        // // find the server which is starting with @
-        // if let Some(server) = args.iter().find(|&x| x.starts_with('@')) {
-        //     options.ns.push(IpAddr::from_str(&server[1..])?);
+        // now process the arguments starting with a '-'
+        let matches = Command::new("DNS query tool")
+            .version("0.1")
+            .author("Alain Viguier dandyvica@gmail.com")
+            .about(
+                r#"A simple DNS query client
+        
+            Project home page: https://github.com/dandyvica/dqy
+        
+            "#,
+            )
+            .no_binary_name(true)            
+            .arg(
+                Arg::new("type")
+                    .short('t')
+                    .long("type")
+                    .long_help("Resource record type to query")
+                    .action(ArgAction::Set)
+                    .value_name("TYPE")
+                    .value_parser(clap::value_parser!(QType))
+                    .default_value("A"),
+            )
+            .arg(
+                Arg::new("class")
+                    .short('c')
+                    .long("class")
+                    .long_help(
+                        "query class as specified in RFC1035. Possible values: IN, CS, CH, HS.",
+                    )
+                    .action(ArgAction::Set)
+                    .value_name("CLASS")
+                    .value_parser(clap::value_parser!(QClass))
+                    .default_value("IN"),
+            )
+            .get_matches_from(args);
 
-        //     // get rid of those args starting with @
-        //     args.retain(|x| !x.starts_with('@'));
-        // } else {
-        //     options.ns = get_stub_resolvers()?;
-        // }
-
-        // // now manage those starting with a +
-        // get_plus_args(args, &mut options);
-
-        // let matches = build_command().get_matches();
+        // copy values into option struct
+        options.qtype.push(*matches.get_one::<QType>("type").unwrap());
 
         // // name server was not provided: so lookup system DNS config
         // if options.ns.is_empty() {
@@ -149,13 +178,6 @@ impl CliOptions {
 
 // // -qtype
 // // fn arg_qtype() -> Arg {
-// //     Arg::new("qtype")
-// //         .short('q')
-// //         .long("qtype")
-// //         .long_help("Resource record type to query")
-// //         .value_name("TYPE")
-// //         .default_value("A")
-// // }
 
 // // --no-opt
 // fn arg_no_opt() -> Arg {
@@ -173,13 +195,7 @@ impl CliOptions {
 
 // // --qclass
 // fn arg_qclass() -> Arg {
-//     Arg::new("class")
-//         .short('c')
-//         .long("class")
-//         .long_help("query class as specified in RFC1035. Possible values: IN, CS, CH, HS.")
-//         .value_name("CLASS")
-//         .value_parser(clap::value_parser!(QClass))
-//         .default_value("IN")
+
 // }
 
 // // --port
