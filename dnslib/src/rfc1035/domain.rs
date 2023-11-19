@@ -63,6 +63,7 @@ impl<'a> DomainName<'a> {
                 // println!("pointer={:0b}", pointer);
                 // println!("pointer shifted={:0b}", (pointer << 2) >> 2);
 
+                // pointer is the offset releative to the ID field in the domain header
                 let pointer = ((pointer << 2) >> 2) as usize;
                 //println!("pointer={:0b}", pointer);
 

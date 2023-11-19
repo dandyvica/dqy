@@ -4,10 +4,7 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use crate::{
-    error::{DNSError, InternalError},
-    rfc1035::char_string::CharacterString,
-    rfc1035::domain::DomainName,
-    rfc1035::qclass::QClass,
+    rfc1035::char_string::CharacterString, rfc1035::domain::DomainName, rfc1035::qclass::QClass,
     rfc1035::qtype::QType,
 };
 
@@ -122,7 +119,6 @@ fn deserialize_from<'a, T: Default + FromNetworkOrder<'a>>(
 
 impl<'a> FromNetworkOrder<'a> for ResourceRecord<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
-
         self.name.deserialize_from(buffer)?;
         self.r#type.deserialize_from(buffer)?;
 
@@ -169,6 +165,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord<'a> {
                 //     self.r_data = Some(RData::DnsKey(x))
                 // }
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::Mx),
+                QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::Loc),
                 _ => unimplemented!("the {:?} RR is not yet implemented", self.r#type),
             }
             //self.r_data = Some(Vec::with_capacity(self.rd_length as usize));
@@ -189,6 +186,7 @@ pub enum RData<'a> {
     Ns(NS<'a>),
     Txt(TXT<'a>),
     Mx(MX<'a>),
+    Loc(LOC)
     //DnsKey(DNSKEY),
 }
 
@@ -199,7 +197,7 @@ impl<'a> Default for RData<'a> {
 }
 
 impl<'a> ToNetworkOrder for RData<'a> {
-    fn serialize_to(&self, buffer: &mut Vec<u8>) -> std::io::Result<usize> {
+    fn serialize_to(&self, _buffer: &mut Vec<u8>) -> std::io::Result<usize> {
         // let mut length = 0usize;
 
         // match self {
@@ -276,3 +274,18 @@ pub type TXT<'a> = CharacterString<'a>;
 
 // RDATA RR
 pub type RDATA = u32;
+
+// LOC record (https://datatracker.ietf.org/doc/html/rfc1876)
+#[derive(Debug, Default, FromNetwork)]
+pub struct LOC {
+    pub version: u8,
+    pub size: u8,
+    pub horiz_pre: u8,
+    pub vert_pre: u8,
+    pub latitude1: u16,
+    pub latitude2: u16,
+    pub longitude1: u16,
+    pub longitude2: u16,
+    pub altitude1: u16,
+    pub altitude2: u16,
+}

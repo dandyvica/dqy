@@ -1,12 +1,13 @@
 use std::io::Cursor;
 use std::net::IpAddr;
-use std::net::UdpSocket;
 
+use log::debug;
 use rand::Rng;
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
-use type2network_derive::{FromNetwork, ToNetwork};
+use type2network_derive::ToNetwork;
 
+use crate::network::TransportType;
 use crate::rfc1035::response_code::ResponseCode;
 use crate::{
     error::DNSResult,
@@ -32,6 +33,7 @@ use crate::{
 // +---------------------+
 #[derive(Debug, Default, ToNetwork)]
 pub struct Message<'a> {
+    pub length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question<'a>,
     pub answer: Option<Vec<ResourceRecord<'a>>>,
@@ -40,12 +42,17 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    pub fn init(
-        &mut self,
-        domain: &'a str,
-        qtype: QType,
-        qclass: QClass,
-    ) -> DNSResult<()> {
+    pub fn new(transport_type: &TransportType) -> Self {
+        let mut msg = Self::default();
+
+        if transport_type == &TransportType::Tcp {
+            msg.length = Some(0u16);
+        }
+
+        msg
+    }
+
+    pub fn init(&mut self, domain: &'a str, qtype: QType, qclass: QClass) -> DNSResult<()> {
         // fill header
 
         // create a random ID
@@ -71,25 +78,37 @@ impl<'a> Message<'a> {
     }
 
     // Send the query through the wire
-    pub fn send(
-        &self,
-        trp: &Transport,
-        dns_resolvers: &[IpAddr],
-        port: u16,
-    ) -> DNSResult<(IpAddr, usize)> {
+    pub fn send(&self, trp: &mut Transport) -> DNSResult<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
-        self.serialize_to(&mut buffer)?;
+        let message_size = self.serialize_to(&mut buffer)? as u16;
+
+        // if using TCP, we need to prepend the message sent with length of message
+        if trp.is_tcp() {
+            let bytes = (message_size - 2).to_be_bytes();
+            buffer[0] = bytes[0];
+            buffer[1] = bytes[1];
+        };
 
         // send packet through the wire
-        trp.send_to(&buffer, dns_resolvers, port)
+        let sent = trp.send(&buffer)?;
+        debug!("sent {} bytes", sent);
+
+        Ok(sent)
     }
 
     // Receive message for DNS resolver
-    pub fn recv(&mut self, trp: &Transport, buffer: &'a mut [u8]) -> DNSResult<usize> {
+    pub fn recv(&mut self, trp: &mut Transport, buffer: &'a mut [u8]) -> DNSResult<usize> {
         // receive packet from endpoint
-        let received = trp.udp_socket.recv(buffer)?;
-        let mut cursor = Cursor::new(&buffer[..received]);
+        let received = trp.recv(buffer)?;
+        debug!("received {} bytes", received);
+
+        // if using TCP, we get rid of 2 bytes which are the length of the message received
+        let mut cursor = if trp.is_tcp() {
+            Cursor::new(&buffer[2..received])
+        } else {
+            Cursor::new(&buffer[..received])
+        };
 
         // get response
         self.deserialize_from(&mut cursor)?;
@@ -106,7 +125,6 @@ impl<'a> Message<'a> {
 
 impl<'a> FromNetworkOrder<'a> for Message<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
-
         self.header.deserialize_from(buffer)?;
         self.question.deserialize_from(buffer)?;
 
@@ -115,7 +133,6 @@ impl<'a> FromNetworkOrder<'a> for Message<'a> {
         if self.header.an_count > 0 {
             self.answer = Some(Vec::with_capacity(self.header.an_count as usize));
             self.answer.deserialize_from(buffer)?;
-
         }
 
         if self.header.ns_count > 0 {

@@ -1,11 +1,22 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use enum_from::{EnumTryFrom, EnumFromStr, EnumDisplay};
+use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
-#[derive(Debug, Default, Copy, Clone, PartialEq, EnumTryFrom, EnumFromStr, EnumDisplay, ToNetwork, FromNetwork)]
+#[derive(
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumTryFrom,
+    EnumFromStr,
+    EnumDisplay,
+    ToNetwork,
+    FromNetwork,
+)]
 #[repr(u16)]
 pub enum QClass {
     #[default]

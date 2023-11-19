@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ReadBytesExt};
 
-use enum_from::{EnumTryFrom, EnumDisplay};
+use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
