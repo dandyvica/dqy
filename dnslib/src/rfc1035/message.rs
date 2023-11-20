@@ -1,5 +1,5 @@
+use std::fmt;
 use std::io::Cursor;
-use std::net::IpAddr;
 
 use log::debug;
 use rand::Rng;
@@ -120,6 +120,37 @@ impl<'a> Message<'a> {
         }
 
         Ok(received)
+    }
+
+    pub fn display(&self) {
+        // header first
+        println!("HEADER: {}\n", self.header);
+        println!("QUESTION: {}\n", self.question);
+
+        // print out anwser, authority, additional if any
+        if let Some(answer) = &self.answer {
+            for a in answer {
+                println!("ANSWER: {}", a);
+            }
+        }
+
+        if let Some(auth) = &self.authority {
+            for a in auth {
+                println!("{}", a);
+            }
+        }
+
+        if let Some(add) = &self.additional {
+            for a in add {
+                println!("{}", a);
+            }
+        }
+    }
+}
+
+impl<'a> fmt::Display for Message<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.header)
     }
 }
 

@@ -81,27 +81,27 @@ impl<'a> fmt::Display for DisplayWrapper<'_, SOA<'a>> {
     }
 }
 
-impl<'a> fmt::Display for DisplayWrapper<'_, MX<'a>> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "preference:{} exchange:{}",
-            self.0.preference, self.0.exchange,
-        )
-    }
-}
+// impl<'a> fmt::Display for DisplayWrapper<'_, MX<'a>> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(
+//             f,
+//             "preference:{} exchange:{}",
+//             self.0.preference, self.0.exchange,
+//         )
+//     }
+// }
 
-impl<'a> fmt::Display for DisplayWrapper<'_, HINFO<'a>> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "cpu:{} os:{}", self.0.cpu, self.0.os,)
-    }
-}
+// impl<'a> fmt::Display for DisplayWrapper<'_, HINFO<'a>> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "cpu:{} os:{}", self.0.cpu, self.0.os,)
+//     }
+// }
 
-impl<'a> fmt::Display for DisplayWrapper<'_, TXT<'a>> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+// impl<'a> fmt::Display for DisplayWrapper<'_, TXT<'a>> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}", self.0)
+//     }
+// }
 
 impl fmt::Display for DisplayWrapper<'_, Header> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -158,70 +158,70 @@ impl<'a> fmt::Display for DisplayWrapper<'_, Question<'a>> {
     }
 }
 
-impl<'a> fmt::Display for DisplayWrapper<'_, Message<'a>> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // header first
-        write!(f, "{}\n", DisplayWrapper(&self.0.header))?;
+// impl<'a> fmt::Display for DisplayWrapper<'_, Message<'a>> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         // header first
+//         write!(f, "{}\n", DisplayWrapper(&self.0.header))?;
 
-        // query or response ?
-        match self.0.header.flags.qr {
-            PacketType::Query => write!(f, "\nQUESTION: {}", DisplayWrapper(&self.0.question)),
-            PacketType::Response => Ok({
-                write!(f, "\nANSWER:\n")?;
+//         // query or response ?
+//         match self.0.header.flags.qr {
+//             PacketType::Query => write!(f, "\nQUESTION: {}", DisplayWrapper(&self.0.question)),
+//             PacketType::Response => Ok({
+//                 write!(f, "\nANSWER:\n")?;
 
-                // print out anwser, authority, additional if any
-                if let Some(answer) = &self.0.answer {
-                    for ans in answer {
-                        write!(f, "{}", DisplayWrapper(ans))?;
-                    }
-                }
+//                 // print out anwser, authority, additional if any
+//                 if let Some(answer) = &self.0.answer {
+//                     for ans in answer {
+//                         write!(f, "{}", DisplayWrapper(ans))?;
+//                     }
+//                 }
 
-                if let Some(auth) = &self.0.authority {
-                    for a in auth {
-                        write!(f, "{}", DisplayWrapper(a))?;
-                    }
-                }
+//                 if let Some(auth) = &self.0.authority {
+//                     for a in auth {
+//                         write!(f, "{}", DisplayWrapper(a))?;
+//                     }
+//                 }
 
-                if let Some(add) = &self.0.additional {
-                    for a in add {
-                        write!(f, "{}", DisplayWrapper(a))?;
-                    }
-                }
-            }),
-        }
-    }
-}
+//                 if let Some(add) = &self.0.additional {
+//                     for a in add {
+//                         write!(f, "{}", DisplayWrapper(a))?;
+//                     }
+//                 }
+//             }),
+//         }
+//     }
+// }
 
-impl<'a> fmt::Display for DisplayWrapper<'_, ResourceRecord<'a>> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        //println!("===========> rtype={:?}", self.0.r#type);
+// impl<'a> fmt::Display for DisplayWrapper<'_, ResourceRecord<'a>> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         //println!("===========> rtype={:?}", self.0.r#type);
 
-        write!(
-            f,
-            "{:<20} {:<10?} {:<10} {:<10} {:<10}",
-            self.0.name.to_string(),
-            self.0.r#type,
-            DisplayWrapper(&self.0.class),
-            DisplayWrapper(&self.0.ttl),
-            self.0.rd_length
-        )?;
+//         write!(
+//             f,
+//             "{:<20} {:<10?} {:<10} {:<10} {:<10}",
+//             self.0.name.to_string(),
+//             self.0.r#type,
+//             DisplayWrapper(&self.0.class),
+//             DisplayWrapper(&self.0.ttl),
+//             self.0.rd_length
+//         )?;
 
-        match self.0.r#type {
-            QType::A => match &self.0.r_data {
-                Some(RData::A(ipv4)) => write!(f, "{}\n", std::net::Ipv4Addr::from(*ipv4)),
-                _ => panic!("unexpected error when displaying RR A"),
-            },
-            QType::AAAA => match &self.0.r_data {
-                Some(RData::AAAA(ipv6)) => write!(f, "{}\n", std::net::Ipv6Addr::from(*ipv6)),
-                _ => panic!("unexpected error when displaying RR AAAA"),
-            },
-            QType::CNAME => rr_display!(f, &self.0.r_data, RData::CName, "CNAME"),
-            QType::HINFO => rr_display!(f, &self.0.r_data, RData::HInfo, "HINFO"),
-            QType::NS => rr_display!(f, &self.0.r_data, RData::Ns, "NS"),
-            QType::TXT => rr_display!(f, &self.0.r_data, RData::Txt, "TXT"),
-            QType::SOA => rr_display!(f, &self.0.r_data, RData::Soa, "SOA"),
-            QType::MX => rr_display!(f, &self.0.r_data, RData::Mx, "MX"),
-            _ => unimplemented!(),
-        }
-    }
-}
+//         match self.0.r#type {
+//             QType::A => match &self.0.r_data {
+//                 Some(RData::A(ipv4)) => write!(f, "{}\n", std::net::Ipv4Addr::from(*ipv4)),
+//                 _ => panic!("unexpected error when displaying RR A"),
+//             },
+//             QType::AAAA => match &self.0.r_data {
+//                 Some(RData::AAAA(ipv6)) => write!(f, "{}\n", std::net::Ipv6Addr::from(*ipv6)),
+//                 _ => panic!("unexpected error when displaying RR AAAA"),
+//             },
+//             QType::CNAME => rr_display!(f, &self.0.r_data, RData::CName, "CNAME"),
+//             QType::HINFO => rr_display!(f, &self.0.r_data, RData::HInfo, "HINFO"),
+//             QType::NS => rr_display!(f, &self.0.r_data, RData::Ns, "NS"),
+//             QType::TXT => rr_display!(f, &self.0.r_data, RData::Txt, "TXT"),
+//             QType::SOA => rr_display!(f, &self.0.r_data, RData::Soa, "SOA"),
+//             QType::MX => rr_display!(f, &self.0.r_data, RData::Mx, "MX"),
+//             _ => unimplemented!(),
+//         }
+//     }
+// }

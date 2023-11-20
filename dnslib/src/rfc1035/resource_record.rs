@@ -1,11 +1,14 @@
-use std::io::{Cursor, Error, ErrorKind};
+use std::{
+    fmt,
+    io::{Cursor, Error, ErrorKind},
+};
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::{
-    rfc1035::char_string::CharacterString, rfc1035::domain::DomainName, rfc1035::qclass::QClass,
-    rfc1035::qtype::QType,
+use super::{
+    a::A, aaaa::AAAA, char_string::CharacterString, cname::CNAME, domain::DomainName, hinfo::HINFO,
+    loc::LOC, mx::MX, ns::NS, qclass::QClass, qtype::QType, soa::SOA, txt::TXT,
 };
 
 // 4.1.3. Resource record format
@@ -59,6 +62,15 @@ impl<'a> Default for Class {
     }
 }
 
+impl fmt::Display for Class {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Class::Qc(cl) => write!(f, "{}", cl),
+            Class::Payload(pl) => write!(f, "{}", pl),
+        }
+    }
+}
+
 #[derive(Debug, Default, ToNetwork, FromNetwork)]
 pub struct ExtendedRcode {
     pub extented_rcode: u8,
@@ -75,6 +87,19 @@ pub enum Ttl {
 impl<'a> Default for Ttl {
     fn default() -> Self {
         Ttl::Ttl(0)
+    }
+}
+
+impl fmt::Display for Ttl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Ttl::Ttl(ttl) => write!(f, "{}", ttl),
+            Ttl::Ext(ecode) => write!(
+                f,
+                "extented_rcode: {} version: {} dos: {}",
+                ecode.extented_rcode, ecode.version, ecode.doz
+            ),
+        }
     }
 }
 
@@ -96,6 +121,41 @@ pub struct ResourceRecord<'a> {
     //  a variable length string of octets that describes the
     //  resource.  The format of this information varies
     //  according to the TYPE and CLASS of the resource record.
+}
+
+macro_rules! rr_display {
+    ($fmt:expr, $rd_data:expr, $rd_arm:path, $tag:literal) => {
+        match $rd_data {
+            Some($rd_arm(x)) => write!($fmt, "{}", x),
+            _ => panic!("unexpected error when displaying RR {}", $tag),
+        }
+    };
+}
+
+impl<'a> fmt::Display for ResourceRecord<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<10} {:<10?} {:<10} {:<10} {:<10}",
+            self.name,
+            self.r#type,
+            self.class,
+            self.ttl,
+            self.rd_length
+        )?;
+
+        match self.r#type {
+            QType::A => rr_display!(f, &self.r_data, RData::A, "A"),
+            QType::AAAA => rr_display!(f, &self.r_data, RData::AAAA, "AAAA"),
+            QType::CNAME => rr_display!(f, &self.r_data, RData::CName, "CNAME"),
+            QType::HINFO => rr_display!(f, &self.r_data, RData::HInfo, "HINFO"),
+            QType::NS => rr_display!(f, &self.r_data, RData::Ns, "NS"),
+            QType::TXT => rr_display!(f, &self.r_data, RData::Txt, "TXT"),
+            QType::SOA => rr_display!(f, &self.r_data, RData::Soa, "SOA"),
+            QType::MX => rr_display!(f, &self.r_data, RData::Mx, "MX"),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 // Macro used to ease the ResourceRecord implementation of the FromNetworkOrder trait
@@ -186,13 +246,12 @@ pub enum RData<'a> {
     Ns(NS<'a>),
     Txt(TXT<'a>),
     Mx(MX<'a>),
-    Loc(LOC)
-    //DnsKey(DNSKEY),
+    Loc(LOC), //DnsKey(DNSKEY),
 }
 
 impl<'a> Default for RData<'a> {
     fn default() -> Self {
-        Self::A(0)
+        Self::A(A(0))
     }
 }
 
@@ -212,80 +271,3 @@ impl<'a> ToNetworkOrder for RData<'a> {
     }
 }
 
-//------------------------------------------------------------------------
-// Definition of all RRs from all different RFCs starting with RFC1035
-//------------------------------------------------------------------------
-
-// A RR
-pub type A = u32;
-
-// HINFO RR
-#[derive(Debug, Default, FromNetwork)]
-pub struct HINFO<'a> {
-    pub cpu: CharacterString<'a>,
-    pub os: CharacterString<'a>,
-}
-
-// CNAME RR
-pub type CNAME<'a> = DomainName<'a>;
-
-// NS RR
-pub type NS<'a> = DomainName<'a>;
-
-// AAAA RR
-pub type AAAA = [u8; 16];
-
-// SOA RR
-#[derive(Debug, Default, FromNetwork)]
-pub struct SOA<'a> {
-    pub mname: DomainName<'a>, // The <domain-name> of the name server that was the
-    // original or primary source of data for this zone.
-    pub rname: DomainName<'a>, // A <domain-name> which specifies the mailbox of the
-    // person responsible for this zone.
-    pub serial: u32, // The unsigned 32 bit version number of the original copy
-    // of the zone.  Zone transfers preserve this value.  This
-    // value wraps and should be compared using sequence space
-    // arithmetic.
-    pub refresh: u32, // A 32 bit time interval before the zone should be
-    // refreshed.
-    pub retry: u32, // A 32 bit time interval that should elapse before a
-    // failed refresh should be retried.
-    pub expire: u32, // A 32 bit time value that specifies the upper limit on
-    // the time interval that can elapse before the zone is no
-    // longer authoritative.
-    pub minimum: u32, //The unsigned 32 bit minimum TTL field that should be
-                      //exported with any RR from this zone.
-}
-
-// PTR RR
-pub type PTR<'a> = DomainName<'a>;
-
-// MX RR
-#[derive(Debug, Default, FromNetwork)]
-pub struct MX<'a> {
-    pub preference: u16, // A 16 bit integer which specifies the preference given to
-    // this RR among others at the same owner.  Lower values
-    // are preferred.
-    pub exchange: DomainName<'a>, // A <domain-name> which specifies a host willing to act as a mail exchange for the owner name.
-}
-
-// TXT RR
-pub type TXT<'a> = CharacterString<'a>;
-
-// RDATA RR
-pub type RDATA = u32;
-
-// LOC record (https://datatracker.ietf.org/doc/html/rfc1876)
-#[derive(Debug, Default, FromNetwork)]
-pub struct LOC {
-    pub version: u8,
-    pub size: u8,
-    pub horiz_pre: u8,
-    pub vert_pre: u8,
-    pub latitude1: u16,
-    pub latitude2: u16,
-    pub longitude1: u16,
-    pub longitude2: u16,
-    pub altitude1: u16,
-    pub altitude2: u16,
-}

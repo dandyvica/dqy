@@ -10,3 +10,4 @@ clap = "4.4.8"
 log = "0.4.20"
 resolver = { git = "https://github.com/dandyvica/resolver.git" }
 dnslib = { path = "../dnslib" }
+idna = "0.4.0"

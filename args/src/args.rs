@@ -8,13 +8,15 @@ use std::time::Duration;
 
 use clap::{Arg, ArgAction, Command};
 
+
 //use simplelog::*;
 use log::debug;
+use idna::punycode::encode_str;
 
 use dnslib::{
     error::DNSResult,
     network::{IPVersion, TransportType},
-    rfc1035::{domain::DomainName, qclass::QClass, qtype::QType},
+    rfc1035::{qclass::QClass, qtype::QType},
 };
 
 use resolver::resolver::Resolvers;
@@ -198,6 +200,11 @@ impl CliOptions {
         }
 
         options.timeout = Some(Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap()));
+
+        // internal domain name processing
+        if options.domain.len() != options.domain.chars().count() {
+            options.domain = format!("xn--{}", encode_str(options.domain.as_str()).unwrap());
+        }
 
         // // if name server is not provided, use the ones given by the OS
         // if matches.is_present("ns") {

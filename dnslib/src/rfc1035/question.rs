@@ -1,3 +1,5 @@
+use std::fmt;
+
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -43,6 +45,12 @@ pub struct Question<'a> {
     pub qname: DomainName<'a>,
     pub qtype: QType,
     pub qclass: QClass,
+}
+
+impl<'a> fmt::Display for Question<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}   {:?}   {:?}", self.qname, self.qtype, self.qclass)
+    }
 }
 
 // #[cfg(test)]

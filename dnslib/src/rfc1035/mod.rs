@@ -10,3 +10,14 @@ pub mod qtype;
 pub mod question;
 pub mod resource_record;
 pub mod response_code;
+// all RRs
+pub mod a;
+pub mod aaaa;
+pub mod cname;
+pub mod hinfo;
+pub mod loc;
+pub mod mx;
+pub mod ns;
+pub mod ptr;
+pub mod soa;
+pub mod txt;

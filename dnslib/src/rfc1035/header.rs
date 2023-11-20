@@ -1,7 +1,9 @@
+use std::fmt;
+
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use super::flags::Flags;
+use super::{flags::Flags, packet_type::PacketType};
 
 //  1  1  1  1  1  1
 //  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -52,4 +54,21 @@ pub struct Header {
     // server resource records in the authority records section.
     pub ar_count: u16, // an unsigned 16 bit integer specifying the number of
                        // resource records in the additional records section.
+}
+
+impl<'a> fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "id:0x{:X}({}) ", self.id, self.id)?;
+        write!(f, "flags:<{:?}>  ", self.flags)?;
+
+        if self.flags.qr == PacketType::Query {
+            write!(f, "QUERY:{}", self.qd_count)
+        } else {
+            write!(
+                f,
+                "QUERY:{}, ANSWER:{} AUTHORITY:{} ADDITIONAL:{}",
+                self.qd_count, self.an_count, self.ns_count, self.ar_count
+            )
+        }
+    }
 }

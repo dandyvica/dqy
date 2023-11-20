@@ -2,7 +2,8 @@
 
 use std::{
     io::{BufReader, Read, Write},
-    net::{IpAddr, TcpStream, UdpSocket}, time::Duration,
+    net::{IpAddr, TcpStream, UdpSocket},
+    time::Duration,
 };
 
 use log::debug;
@@ -51,21 +52,19 @@ impl Transport {
         }
     }
 
-    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()>  {
+    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()> {
         match self {
-            Transport::Udp{sock} => {
+            Transport::Udp { sock } => {
                 sock.set_read_timeout(timeout)?;
                 sock.set_write_timeout(timeout)
-
             }
-            Transport::Tcp{stream} => {
+            Transport::Tcp { stream } => {
                 stream.set_read_timeout(timeout)?;
                 stream.set_write_timeout(timeout)
             }
             _ => unimplemented!("not implemented"),
         }
     }
-
 }
 
 impl Transport {

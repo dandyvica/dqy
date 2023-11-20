@@ -14,8 +14,10 @@ use dnslib::{
 
 use args::args::CliOptions;
 
-mod display;
-use display::DisplayWrapper;
+// mod display;
+// use display::DisplayWrapper;
+
+//mod output;
 
 fn main() -> DNSResult<()> {
     env_logger::init();
@@ -43,11 +45,15 @@ fn main() -> DNSResult<()> {
 
         // check whether message ID is the one sent
         if response.header.id != query.header.id {
-            eprintln!("query and response ID are not equal");
-            exit(2);
+            eprintln!(
+                "query and response ID are not equal, discarding answer for type {:?}",
+                qt
+            );
+            continue;
         }
 
-        println!("{}", DisplayWrapper(&response));
+        //println!("{}", DisplayWrapper(&response));
+        response.display();
     }
 
     Ok(())
