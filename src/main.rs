@@ -6,10 +6,10 @@ use std::process::exit;
 use log::debug;
 
 // my DNS library
-use dnslib::{
+use dns::{
     error::DNSResult,
     network::Transport,
-    rfc1035::{domain::DomainName, message::Message, qtype::QType},
+    rfc1035::{domain::DomainName, qtype::QType, query::Query, response::Response},
 };
 
 use args::args::CliOptions;
@@ -34,13 +34,14 @@ fn main() -> DNSResult<()> {
 
     //
     for qt in options.qtype {
-        let mut query = Message::new(&options.trp_type);
-
+        let mut query = Query::new(&options.trp_type);
         query.init(&options.domain, qt, options.qclass)?;
+        query.add_opt(None);
+
         query.send(&mut trp)?;
 
-        let mut response = Message::new(&options.trp_type);
-        let mut buffer = [0u8; 512];
+        let mut response = Response::new(&options.trp_type);
+        //let mut buffer = [0u8; 512];
         let bytes = response.recv(&mut trp, &mut buffer)?;
 
         // check whether message ID is the one sent

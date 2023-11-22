@@ -3,8 +3,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use super::domain::DomainName;
-
 // LOC RR (https://datatracker.ietf.org/doc/html/rfc1876)
 #[derive(Debug, Default, FromNetwork)]
 pub struct LOC {

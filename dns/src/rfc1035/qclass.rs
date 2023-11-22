@@ -1,3 +1,5 @@
+use std::fmt;
+
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
@@ -25,6 +27,27 @@ pub enum QClass {
     CH = 3, // the CHAOS class
     HS = 4, // Hesiod [Dyer 87]
     ANY = 255,
+}
+
+#[derive(Debug, ToNetwork)]
+pub enum Class {
+    Qclass(QClass),
+    Payload(u16), // case of OPT
+}
+
+impl fmt::Display for Class {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Class::Qclass(cl) => write!(f, "{}", cl),
+            Class::Payload(pl) => write!(f, "{}", pl),
+        }
+    }
+}
+
+impl<'a> Default for Class {
+    fn default() -> Self {
+        Class::Qclass(QClass::IN)
+    }
 }
 
 #[cfg(test)]

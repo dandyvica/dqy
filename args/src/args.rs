@@ -13,7 +13,7 @@ use clap::{Arg, ArgAction, Command};
 use log::debug;
 use idna::punycode::encode_str;
 
-use dnslib::{
+use dns::{
     error::DNSResult,
     network::{IPVersion, TransportType},
     rfc1035::{qclass::QClass, qtype::QType},

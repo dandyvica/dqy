@@ -18,7 +18,7 @@ impl<'a> DomainName<'a> {
     }
 
     /// ```
-    /// use dnslib::rfc1035::domain::DomainName;
+    /// use dns::rfc1035::domain::DomainName;
     ///
     /// let v = vec![0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00];
     /// let mut dn = DomainName::default();
@@ -100,7 +100,7 @@ impl<'a> DomainName<'a> {
 }
 
 /// ```
-/// use dnslib::rfc1035::domain::DomainName;
+/// use dns::rfc1035::domain::DomainName;
 ///
 /// let mut dn = DomainName::try_from("www.google.com").unwrap();
 /// assert_eq!(dn.to_string(), "www.google.com.");
@@ -123,7 +123,7 @@ impl<'a> fmt::Display for DomainName<'a> {
 }
 
 /// ```
-/// use dnslib::rfc1035::domain::DomainName;
+/// use dns::rfc1035::domain::DomainName;
 ///
 /// let dn = DomainName::try_from("www.example.com").unwrap();
 /// assert_eq!(dn.labels.len(), 3);
@@ -162,7 +162,7 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
 
 impl<'a> ToNetworkOrder for DomainName<'a> {
     /// ```
-    /// use dnslib::rfc1035::domain::DomainName;
+    /// use dns::rfc1035::domain::DomainName;
     /// use type2network::ToNetworkOrder;
     ///
     /// let dn = DomainName::try_from("www.google.ie").unwrap();
@@ -189,7 +189,7 @@ impl<'a> ToNetworkOrder for DomainName<'a> {
 impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
     /// ```
     /// use std::io::Cursor;
-    /// use dnslib::rfc1035::domain::DomainName;
+    /// use dns::rfc1035::domain::DomainName;
     /// use type2network::FromNetworkOrder;
     ///
     /// // with sentinel = 0

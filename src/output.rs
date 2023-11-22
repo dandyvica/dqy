@@ -1,5 +1,5 @@
 // Module to print out DNS response results
-use dnslib::rfc1035::resource_record::*;
+use dns::rfc1035::resource_record::*;
 
 #[derive(Debug, Copy, Clone)]
 enum Color {

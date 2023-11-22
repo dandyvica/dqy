@@ -76,7 +76,7 @@ pub struct Flags {
 /// TryFrom implementation for DNSFlags is useful for comparing raw flags as a u16
 /// ```
 /// use std::convert::TryFrom;
-/// use dnslib::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
+/// use dns::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
 ///
 /// let x = 0b_1000_1111_1111_0001;
 /// let v = Flags::try_from(x).unwrap();
@@ -127,7 +127,7 @@ impl TryFrom<u16> for Flags {
 impl ToNetworkOrder for Flags {
     /// ```
     /// use type2network::ToNetworkOrder;
-    /// use dnslib::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
+    /// use dns::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
     ///
     /// let flags = Flags {
     ///     qr: PacketType::Response,
@@ -175,7 +175,7 @@ impl<'a> FromNetworkOrder<'a> for Flags {
     /// ```
     /// use std::io::Cursor;
     /// use type2network::FromNetworkOrder;
-    /// use dnslib::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
+    /// use dns::{rfc1035::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
     ///
     /// let b = vec![0b_10001111, 0b_1111_0001];
     /// let mut buffer = Cursor::new(b.as_slice());

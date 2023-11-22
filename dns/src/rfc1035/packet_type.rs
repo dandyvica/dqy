@@ -19,7 +19,7 @@ pub enum PacketType {
 
 impl fmt::Display for PacketType {
     /// ```
-    /// use dnslib::rfc1035::packet_type::PacketType;
+    /// use dns::rfc1035::packet_type::PacketType;
     ///
     /// assert_eq!(PacketType::Query.to_string(), "QUERY");
     /// ```    

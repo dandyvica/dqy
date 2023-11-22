@@ -19,7 +19,7 @@ use crate::{rfc1035::domain::DomainName, rfc1035::qclass::QClass, rfc1035::qtype
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// ```
 /// use std::io::Cursor;
-/// use dnslib::{
+/// use dns::{
 ///     rfc1035::question::Question,
 ///     rfc1035::domain::DomainName,
 ///     rfc1035::qtype::QType,

@@ -2,7 +2,7 @@
 //! to not put these methods in the lib, use a wrapper
 use std::fmt;
 
-use dnslib::rfc1035::{
+use dns::rfc1035::{
     domain::DomainName,
     flags::Flags,
     header::Header,

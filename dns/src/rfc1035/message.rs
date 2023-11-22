@@ -5,7 +5,7 @@ use log::debug;
 use rand::Rng;
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
-use type2network_derive::ToNetwork;
+use type2network_derive::{ToNetwork, FromNetwork};
 
 use crate::network::TransportType;
 use crate::rfc1035::response_code::ResponseCode;
@@ -130,7 +130,7 @@ impl<'a> Message<'a> {
         // print out anwser, authority, additional if any
         if let Some(answer) = &self.answer {
             for a in answer {
-                println!("ANSWER: {}", a);
+                println!("{}", a);
             }
         }
 

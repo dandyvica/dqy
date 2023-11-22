@@ -12,7 +12,7 @@ pub struct CharacterString<'a> {
 
 /// ```
 /// use std::io::Cursor;
-/// use dnslib::rfc1035::char_string::CharacterString;
+/// use dns::rfc1035::char_string::CharacterString;
 ///
 /// let cs = CharacterString::from("www");
 /// assert_eq!(cs.length, 3u8);
@@ -29,7 +29,7 @@ impl<'a> From<&'a str> for CharacterString<'a> {
 
 /// ```
 /// use std::io::Cursor;
-/// use dnslib::rfc1035::char_string::CharacterString;
+/// use dns::rfc1035::char_string::CharacterString;
 ///
 /// let cs = CharacterString::from("www");
 /// assert_eq!(cs.to_string(), "www");
@@ -44,7 +44,7 @@ impl<'a> FromNetworkOrder<'a> for CharacterString<'a> {
     /// ```
     /// use std::io::Cursor;
     /// use type2network::FromNetworkOrder;
-    /// use dnslib::rfc1035::char_string::CharacterString;
+    /// use dns::rfc1035::char_string::CharacterString;
     ///
     /// let mut buffer = Cursor::new([0x06_u8, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65].as_slice());
     /// let mut cs = CharacterString::default();
