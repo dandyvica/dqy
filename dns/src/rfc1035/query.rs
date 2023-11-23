@@ -10,8 +10,14 @@ use crate::{
 };
 
 use super::{
-    domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType, qclass::{QClass, Class},
-    qtype::QType, question::Question, resource_record::MetaRR,
+    domain::DomainName,
+    header::Header,
+    opcode::OpCode,
+    packet_type::PacketType,
+    qclass::{Class, QClass},
+    qtype::QType,
+    question::Question,
+    resource_record::MetaRR,
 };
 
 #[derive(Default, ToNetwork)]

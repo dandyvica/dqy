@@ -3,7 +3,8 @@ use std::fmt::{self};
 use type2network::ToNetworkOrder;
 
 use super::{
-    a::A, aaaa::AAAA, cname::CNAME, hinfo::HINFO, loc::LOC, mx::MX, ns::NS, soa::SOA, txt::TXT,
+    a::A, aaaa::AAAA, cname::CNAME, hinfo::HINFO, loc::LOC, mx::MX, ns::NS, opt::OPT, soa::SOA,
+    txt::TXT,
 };
 
 #[derive(Debug)]
@@ -12,7 +13,7 @@ pub enum RData<'a> {
     AAAA(AAAA),
     CName(CNAME<'a>),
     HInfo(HINFO<'a>),
-    //Opt(OPTData),
+    Opt(Option<Vec<OPT>>),
     Soa(SOA<'a>),
     Ns(NS<'a>),
     Txt(TXT<'a>),

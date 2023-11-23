@@ -18,6 +18,7 @@ pub mod hinfo;
 pub mod loc;
 pub mod mx;
 pub mod ns;
+pub mod opt;
 pub mod ptr;
 pub mod query;
 pub mod rdata;

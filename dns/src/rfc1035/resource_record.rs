@@ -5,7 +5,7 @@ use type2network_derive::ToNetwork;
 
 use super::{
     a::A, aaaa::AAAA, cname::CNAME, domain::DomainName, hinfo::HINFO, loc::LOC, mx::MX, ns::NS,
-    qclass::Class, qtype::QType, rdata::RData, soa::SOA, txt::TXT,
+    opt::OPT, qclass::{Class, QClass}, qtype::QType, rdata::RData, soa::SOA, txt::TXT, 
 };
 
 // 4.1.3. Resource record format
@@ -125,8 +125,11 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         cl.deserialize_from(buffer)?;
 
         self.class = match self.r#type {
-            QType::OPT => unimplemented!("OPT deser not yet implemented"),
-            _ => Class::Payload(cl),
+            QType::OPT => Class::Payload(cl),
+            _ => {
+                let qc = QClass::try_from(cl as u64).unwrap();
+                Class::Qclass(qc)
+            }
         };
 
         self.ttl.deserialize_from(buffer)?;
@@ -141,7 +144,21 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::NS => self.r_data = get_rr!(buffer, NS, RData::Ns),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::Txt),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::Soa),
-                //QType::OPT => self.r_data = get_rr!(buffer, OPTData, RData::Opt),
+                QType::OPT => {
+                    let mut v: Vec<OPT> = Vec::new();
+                    let mut current_length = 0u16;
+
+                    while current_length <= self.rd_length {
+                        let mut opt = OPT::default();
+                        opt.deserialize_from(buffer)?;
+
+                        current_length += opt.length;
+
+                        v.push(opt);
+                    }
+
+                    self.r_data = RData::Opt(Some(v))
+                }
                 // QType::DNSKEY => {
                 //     let mut x = DNSKEY::default();
                 //     x.key = Vec::with_capacity((self.rd_length - 4) as usize);
