@@ -4,9 +4,26 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::ToNetwork;
 
 use super::{
-    a::A, aaaa::AAAA, cname::CNAME, domain::DomainName, hinfo::HINFO, loc::LOC, mx::MX, ns::NS,
-    opt::OPT, qclass::{Class, QClass}, qtype::QType, rdata::RData, soa::SOA, txt::TXT, 
+    a::A,
+    aaaa::AAAA,
+    cname::CNAME,
+    dnskey::DNSKEY,
+    domain::DomainName,
+    hinfo::HINFO,
+    loc::LOC,
+    mx::MX,
+    ns::NS,
+    ptr::PTR,
+    qclass::{Class, QClass},
+    qtype::QType,
+    rdata::RData,
+    soa::SOA,
+    txt::TXT,
 };
+
+use crate::{rfc6891::opt::*, rfc1035::{ds::DS, rrsig::RRSIG}};
+
+use log::trace;
 
 // 4.1.3. Resource record format
 
@@ -74,36 +91,40 @@ where
 pub type MetaRR<'a> = ResourceRecord<'a, Vec<u8>>;
 pub type RR<'a> = ResourceRecord<'a, RData<'a>>;
 
-// macro_rules! rr_display {
-//     ($fmt:expr, $rd_data:expr, $rd_arm:path, $tag:literal) => {
-//         match $rd_data {
-//             Some($rd_arm(x)) => write!($fmt, "{}", x),
-//             _ => panic!("unexpected error when displaying RR {}", $tag),
-//         }
-//     };
-// }
+impl<'a> ResourceRecord<'a, Vec<u8>> {
+    pub fn new_opt(bufsize: Option<u16>) -> Self {
+        let mut opt = MetaRR::default();
+        opt.r#type = QType::OPT;
+        opt.class = Class::Payload(bufsize.unwrap_or(1232));
+
+        opt
+    }
+
+    pub fn set_edns_nsid(&mut self) -> std::io::Result<usize> {
+        let mut opt = OPT::default();
+        opt.code = OptionCode::NSID as u16;
+
+        opt.serialize_to(&mut self.r_data)
+    }
+}
 
 impl<'a> fmt::Display for RR<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<10} {:<10?} {:<10} {:<10} {:<10}",
-            self.name, self.r#type, self.class, self.ttl, self.rd_length
+            "{:<28} {:<10} {:<10} {:<10} {:<10}",
+            self.name.to_string(),
+            self.r#type.to_string(),
+            self.class.to_string(),
+            self.ttl,
+            self.rd_length
         )?;
 
-        // match self.r#type {
-        //     QType::A => rr_display!(f, &self.r_data, RData::A, "A"),
-        //     QType::AAAA => rr_display!(f, &self.r_data, RData::AAAA, "AAAA"),
-        //     QType::CNAME => rr_display!(f, &self.r_data, RData::CName, "CNAME"),
-        //     QType::HINFO => rr_display!(f, &self.r_data, RData::HInfo, "HINFO"),
-        //     QType::NS => rr_display!(f, &self.r_data, RData::Ns, "NS"),
-        //     QType::TXT => rr_display!(f, &self.r_data, RData::Txt, "TXT"),
-        //     QType::SOA => rr_display!(f, &self.r_data, RData::Soa, "SOA"),
-        //     QType::MX => rr_display!(f, &self.r_data, RData::Mx, "MX"),
-        //     _ => unimplemented!(),
-        // }
+        if self.rd_length != 0 {
+            write!(f, "{}", self.r_data)?;
+        }
 
-        write!(f, "{}", self.r_data)
+        Ok(())
     }
 }
 
@@ -135,16 +156,20 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
+        trace!("RR type: {:?}", self.r#type);
+
         if self.rd_length != 0 {
             match self.r#type {
                 QType::A => self.r_data = get_rr!(buffer, A, RData::A),
                 QType::AAAA => self.r_data = get_rr!(buffer, AAAA, RData::AAAA),
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CName),
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HInfo),
+                QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::Ptr),
                 QType::NS => self.r_data = get_rr!(buffer, NS, RData::Ns),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::Txt),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::Soa),
                 QType::OPT => {
+                    println!("found OPT");
                     let mut v: Vec<OPT> = Vec::new();
                     let mut current_length = 0u16;
 
@@ -159,13 +184,33 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
 
                     self.r_data = RData::Opt(Some(v))
                 }
-                // QType::DNSKEY => {
-                //     let mut x = DNSKEY::default();
-                //     x.key = Vec::with_capacity((self.rd_length - 4) as usize);
+                QType::DNSKEY => {
+                    let mut x = DNSKEY::default();
+                    x.key = Vec::with_capacity((self.rd_length - 4) as usize);
 
-                //     x.deserialize_from(buffer)?;
-                //     self.r_data = Some(RData::DnsKey(x))
-                // }
+                    x.deserialize_from(buffer)?;
+                    self.r_data = RData::DnsKey(x)
+                }
+                QType::DS => {
+                    let mut x = DS::default();
+                    x.digest = Vec::with_capacity((self.rd_length - 4) as usize);
+
+                    x.deserialize_from(buffer)?;
+                    self.r_data = RData::Ds(x)                    
+                },
+                QType::RRSIG => {
+                    let mut x = RRSIG::default();
+                    x.type_covered.deserialize_from(buffer)?;
+                    x.algorithm.deserialize_from(buffer)?;
+                    x.label.deserialize_from(buffer)?;
+                    x.ttl.deserialize_from(buffer)?;
+                    x.sign_expiration.deserialize_from(buffer)?;
+                    x.sing_inception.deserialize_from(buffer)?;
+                    x.key_tag.deserialize_from(buffer)?;
+                    x.name.deserialize_from(buffer)?;
+                    //x.signature = Vec::with_capacity((self.rd_length - 11 - ) as usize);
+                    self.r_data = RData::Rrsig(x)                    
+                },
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::Mx),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::Loc),
                 _ => unimplemented!("the {:?} RR is not yet implemented", self.r#type),
@@ -176,3 +221,11 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         Ok(())
     }
 }
+
+// fn deserialize_helper<T: Default>(length: u16) -> T {
+//     let mut x: DNSKEY = T::default();
+//     x.key = Vec::with_capacity((self.rd_length - 4) as usize);
+
+//     x.deserialize_from(buffer)?;
+//     self.r_data = RData::DnsKey(x)
+// }

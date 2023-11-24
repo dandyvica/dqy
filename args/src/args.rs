@@ -1,17 +1,20 @@
 //! Manage command line arguments here.
 use std::str::FromStr;
+use std::time::Duration;
 use std::{
     fs::{File, OpenOptions},
     net::IpAddr,
 };
-use std::time::Duration;
+
+use crate::plus;
+
+use super::plus::PlusArg;
 
 use clap::{Arg, ArgAction, Command};
 
-
 //use simplelog::*;
-use log::debug;
 use idna::punycode::encode_str;
+use log::debug;
 
 use dns::{
     error::DNSResult,
@@ -34,8 +37,16 @@ pub struct CliOptions {
     //pub debug: bool,
     pub trp_type: TransportType,
     pub ip_version: IPVersion,
-    pub timeout: Option<Duration>
+    pub timeout: Option<Duration>,
+    pub stats: bool
 }
+
+// OPT specific options
+// #[derive(Debug, Default)]
+// pub struct OptOptions {
+//     use_it: bool,
+//     bufsize: u16,
+// }
 
 impl CliOptions {
     pub fn options(args: &[String]) -> DNSResult<Self> {
@@ -45,15 +56,17 @@ impl CliOptions {
         // split arguments into 2 sets: those not starting with a '-' which should be first
         // and the others
         let dash_pos = args.iter().position(|arg| arg.starts_with("-"));
-        println!("dash_pos={:?}", dash_pos);
+        //println!("dash_pos={:?}", dash_pos);
 
         let (without_dash, with_dash) = match dash_pos {
             Some(pos) => (&args[0..pos], &args[pos..]),
             None => (&args[..], &[] as &[String]),
         };
 
-        println!("without_dash={:?}", without_dash);
-        println!("with_dash={:?}", with_dash);
+        let mut plus_args = Vec::new();
+
+        // println!("without_dash={:?}", without_dash);
+        // println!("with_dash={:?}", with_dash);
 
         // process the arguments not starting with a '-'
         for arg in without_dash {
@@ -69,11 +82,17 @@ impl CliOptions {
                 continue;
             }
 
+            // manage + options
+            if arg.starts_with('+') {
+                plus_args.push(PlusArg::new(arg));
+            }
+
             // otherwise it's a Qtype
             if let Ok(qt) = QType::from_str(&arg.to_uppercase()) {
                 options.qtype.push(qt);
             }
         }
+        println!("plus args={:?}", plus_args);
 
         // now process the arguments starting with a '-'
         let matches = Command::new("DNS query tool")
@@ -102,7 +121,7 @@ impl CliOptions {
                     .short('c')
                     .long("class")
                     .long_help(
-                        "query class as specified in RFC1035. Possible values: IN, CS, CH, HS.",
+                        "Query class as specified in RFC1035. Possible values: IN, CS, CH, HS.",
                     )
                     .action(ArgAction::Set)
                     .value_name("CLASS")
@@ -113,8 +132,9 @@ impl CliOptions {
                 Arg::new("domain")
                     .short('d')
                     .long("domain")
-                    .long_help("domain name to query.")
+                    .long_help("Domain name to query.")
                     .action(ArgAction::Set)
+                    .required(false)
                     .value_name("DOMAIN"),
             )
             .arg(
@@ -152,6 +172,14 @@ impl CliOptions {
                     .value_name("TCP"),
             )
             .arg(
+                Arg::new("stats")
+                    .short('S')
+                    .long("stats")
+                    .long_help("Print out statistics around the query.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("STATS"),
+            )
+            .arg(
                 Arg::new("timeout")
                     .long("timeout")
                     .long_help("Set timeout for network operations (in ms).")
@@ -160,6 +188,21 @@ impl CliOptions {
                     .default_value("5000")
                     .value_name("TIMEOUT"),
             )
+            .arg(
+                Arg::new("ptr")
+                    .short('x')
+                    .long("reverse")
+                    .long_help("Reverse DNS lookup.")
+                    .action(ArgAction::Set)
+                    .value_name("PTR"),
+            )
+            // .arg(
+            //     Arg::new("no-edns")
+            //         .long("no-edns")
+            //         .long_help("Do not add an OPT record to the query.")
+            //         .action(ArgAction::SetTrue)
+            //         .value_name("NO-EDNS"),
+            // )
             .get_matches_from(with_dash);
 
         // copy values into option struct
@@ -182,7 +225,11 @@ impl CliOptions {
 
         // test if we already fill-in the domain
         if options.domain.is_empty() {
-            options.domain = matches.get_one::<String>("domain").unwrap().clone();
+            options.domain = if let Some(d) = matches.get_one::<String>("domain") {
+                d.clone()
+            } else {
+                String::from(".")
+            };
         }
 
         // // name server was not provided: so lookup system DNS config
@@ -195,49 +242,32 @@ impl CliOptions {
             } else {
                 options.resolvers = resolvers.unwrap().v4;
             }
-
-
         }
 
-        options.timeout = Some(Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap()));
+        options.timeout = Some(Duration::from_millis(
+            *matches.get_one::<u64>("timeout").unwrap(),
+        ));
 
         // internal domain name processing
-        if options.domain.len() != options.domain.chars().count() {
-            options.domain = format!("xn--{}", encode_str(options.domain.as_str()).unwrap());
+        // if options.domain.len() != options.domain.chars().count() {
+        //     options.domain = format!("xn--{}", encode_str(options.domain.as_str()).unwrap());
+        // }
+
+        // if reverse query, ignore all others
+        if let Some(ip) = matches.get_one::<String>("ptr") {
+            // reverse query uses PTR
+            options.qtype = vec![QType::PTR];
+
+            // new to reverse numbers
+            if options.ip_version == IPVersion::V4 {
+                let mut limbs: Vec<_> = ip.split(".").collect();
+                limbs.reverse();
+                options.domain = format!("{}.in-addr.arpa", limbs.join("."));
+            }
         }
 
-        // // if name server is not provided, use the ones given by the OS
-        // if matches.is_present("ns") {
-        //     let ip = IpAddr::from_str(matches.value_of("ns").unwrap())?;
-        //     options.ns = vec![ip];
-        // } else {
-        //     options.ns = get_stub_resolvers()?;
-        // }
-
-        // // domain is required
-        // options.domain = String::from(matches.value_of("domain").unwrap());
-
-        // // if QType is not present, defaults to A
-        // if matches.is_present("qtype") {
-        //     options.qtype = QType::from_str(&matches.value_of("qtype").unwrap().to_uppercase())?;
-        // } else {
-        //     options.qtype = QType::A;
-        // }
-
-        // get qclass
-        // options.qclass = *matches.get_one::<QClass>("class").unwrap();
-
-        // // get port
-        // options.port = *matches.get_one::<u16>("port").unwrap();
-
-        // // OPT meta RR
-        // options.no_opt = matches.get_flag("no-opt");
-
-        // // create logfile only if requested. Logfile is gathering a bunch of information used for debugging
-        // options.debug = matches.get_flag("debug");
-        // if options.debug {
-        //     init_logger("dnsq.log")?;
-        // }
+        // manage other options
+        options.stats = matches.get_flag("stats");
 
         // println!("options={:#?}", options);
         Ok(options)
@@ -262,22 +292,6 @@ impl CliOptions {
 //     Ok(())
 // }
 
-// // try to get the DNS servers in the /etc/resolv.conf file
-// // Extract those args starting with a +
-// fn get_plus_args(args: &Vec<String>, options: &mut CliOptions) {
-//     // extract those starting with +
-//     let plus_args: Vec<_> = args.iter().filter(|&x| x.starts_with('+')).collect();
-//     println!("plus_args={:?}", plus_args);
-
-//     for plus_arg in plus_args {
-//         match plus_arg.as_ref() {
-//             "+aaonly" => options.plus_args.aaonly = true,
-//             "+additional" => options.plus_args.additional = true,
-//             &_ => {}
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -288,6 +302,20 @@ mod tests {
             .map(|a| a.to_string())
             .collect();
         CliOptions::options(&args)
+    }
+
+    #[test]
+    fn empty() {
+        let opts = args_to_options("");
+        assert!(opts.is_ok());
+        let opts = opts.unwrap();
+
+        assert_eq!(opts.qtype, vec![QType::A]);
+        assert_eq!(opts.qclass, QClass::IN);
+        assert_eq!(opts.port, 53);
+        assert_eq!(&opts.domain, ".");
+        assert_eq!(opts.ip_version, IPVersion::V4);
+        assert_eq!(opts.trp_type, TransportType::Udp);
     }
 
     #[test]

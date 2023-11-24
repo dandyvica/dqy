@@ -1,7 +1,5 @@
-//! A DNS resource query
-use std::io::Cursor;
-use std::net::UdpSocket;
-use std::process::exit;
+//! A DNS resource query tool
+use std::time::Instant;
 
 use log::debug;
 
@@ -9,7 +7,9 @@ use log::debug;
 use dns::{
     error::DNSResult,
     network::Transport,
-    rfc1035::{domain::DomainName, qtype::QType, query::Query, response::Response},
+    rfc1035::{
+        domain::DomainName, qtype::QType, query::Query, resource_record::MetaRR, response::Response,
+    }, rfc6891::opt::OptRR,
 };
 
 use args::args::CliOptions;
@@ -20,9 +20,12 @@ use args::args::CliOptions;
 //mod output;
 
 fn main() -> DNSResult<()> {
+    let now = Instant::now();
+
     env_logger::init();
 
-    let mut buffer = [0u8; 512];
+
+    let mut buffer = [0u8; 4096];
 
     // get arguments
     let mut args: Vec<String> = std::env::args().skip(1).collect();
@@ -36,7 +39,14 @@ fn main() -> DNSResult<()> {
     for qt in options.qtype {
         let mut query = Query::new(&options.trp_type);
         query.init(&options.domain, qt, options.qclass)?;
-        query.add_opt(None);
+
+        // manage edns options
+        // let mut opt = MetaRR::new_opt(None);
+        // opt.rd_length = opt.set_edns_nsid()? as u16;
+        let mut opt = OptRR::new(None);
+        opt.set_edns_nsid()?;
+
+        query.push_additional(opt.0);
 
         query.send(&mut trp)?;
 
@@ -56,6 +66,12 @@ fn main() -> DNSResult<()> {
         //println!("{}", DisplayWrapper(&response));
         response.display();
     }
+
+    let elapsed = now.elapsed();
+    if options.stats {
+        eprintln!("stats ==> server:{}, transport:{:?}, elapsed:{} ms", options.resolvers[0], options.trp_type, elapsed.as_millis());
+    }
+    
 
     Ok(())
 }

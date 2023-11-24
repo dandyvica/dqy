@@ -65,9 +65,7 @@ impl Transport {
             _ => unimplemented!("not implemented"),
         }
     }
-}
 
-impl Transport {
     // send data through UDP socket
     pub fn send(&mut self, buffer: &[u8]) -> DNSResult<usize> {
         match self {

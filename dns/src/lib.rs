@@ -4,7 +4,7 @@ pub mod network;
 pub mod rfc1035;
 
 //pub mod rfc4034;
-//pub mod rfc6891;
+pub mod rfc6891;
 // pub mod util;
 
 #[cfg(test)]

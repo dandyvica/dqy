@@ -59,7 +59,7 @@ pub struct Header {
 impl<'a> fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "id:0x{:X}({}) ", self.id, self.id)?;
-        write!(f, "flags:<{:?}>  ", self.flags)?;
+        write!(f, "flags:<{}>  ", self.flags)?;
 
         if self.flags.qr == PacketType::Query {
             write!(f, "QUERY:{}", self.qd_count)

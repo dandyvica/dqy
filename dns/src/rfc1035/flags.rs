@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::{Cursor, Result};
 
 use crate::{
@@ -118,7 +119,8 @@ impl TryFrom<u16> for Flags {
         flags.z = (value >> 6 & 1) == 1;
         flags.authentic_data = (value >> 5 & 1) == 1;
         flags.checking_disabled = (value >> 4 & 1) == 1;
-        flags.response_code = ResponseCode::try_from((value & 0b1111) as u64)?;
+        flags.response_code = ResponseCode::try_from((value & 0b1111) as u64)
+            .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowOpCode))?;
 
         Ok(flags)
     }
@@ -200,5 +202,36 @@ impl<'a> FromNetworkOrder<'a> for Flags {
         })?;
 
         Ok(())
+    }
+}
+
+// helper macro to print out boolean flags if true
+macro_rules! flag_display {
+    ($fmt:expr, $bit:expr, $label:literal) => {
+        if $bit {
+            write!($fmt, "{} ", $label)?
+        }
+    };
+}
+
+impl fmt::Display for Flags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // output depends on whether it's a query or a response
+        // because some fields are unnecessary when Query or Response
+        write!(f, "qr:{:?} ", self.qr)?;
+
+        if self.qr == PacketType::Query {
+            write!(f, "opcode:{:?} rd:{}", self.op_code, self.recursion_desired)
+        } else {
+            write!(f, "code:{} ", self.response_code)?;
+            Ok({
+                flag_display!(f, self.authorative_answer, "aa");
+                flag_display!(f, self.truncated, "tc");
+                flag_display!(f, self.recursion_desired, "rd");
+                flag_display!(f, self.recursion_available, "ra");
+                flag_display!(f, self.authentic_data, "ad");
+                flag_display!(f, self.checking_disabled, "cd");
+            })
+        }
     }
 }

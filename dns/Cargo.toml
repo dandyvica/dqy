@@ -12,4 +12,7 @@ rand = "0.8.5"
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network" }
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+base64 = "0.21.5"
 
+[dev-dependencies]
+pcap-parser = "0.14.1"

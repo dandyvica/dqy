@@ -3,7 +3,6 @@ use std::io::Cursor;
 use log::debug;
 
 use type2network::FromNetworkOrder;
-use type2network_derive::FromNetwork;
 
 use crate::{
     error::DNSResult,
@@ -61,8 +60,11 @@ impl<'a> Response<'a> {
 
     pub fn display(&self) {
         // header first
+
+        // flags
+        //println!("{}", self.header.flags);
         println!("HEADER: {}\n", self.header);
-        println!("QUESTION: {}\n", self.question);
+        // println!("QUESTION: {}\n", self.question);
 
         // print out anwser, authority, additional if any
         if let Some(answer) = &self.answer {

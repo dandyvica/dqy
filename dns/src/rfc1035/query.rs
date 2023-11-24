@@ -10,14 +10,8 @@ use crate::{
 };
 
 use super::{
-    domain::DomainName,
-    header::Header,
-    opcode::OpCode,
-    packet_type::PacketType,
-    qclass::{Class, QClass},
-    qtype::QType,
-    question::Question,
-    resource_record::MetaRR,
+    domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType, qclass::QClass,
+    qtype::QType, question::Question, resource_record::MetaRR,
 };
 
 #[derive(Default, ToNetwork)]
@@ -39,12 +33,12 @@ impl<'a> Query<'a> {
         msg
     }
 
-    pub fn add_opt(&mut self, buffsize: Option<u16>) {
-        let mut opt = MetaRR::default();
-        opt.r#type = QType::OPT;
-        opt.class = Class::Payload(buffsize.unwrap_or(1232));
-
-        self.additional = Some(vec![opt]);
+    pub fn push_additional(&mut self, additional_rr: MetaRR<'a>) {
+        if let Some(ref mut v) = self.additional {
+            v.push(additional_rr);
+        } else {
+            self.additional = Some(vec![additional_rr]);
+        }
         self.header.ar_count += 1;
     }
 
