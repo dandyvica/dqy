@@ -1,6 +1,7 @@
 use std::fmt;
 use std::io::{Cursor, Result};
 
+use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
 use crate::error::{DNSError, DNSResult, InternalError};
@@ -13,12 +14,25 @@ pub struct DomainName<'a> {
 }
 
 impl<'a> DomainName<'a> {
+    // this identifies a compressed label
     fn is_pointer(x: u8) -> bool {
         x >= 192
     }
 
+    // need to know the length is bytes sometimes
+    pub fn len(&self) -> usize {
+        let mut len = 0usize;
+
+        for l in &self.labels {
+            len += l.len() + 1;
+        }
+
+        // we add the sentinel
+        len + 1
+    }
+
     /// ```
-    /// use dns::rfc1035::domain::DomainName;
+    /// use dns::rfc::domain::DomainName;
     ///
     /// let v = vec![0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00];
     /// let mut dn = DomainName::default();
@@ -28,15 +42,18 @@ impl<'a> DomainName<'a> {
     pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> DNSResult<usize> {
         let mut index = pos;
 
-        // println!(
-        //     "from_position(): starting at position: {} with value: {:X?} ({})",
-        //     index, buffer[index], buffer[index]
-        // );
+        trace!(
+            "from_position(): starting at position: 0x{:X?} ({}) with value: 0x{:X?} ({})",
+            index,
+            index,
+            buffer[index],
+            buffer[index]
+        );
 
         loop {
             // we reach the sentinel
             if buffer[index] == 0 {
-                //println!("from_position(): found sentinel");
+                //dbg!("from_position(): found sentinel", &self.labels);
                 break;
             }
 
@@ -77,6 +94,7 @@ impl<'a> DomainName<'a> {
 
             // then we convert the label into UTF8
             let label = &buffer[index + 1..index + size + 1];
+            //dbg!(label);
             let label_as_utf8 = std::str::from_utf8(label)?;
             // println!(
             //     "label_as_utf8={}, index={}, buffer[index]={:02X?}",
@@ -100,7 +118,7 @@ impl<'a> DomainName<'a> {
 }
 
 /// ```
-/// use dns::rfc1035::domain::DomainName;
+/// use dns::rfc::domain::DomainName;
 ///
 /// let mut dn = DomainName::try_from("www.google.com").unwrap();
 /// assert_eq!(dn.to_string(), "www.google.com.");
@@ -123,7 +141,7 @@ impl<'a> fmt::Display for DomainName<'a> {
 }
 
 /// ```
-/// use dns::rfc1035::domain::DomainName;
+/// use dns::rfc::domain::DomainName;
 ///
 /// let dn = DomainName::try_from("www.example.com").unwrap();
 /// assert_eq!(dn.labels.len(), 3);
@@ -162,7 +180,7 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
 
 impl<'a> ToNetworkOrder for DomainName<'a> {
     /// ```
-    /// use dns::rfc1035::domain::DomainName;
+    /// use dns::rfc::domain::DomainName;
     /// use type2network::ToNetworkOrder;
     ///
     /// let dn = DomainName::try_from("www.google.ie").unwrap();
@@ -189,7 +207,7 @@ impl<'a> ToNetworkOrder for DomainName<'a> {
 impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
     /// ```
     /// use std::io::Cursor;
-    /// use dns::rfc1035::domain::DomainName;
+    /// use dns::rfc::domain::DomainName;
     /// use type2network::FromNetworkOrder;
     ///
     /// // with sentinel = 0
@@ -204,6 +222,7 @@ impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
 
         // loop through the vector
         let start_position = buffer.position() as usize;
+        //dbg!(start_position);
 
         // get a reference on inner data
         let inner_ref = buffer.get_ref();

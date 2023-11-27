@@ -10,7 +10,7 @@ use type2network_derive::FromNetwork;
 
 use dns::{
     error::DNSResult,
-    rfc1035::{
+    rfc::{
         a::A,
         opcode::OpCode,
         packet_type::PacketType,
@@ -235,14 +235,14 @@ fn cap2() -> DNSResult<()> {
         assert_eq!(answer[i].rd_length, 4);
     }
 
-    assert!(matches!(&answer[0].r_data, RData::Ns(ns) if ns.to_string() == "c.hkirc.net.hk."));
-    assert!(matches!(&answer[1].r_data, RData::Ns(ns) if ns.to_string() == "d.hkirc.net.hk."));
-    assert!(matches!(&answer[2].r_data, RData::Ns(ns) if ns.to_string() == "t.hkirc.net.hk."));
-    assert!(matches!(&answer[3].r_data, RData::Ns(ns) if ns.to_string() == "u.hkirc.net.hk."));
-    assert!(matches!(&answer[4].r_data, RData::Ns(ns) if ns.to_string() == "v.hkirc.net.hk."));
-    assert!(matches!(&answer[5].r_data, RData::Ns(ns) if ns.to_string() == "x.hkirc.net.hk."));
-    assert!(matches!(&answer[6].r_data, RData::Ns(ns) if ns.to_string() == "y.hkirc.net.hk."));
-    assert!(matches!(&answer[7].r_data, RData::Ns(ns) if ns.to_string() == "z.hkirc.net.hk."));
+    assert!(matches!(&answer[0].r_data, RData::NS(ns) if ns.to_string() == "c.hkirc.net.hk."));
+    assert!(matches!(&answer[1].r_data, RData::NS(ns) if ns.to_string() == "d.hkirc.net.hk."));
+    assert!(matches!(&answer[2].r_data, RData::NS(ns) if ns.to_string() == "t.hkirc.net.hk."));
+    assert!(matches!(&answer[3].r_data, RData::NS(ns) if ns.to_string() == "u.hkirc.net.hk."));
+    assert!(matches!(&answer[4].r_data, RData::NS(ns) if ns.to_string() == "v.hkirc.net.hk."));
+    assert!(matches!(&answer[5].r_data, RData::NS(ns) if ns.to_string() == "x.hkirc.net.hk."));
+    assert!(matches!(&answer[6].r_data, RData::NS(ns) if ns.to_string() == "y.hkirc.net.hk."));
+    assert!(matches!(&answer[7].r_data, RData::NS(ns) if ns.to_string() == "z.hkirc.net.hk."));
 
     // check additional records
     assert!(resp.additional.is_some());

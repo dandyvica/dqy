@@ -8,7 +8,7 @@ use type2network_derive::FromNetwork;
 ///
 /// ```
 /// use std::convert::TryFrom;
-/// use dns::rfc1035::response_code::ResponseCode;
+/// use dns::rfc::response_code::ResponseCode;
 ///
 /// assert_eq!(ResponseCode::try_from(23).unwrap(), ResponseCode::BADCOOKIE);
 /// assert!(ResponseCode::try_from(110).is_err());

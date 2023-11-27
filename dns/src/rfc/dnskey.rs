@@ -3,7 +3,9 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{Engine as _, engine::{self, general_purpose}, alphabet};
+use base64::{engine::general_purpose, Engine as _};
+
+use crate::buffer::Buffer;
 
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -55,14 +57,15 @@ pub struct DNSKEY {
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
-    pub key: Vec<u8>,
+    //#[deser(with_code( self.key = Buffer::new(self.rd_length - 4); ))]
+    pub key: Buffer,
 }
 
 impl fmt::Display for DNSKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "flags: {} protocol: {} algorithm: {} key: ",
+            "flags:{} protocol:{} algorithm:{} key:",
             self.flags, self.protocol, self.algorithm
         )?;
 

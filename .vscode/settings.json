@@ -1,13 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
-        "./dnslib/Cargo.toml",
+        "./dns/Cargo.toml",
         "./dns/Cargo.toml"
     ]
 }

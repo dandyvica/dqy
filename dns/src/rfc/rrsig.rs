@@ -1,9 +1,13 @@
 use std::fmt;
 
+use base64::{engine::general_purpose, Engine as _};
+
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use super::{qtype::QType, domain::DomainName};
+use crate::buffer::Buffer;
+
+use super::{domain::DomainName, rtype::RType};
 
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
@@ -32,29 +36,27 @@ use super::{qtype::QType, domain::DomainName};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct RRSIG<'a> {
-    pub type_covered: QType,
+    pub type_covered: RType,
     pub algorithm: u8,
-    pub label: u8,
-    pub ttl: u16,
-    pub sign_expiration: u16,
-    pub sing_inception: u16,
-    pub key_tag: u8,
+    pub labels: u8,
+    pub ttl: u32,
+    pub sign_expiration: u32,
+    pub sign_inception: u32,
+    pub key_tag: u16,
+
+    #[deser(no)]
     pub name: DomainName<'a>,
-    pub signature: Vec<u8>,
+    #[deser(no)]
+    pub signature: Buffer,
 }
 
 impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {:?}",
-            self.type_covered, self.name, self.signature
-        )?;
+        write!(f, "{} {} ", self.type_covered, self.name)?;
 
-        // let b64 = general_purpose::STANDARD.encode(&self.key);
-        // write!(f, "{}", b64)?;
+        let b64 = general_purpose::STANDARD.encode(&self.signature);
+        write!(f, "{}", b64)?;
 
         Ok(())
     }
 }
-

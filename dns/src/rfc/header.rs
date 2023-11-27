@@ -22,7 +22,7 @@ use super::{flags::Flags, packet_type::PacketType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// ```
 /// use std::io::Cursor;
-/// use dns::rfc1035::{flags::Flags, header::Header};
+/// use dns::rfc::{flags::Flags, header::Header};
 /// use type2network::{FromNetworkOrder, ToNetworkOrder};
 ///
 /// let sample = vec![0x49, 0x1e, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];

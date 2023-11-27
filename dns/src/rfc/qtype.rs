@@ -1,12 +1,21 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use enum_from::{EnumDisplay, EnumFromStr};
+use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
 #[derive(
-    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumDisplay, ToNetwork, FromNetwork,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumTryFrom,
+    EnumFromStr,
+    EnumDisplay,
+    ToNetwork,
+    FromNetwork,
 )]
 #[repr(u16)]
 pub enum QType {
@@ -104,6 +113,9 @@ pub enum QType {
     // Unassigned	261-32767
     TA = 32768, // DNSSEC Trust Authorities	[Sam_Weiler][http://cameo.library.cmu.edu/][ Deploying DNSSEC Without a Signed Root. Technical Report 1999-19, Information Networking Institute, Carnegie Mellon University, April 2004.]		2005-12-13
     DLV = 32769, // DNSSEC Lookaside Validation (OBSOLETE)	[RFC8749][RFC4431]
+
+    // some resolvers send back an unknow value
+    UNKNOWN = 0xFFFF,
 }
 
 #[cfg(test)]

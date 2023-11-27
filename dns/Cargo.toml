@@ -9,8 +9,10 @@ edition = "2021"
 log = "0.4.20"
 byteorder = "1.5.0"
 rand = "0.8.5"
-type2network = { git = "https://github.com/dandyvica/type2network" }
-type2network_derive = { git = "https://github.com/dandyvica/type2network" }
+type2network = { path = "/data/projects/rust/type2network" }
+type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
+# type2network = { git = "https://github.com/dandyvica/type2network" }
+# type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
 base64 = "0.21.5"
 

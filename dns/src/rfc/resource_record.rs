@@ -21,7 +21,10 @@ use super::{
     txt::TXT,
 };
 
-use crate::{rfc6891::opt::*, rfc1035::{ds::DS, rrsig::RRSIG}};
+use crate::{
+    buffer::Buffer,
+    rfc::{ds::DS, rrsig::RRSIG, opt::*}
+};
 
 use log::trace;
 
@@ -91,23 +94,6 @@ where
 pub type MetaRR<'a> = ResourceRecord<'a, Vec<u8>>;
 pub type RR<'a> = ResourceRecord<'a, RData<'a>>;
 
-impl<'a> ResourceRecord<'a, Vec<u8>> {
-    pub fn new_opt(bufsize: Option<u16>) -> Self {
-        let mut opt = MetaRR::default();
-        opt.r#type = QType::OPT;
-        opt.class = Class::Payload(bufsize.unwrap_or(1232));
-
-        opt
-    }
-
-    pub fn set_edns_nsid(&mut self) -> std::io::Result<usize> {
-        let mut opt = OPT::default();
-        opt.code = OptionCode::NSID as u16;
-
-        opt.serialize_to(&mut self.r_data)
-    }
-}
-
 impl<'a> fmt::Display for RR<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -156,18 +142,24 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
-        trace!("RR type: {:?}", self.r#type);
+        trace!(
+            "found RR: name:<{}> type:{:?} ttl: {} RD length:{}",
+            self.name,
+            self.r#type,
+            self.ttl,
+            self.rd_length
+        );
 
         if self.rd_length != 0 {
             match self.r#type {
                 QType::A => self.r_data = get_rr!(buffer, A, RData::A),
                 QType::AAAA => self.r_data = get_rr!(buffer, AAAA, RData::AAAA),
-                QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CName),
-                QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HInfo),
-                QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::Ptr),
-                QType::NS => self.r_data = get_rr!(buffer, NS, RData::Ns),
-                QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::Txt),
-                QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::Soa),
+                QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
+                QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
+                QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::PTR),
+                QType::NS => self.r_data = get_rr!(buffer, NS, RData::NS),
+                QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
+                QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::OPT => {
                     println!("found OPT");
                     let mut v: Vec<OPT> = Vec::new();
@@ -182,40 +174,44 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                         v.push(opt);
                     }
 
-                    self.r_data = RData::Opt(Some(v))
+                    self.r_data = RData::OPT(Some(v))
                 }
                 QType::DNSKEY => {
                     let mut x = DNSKEY::default();
-                    x.key = Vec::with_capacity((self.rd_length - 4) as usize);
+                    x.key = Buffer::new(self.rd_length - 4);
 
                     x.deserialize_from(buffer)?;
-                    self.r_data = RData::DnsKey(x)
+                    self.r_data = RData::DNSKEY(x)
                 }
                 QType::DS => {
                     let mut x = DS::default();
-                    x.digest = Vec::with_capacity((self.rd_length - 4) as usize);
+                    x.digest = Buffer::new(self.rd_length - 4);
 
                     x.deserialize_from(buffer)?;
-                    self.r_data = RData::Ds(x)                    
-                },
+                    self.r_data = RData::DS(x)
+                }
                 QType::RRSIG => {
                     let mut x = RRSIG::default();
-                    x.type_covered.deserialize_from(buffer)?;
-                    x.algorithm.deserialize_from(buffer)?;
-                    x.label.deserialize_from(buffer)?;
-                    x.ttl.deserialize_from(buffer)?;
-                    x.sign_expiration.deserialize_from(buffer)?;
-                    x.sing_inception.deserialize_from(buffer)?;
-                    x.key_tag.deserialize_from(buffer)?;
+                    x.deserialize_from(buffer)?;
+
+                    // we need this trick to not deserialize the name because its length is unknown yet
+                    // we need the length to allocate the Buffer for the signature
                     x.name.deserialize_from(buffer)?;
-                    //x.signature = Vec::with_capacity((self.rd_length - 11 - ) as usize);
-                    self.r_data = RData::Rrsig(x)                    
-                },
-                QType::MX => self.r_data = get_rr!(buffer, MX, RData::Mx),
-                QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::Loc),
-                _ => unimplemented!("the {:?} RR is not yet implemented", self.r#type),
+                    x.signature = Buffer::new(self.rd_length - 18 - x.name.len() as u16);
+                    x.signature.deserialize_from(buffer)?;
+
+                    self.r_data = RData::RRSIG(x)
+                }
+                QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
+                QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
+                // _ => unimplemented!("the {:?} RR is not yet implemented", self.r#type),
+                _ => {
+                    // allocate the buffer to hold the data
+                    let mut buf = Buffer::new(self.rd_length);
+                    buf.deserialize_from(buffer)?;
+                    self.r_data = RData::UNKNOWN(buf);
+                }
             }
-            //self.r_data = Some(Vec::with_capacity(self.rd_length as usize));
         }
 
         Ok(())

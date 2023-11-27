@@ -19,7 +19,7 @@ use log::debug;
 use dns::{
     error::DNSResult,
     network::{IPVersion, TransportType},
-    rfc1035::{qclass::QClass, qtype::QType},
+    rfc::{qclass::QClass, qtype::QType},
 };
 
 use resolver::resolver::Resolvers;
@@ -385,6 +385,20 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V6);
+        assert_eq!(opts.trp_type, TransportType::Tcp);
+    }
+
+    #[test]
+    fn with_ptr() {
+        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --tcp -x 1.2.3.4");
+        assert!(opts.is_ok());
+        let opts = opts.unwrap();
+
+        assert_eq!(opts.qtype, vec![QType::PTR]);
+        assert_eq!(opts.qclass, QClass::IN);
+        assert_eq!(opts.port, 53);
+        assert_eq!(&opts.domain, "4.3.2.1.in-addr.arpa");
+        assert_eq!(opts.ip_version, IPVersion::V4);
         assert_eq!(opts.trp_type, TransportType::Tcp);
     }
 }

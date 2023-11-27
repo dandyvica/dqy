@@ -7,17 +7,20 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::rfc1035::{qclass::Class, qtype::QType, resource_record::MetaRR};
+use crate::{
+    buffer::Buffer,
+    rfc::{qclass::Class, qtype::QType, resource_record::MetaRR},
+};
 
-pub struct OptRR<'a>(pub MetaRR<'a>);
+pub struct OPTRR<'a>(pub MetaRR<'a>);
 
-impl<'a> OptRR<'a> {
+impl<'a> OPTRR<'a> {
     pub fn new(bufsize: Option<u16>) -> Self {
         let mut opt = MetaRR::default();
         opt.r#type = QType::OPT;
         opt.class = Class::Payload(bufsize.unwrap_or(1232));
 
-        OptRR(opt)
+        OPTRR(opt)
     }
 
     pub fn set_edns_nsid(&mut self) -> std::io::Result<()> {
@@ -30,7 +33,7 @@ impl<'a> OptRR<'a> {
     }
 }
 
-impl<'a> Deref for OptRR<'a> {
+impl<'a> Deref for OPTRR<'a> {
     type Target = MetaRR<'a>;
 
     fn deref(&self) -> &Self::Target {
@@ -69,27 +72,34 @@ pub enum OptionCode {
     DeviceID = 26946, // Optional	[https://developer.cisco.com/docs/cloud-security/#!network-devices-getting-started/response-codes][Cisco_CIE_DNS_team]
 }
 
-#[derive(Debug, Default, ToNetwork)]
+#[derive(Debug, Default, ToNetwork, FromNetwork)]
 pub struct OPT {
     pub code: u16,
     pub length: u16,
-    pub data: Vec<u8>,
+
+    // due to proc macro, this code is injected before deserializing the data field
+    #[deser(with_code( self.data = Buffer::new(self.length); ))]
+    pub data: Buffer,
 }
 
-impl<'a> FromNetworkOrder<'a> for OPT {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
-        self.code.deserialize_from(buffer)?;
-        self.length.deserialize_from(buffer)?;
+// impl<'a> FromNetworkOrder<'a> for OPT {
+//     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+//         self.code.deserialize_from(buffer)?;
+//         self.length.deserialize_from(buffer)?;
 
-        self.data = Vec::with_capacity(self.length as usize);
-        self.data.deserialize_from(buffer)?;
+//         self.data = Vec::with_capacity(self.length as usize);
+//         self.data.deserialize_from(buffer)?;
 
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
 impl fmt::Display for OPT {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "code={}, length={}", self.code, self.length)
+        write!(
+            f,
+            "code={} length={} data={}",
+            self.code, self.length, self.data
+        )
     }
 }

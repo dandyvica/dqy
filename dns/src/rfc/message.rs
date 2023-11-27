@@ -8,11 +8,11 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{ToNetwork, FromNetwork};
 
 use crate::network::TransportType;
-use crate::rfc1035::response_code::ResponseCode;
+use crate::rfc::response_code::ResponseCode;
 use crate::{
     error::DNSResult,
     network::Transport,
-    rfc1035::{
+    rfc::{
         domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType,
         qclass::QClass, qtype::QType, question::Question, resource_record::ResourceRecord,
     },

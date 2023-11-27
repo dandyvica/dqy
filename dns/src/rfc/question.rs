@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::{rfc1035::domain::DomainName, rfc1035::qclass::QClass, rfc1035::qtype::QType};
+use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
 
 // Question structure: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 // 1  1  1  1  1  1
@@ -20,10 +20,10 @@ use crate::{rfc1035::domain::DomainName, rfc1035::qclass::QClass, rfc1035::qtype
 /// ```
 /// use std::io::Cursor;
 /// use dns::{
-///     rfc1035::question::Question,
-///     rfc1035::domain::DomainName,
-///     rfc1035::qtype::QType,
-///     rfc1035::qclass::QClass
+///     rfc::question::Question,
+///     rfc::domain::DomainName,
+///     rfc::qtype::QType,
+///     rfc::qclass::QClass
 /// };
 ///
 /// use type2network::{FromNetworkOrder, ToNetworkOrder};

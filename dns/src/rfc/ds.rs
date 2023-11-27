@@ -3,6 +3,8 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use crate::buffer::Buffer;
+
 // The RDATA for a DS RR consists of a 2 octet Key Tag field, a 1 octet
 // Algorithm field, a 1 octet Digest Type field, and a Digest field.
 
@@ -20,20 +22,20 @@ pub struct DS {
     key_tag: u16,
     algorithm: u8,
     digest_type: u8,
-    pub digest: Vec<u8>
+    pub digest: Buffer,
 }
 
 impl fmt::Display for DS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "key_tag: {} algorithm: {} digest_type: {} digest:",
-            self.key_tag, self.algorithm, self.digest_type
+            "key_tag: {} algorithm: {} digest_type: {} digest:{}",
+            self.key_tag, self.algorithm, self.digest_type, self.digest
         )?;
 
-        for c in &self.digest {
-            write!(f, "{:X?}", c)?;
-        }
+        // for c in &self.digest {
+        //     write!(f, "{:X?}", c)?;
+        // }
 
         Ok(())
     }

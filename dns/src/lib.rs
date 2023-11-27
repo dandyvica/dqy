@@ -1,11 +1,8 @@
+pub mod buffer;
 pub mod error;
 pub mod network;
-// pub mod macros;
-pub mod rfc1035;
+pub mod rfc;
 
-//pub mod rfc4034;
-pub mod rfc6891;
-// pub mod util;
 
 #[cfg(test)]
 use type2network::{FromNetworkOrder, ToNetworkOrder};

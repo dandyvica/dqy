@@ -7,9 +7,9 @@ use log::debug;
 use dns::{
     error::DNSResult,
     network::Transport,
-    rfc1035::{
-        domain::DomainName, qtype::QType, query::Query, resource_record::MetaRR, response::Response,
-    }, rfc6891::opt::OptRR,
+    rfc::{
+        domain::DomainName, qtype::QType, query::Query, resource_record::MetaRR, response::Response, opt::OPTRR
+    },
 };
 
 use args::args::CliOptions;
@@ -23,7 +23,6 @@ fn main() -> DNSResult<()> {
     let now = Instant::now();
 
     env_logger::init();
-
 
     let mut buffer = [0u8; 4096];
 
@@ -43,7 +42,7 @@ fn main() -> DNSResult<()> {
         // manage edns options
         // let mut opt = MetaRR::new_opt(None);
         // opt.rd_length = opt.set_edns_nsid()? as u16;
-        let mut opt = OptRR::new(None);
+        let mut opt = OPTRR::new(Some(20));
         opt.set_edns_nsid()?;
 
         query.push_additional(opt.0);
@@ -69,9 +68,13 @@ fn main() -> DNSResult<()> {
 
     let elapsed = now.elapsed();
     if options.stats {
-        eprintln!("stats ==> server:{}, transport:{:?}, elapsed:{} ms", options.resolvers[0], options.trp_type, elapsed.as_millis());
+        eprintln!(
+            "stats ==> server:{}, transport:{:?}, elapsed:{} ms",
+            options.resolvers[0],
+            options.trp_type,
+            elapsed.as_millis()
+        );
     }
-    
 
     Ok(())
 }

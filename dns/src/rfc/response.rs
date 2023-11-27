@@ -7,7 +7,7 @@ use type2network::FromNetworkOrder;
 use crate::{
     error::DNSResult,
     network::{Transport, TransportType},
-    rfc1035::response_code::ResponseCode,
+    rfc::response_code::ResponseCode,
 };
 
 use super::{header::Header, question::Question, resource_record::RR};
