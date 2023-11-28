@@ -82,7 +82,7 @@ impl<'a> FromNetworkOrder<'a> for CharacterString<'a> {
         self.data = &buffer.get_ref()[current_position..current_position + self.length as usize];
 
         // don't forget to move the position
-        buffer.seek(SeekFrom::Current(self.length as i64))?;        
+        buffer.seek(SeekFrom::Current(self.length as i64))?;
 
         Ok(())
     }

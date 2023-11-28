@@ -1,4 +1,8 @@
 //! A DNS resource query tool
+//! 
+//! TODO: add trace for buffer in response
+//! TODO: specialize RUST_LOG 
+//! TODO: add DoH
 use std::time::Instant;
 
 use log::debug;
@@ -6,52 +10,78 @@ use log::debug;
 // my DNS library
 use dns::{
     error::DNSResult,
-    network::Transport,
+    network::{tls::TlsConnexion, transport::Transport},
     rfc::{
-        domain::DomainName, qtype::QType, query::Query, resource_record::MetaRR, response::Response, opt::OPTRR
+        domain::DomainName, opt::OPTRR, qtype::QType, query::Query, resource_record::MetaRR,
+        response::Response,
     },
 };
 
 use args::args::CliOptions;
-
-// mod display;
-// use display::DisplayWrapper;
-
-//mod output;
 
 fn main() -> DNSResult<()> {
     let now = Instant::now();
 
     env_logger::init();
 
-    let mut buffer = [0u8; 4096];
-
     // get arguments
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let options = CliOptions::options(&mut args)?;
     debug!("{:?}", options);
 
-    let mut trp = Transport::new(&options.trp_type, options.resolvers[0], options.port)?;
-    trp.set_timeout(options.timeout)?;
+    // if we use TLS (DoH or DoT), we need special handling for the TLS connexion
+    if options.transport_mode.uses_tls() {
+        let mut tls_conn = TlsConnexion::new("dns.google");
+        let mut trp = Transport::new(
+            &options.transport_mode,
+            None,
+            options.port,
+            Some(&mut tls_conn),
+        )?;
+        trp.set_timeout(options.timeout)?;
+        send_receive_query(&options, &mut trp)?;
+    } else {
+        let mut trp = Transport::new(
+            &options.transport_mode,
+            Some(&options.resolvers[0]),
+            options.port,
+            None,
+        )?;
+        trp.set_timeout(options.timeout)?;
+        send_receive_query(&options, &mut trp)?;
+    }
 
-    //
-    for qt in options.qtype {
-        let mut query = Query::new(&options.trp_type);
+    let elapsed = now.elapsed();
+    if options.stats {
+        eprintln!(
+            "stats ==> server:{}, transport:{:?}, elapsed:{} ms",
+            options.resolvers[0],
+            options.transport_mode,
+            elapsed.as_millis()
+        );
+    }
+
+    Ok(())
+}
+
+// This sends and receive queries using a transport
+fn send_receive_query(options: &CliOptions, trp: &mut Transport) -> DNSResult<()> {
+    let mut buffer = [0u8; 4096];
+
+    for qt in &options.qtype {
+        let mut query = Query::new(&options.transport_mode);
         query.init(&options.domain, qt, options.qclass)?;
 
         // manage edns options
-        // let mut opt = MetaRR::new_opt(None);
-        // opt.rd_length = opt.set_edns_nsid()? as u16;
         let mut opt = OPTRR::new(Some(20));
         opt.set_edns_nsid()?;
 
         query.push_additional(opt.0);
 
-        query.send(&mut trp)?;
+        query.send(trp)?;
 
-        let mut response = Response::new(&options.trp_type);
-        //let mut buffer = [0u8; 512];
-        let bytes = response.recv(&mut trp, &mut buffer)?;
+        let mut response = Response::new(&options.transport_mode);
+        let bytes = response.recv(trp, &mut buffer)?;
 
         // check whether message ID is the one sent
         if response.header.id != query.header.id {
@@ -64,16 +94,6 @@ fn main() -> DNSResult<()> {
 
         //println!("{}", DisplayWrapper(&response));
         response.display();
-    }
-
-    let elapsed = now.elapsed();
-    if options.stats {
-        eprintln!(
-            "stats ==> server:{}, transport:{:?}, elapsed:{} ms",
-            options.resolvers[0],
-            options.trp_type,
-            elapsed.as_millis()
-        );
     }
 
     Ok(())

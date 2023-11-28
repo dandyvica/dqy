@@ -6,7 +6,7 @@ use type2network_derive::ToNetwork;
 
 use crate::{
     error::DNSResult,
-    network::{Transport, TransportType},
+    network::transport::{Transport, TransportMode},
 };
 
 use super::{
@@ -23,10 +23,10 @@ pub struct Query<'a> {
 }
 
 impl<'a> Query<'a> {
-    pub fn new(transport_type: &TransportType) -> Self {
+    pub fn new(transport_mode: &TransportMode) -> Self {
         let mut msg = Self::default();
 
-        if transport_type == &TransportType::Tcp {
+        if transport_mode.uses_tcp() {
             msg.length = Some(0u16);
         }
 
@@ -42,7 +42,7 @@ impl<'a> Query<'a> {
         self.header.ar_count += 1;
     }
 
-    pub fn init(&mut self, domain: &'a str, qtype: QType, qclass: QClass) -> DNSResult<()> {
+    pub fn init(&mut self, domain: &'a str, qtype: &QType, qclass: QClass) -> DNSResult<()> {
         // fill header
 
         // create a random ID
@@ -56,7 +56,7 @@ impl<'a> Query<'a> {
 
         // fill question
         self.question.qname = DomainName::try_from(domain)?;
-        self.question.qtype = qtype;
+        self.question.qtype = *qtype;
         self.question.qclass = qclass;
 
         // OPT?
@@ -74,7 +74,7 @@ impl<'a> Query<'a> {
         let message_size = self.serialize_to(&mut buffer)? as u16;
 
         // if using TCP, we need to prepend the message sent with length of message
-        if trp.is_tcp() {
+        if trp.uses_tcp() {
             let bytes = (message_size - 2).to_be_bytes();
             buffer[0] = bytes[0];
             buffer[1] = bytes[1];

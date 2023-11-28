@@ -3,7 +3,6 @@ pub mod error;
 pub mod network;
 pub mod rfc;
 
-
 #[cfg(test)]
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 //use type2network_derive::{FromNetwork, ToNetwork};

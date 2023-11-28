@@ -6,7 +6,7 @@ use type2network::FromNetworkOrder;
 
 use crate::{
     error::DNSResult,
-    network::{Transport, TransportType},
+    network::transport::{Transport, TransportMode},
     rfc::response_code::ResponseCode,
 };
 
@@ -23,12 +23,12 @@ pub struct Response<'a> {
 }
 
 impl<'a> Response<'a> {
-    pub fn new(transport_type: &TransportType) -> Self {
+    pub fn new(transport_type: &TransportMode) -> Self {
         let mut msg = Self::default();
 
-        if transport_type == &TransportType::Tcp {
-            msg.length = Some(0u16);
-        }
+        // if matches!(transport_type, &TransportMode::Tcp(_)) {
+        //     msg.length = Some(0u16);
+        // }
 
         msg
     }
@@ -38,9 +38,10 @@ impl<'a> Response<'a> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
+        debug!("buffer {:X?}", &buffer[..received]);
 
         // if using TCP, we get rid of 2 bytes which are the length of the message received
-        let mut cursor = if trp.is_tcp() {
+        let mut cursor = if trp.uses_tcp() {
             Cursor::new(&buffer[2..received])
         } else {
             Cursor::new(&buffer[..received])

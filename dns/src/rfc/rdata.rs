@@ -7,7 +7,7 @@ use super::{
     ptr::PTR, rrsig::RRSIG, soa::SOA, txt::TXT,
 };
 
-use crate::{rfc::opt::OPT, buffer::Buffer};
+use crate::{buffer::Buffer, rfc::opt::OPT};
 
 #[derive(Debug)]
 pub enum RData<'a> {
@@ -25,7 +25,7 @@ pub enum RData<'a> {
     DNSKEY(DNSKEY),
     DS(DS),
     RRSIG(RRSIG<'a>),
-    UNKNOWN(Buffer)
+    UNKNOWN(Buffer),
 }
 
 impl<'a> Default for RData<'a> {

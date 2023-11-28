@@ -23,7 +23,7 @@ use super::{
 
 use crate::{
     buffer::Buffer,
-    rfc::{ds::DS, rrsig::RRSIG, opt::*}
+    rfc::{ds::DS, opt::*, rrsig::RRSIG},
 };
 
 use log::trace;

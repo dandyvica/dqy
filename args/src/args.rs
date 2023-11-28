@@ -18,7 +18,7 @@ use log::debug;
 
 use dns::{
     error::DNSResult,
-    network::{IPVersion, TransportType},
+    network::transport::{IPVersion, TransportMode},
     rfc::{qclass::QClass, qtype::QType},
 };
 
@@ -35,10 +35,13 @@ pub struct CliOptions {
     pub port: u16,
     pub domain: String,
     //pub debug: bool,
-    pub trp_type: TransportType,
+    pub transport_mode: TransportMode,
     pub ip_version: IPVersion,
     pub timeout: Option<Duration>,
-    pub stats: bool
+    pub stats: bool,
+
+    // server is the name passed after @
+    pub server: String,
 }
 
 // OPT specific options
@@ -73,6 +76,7 @@ impl CliOptions {
             // check if it's a name server
             if arg.starts_with('@') {
                 options.resolvers = vec![IpAddr::from_str(&arg[1..])?];
+                options.server = arg[1..].to_string();
                 continue;
             }
 
@@ -92,7 +96,7 @@ impl CliOptions {
                 options.qtype.push(qt);
             }
         }
-        println!("plus args={:?}", plus_args);
+        //println!("plus args={:?}", plus_args);
 
         // now process the arguments starting with a '-'
         let matches = Command::new("DNS query tool")
@@ -172,6 +176,14 @@ impl CliOptions {
                     .value_name("TCP"),
             )
             .arg(
+                Arg::new("dot")
+                    .short('D')
+                    .long("dot")
+                    .long_help("Set transport to DNS over TLS.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("DOT"),
+            )
+            .arg(
                 Arg::new("stats")
                     .short('S')
                     .long("stats")
@@ -219,10 +231,6 @@ impl CliOptions {
             options.ip_version = IPVersion::V6;
         }
 
-        if matches.get_flag("tcp") {
-            options.trp_type = TransportType::Tcp;
-        }
-
         // test if we already fill-in the domain
         if options.domain.is_empty() {
             options.domain = if let Some(d) = matches.get_one::<String>("domain") {
@@ -243,6 +251,15 @@ impl CliOptions {
                 options.resolvers = resolvers.unwrap().v4;
             }
         }
+
+        // transport mode
+        if matches.get_flag("tcp") {
+            options.transport_mode = TransportMode::Tcp;
+        }
+        if matches.get_flag("dot") {
+            options.transport_mode = TransportMode::DoT;
+        }
+
 
         options.timeout = Some(Duration::from_millis(
             *matches.get_one::<u64>("timeout").unwrap(),
@@ -315,7 +332,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, ".");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.trp_type, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportType::Udp);
     }
 
     #[test]
@@ -329,7 +346,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.trp_type, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportType::Udp);
     }
 
     #[test]
@@ -343,7 +360,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.trp_type, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportType::Udp);
     }
 
     #[test]
@@ -357,7 +374,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.trp_type, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportType::Udp);
     }
 
     #[test]
@@ -371,7 +388,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V6);
-        assert_eq!(opts.trp_type, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportType::Udp);
     }
 
     #[test]
@@ -385,7 +402,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V6);
-        assert_eq!(opts.trp_type, TransportType::Tcp);
+        assert_eq!(opts.transport_mode, TransportType::Tcp);
     }
 
     #[test]
@@ -399,6 +416,6 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "4.3.2.1.in-addr.arpa");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.trp_type, TransportType::Tcp);
+        assert_eq!(opts.transport_mode, TransportType::Tcp);
     }
 }
