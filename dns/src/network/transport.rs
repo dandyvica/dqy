@@ -2,14 +2,12 @@
 
 use std::{
     io::{BufReader, Read, Write},
-    net::{IpAddr, Ipv4Addr, TcpStream, UdpSocket},
-    str::FromStr,
-    sync::Arc,
+    net::{IpAddr, TcpStream, UdpSocket},
     time::Duration,
 };
 
 use log::debug;
-use rustls::{ClientConfig, ClientConnection, Connection, RootCertStore, Stream};
+use rustls::{ClientConnection, Stream};
 
 use crate::error::DNSResult;
 

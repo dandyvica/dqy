@@ -23,7 +23,7 @@ use super::{
 
 use crate::{
     buffer::Buffer,
-    rfc::{ds::DS, opt::*, rrsig::RRSIG},
+    rfc::{ds::DS, rrsig::RRSIG},
 };
 
 use log::trace;
@@ -160,22 +160,22 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::NS => self.r_data = get_rr!(buffer, NS, RData::NS),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
-                QType::OPT => {
-                    println!("found OPT");
-                    let mut v: Vec<OPT> = Vec::new();
-                    let mut current_length = 0u16;
+                // QType::OPT => {
+                //     println!("found OPT");
+                //     let mut v: Vec<OPT> = Vec::new();
+                //     let mut current_length = 0u16;
 
-                    while current_length <= self.rd_length {
-                        let mut opt = OPT::default();
-                        opt.deserialize_from(buffer)?;
+                //     while current_length <= self.rd_length {
+                //         let mut opt = OPT::default();
+                //         opt.deserialize_from(buffer)?;
 
-                        current_length += opt.length;
+                //         current_length += opt.length;
 
-                        v.push(opt);
-                    }
+                //         v.push(opt);
+                //     }
 
-                    self.r_data = RData::OPT(Some(v))
-                }
+                //     self.r_data = RData::OPT(Some(v))
+                // }
                 QType::DNSKEY => {
                     let mut x = DNSKEY::default();
                     x.key = Buffer::new(self.rd_length - 4);

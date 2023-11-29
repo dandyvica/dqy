@@ -7,7 +7,7 @@ use super::{
     ptr::PTR, rrsig::RRSIG, soa::SOA, txt::TXT,
 };
 
-use crate::{buffer::Buffer, rfc::opt::OPT};
+use crate::buffer::Buffer;
 
 #[derive(Debug)]
 pub enum RData<'a> {
@@ -16,7 +16,7 @@ pub enum RData<'a> {
     CNAME(CNAME<'a>),
     HINFO(HINFO<'a>),
     PTR(PTR<'a>),
-    OPT(Option<Vec<OPT>>),
+    //OPT(Option<Vec<OPT>>),
     SOA(SOA<'a>),
     NS(NS<'a>),
     TXT(TXT<'a>),

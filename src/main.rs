@@ -12,7 +12,7 @@ use dns::{
     error::DNSResult,
     network::{tls::TlsConnexion, transport::Transport},
     rfc::{
-        domain::DomainName, opt::OPTRR, qtype::QType, query::Query, resource_record::MetaRR,
+        domain::DomainName, opt::opt_query::OptQuery, qtype::QType, query::Query, resource_record::MetaRR,
         response::Response,
     },
 };
@@ -73,8 +73,8 @@ fn send_receive_query(options: &CliOptions, trp: &mut Transport) -> DNSResult<()
         query.init(&options.domain, qt, options.qclass)?;
 
         // manage edns options
-        let mut opt = OPTRR::new(Some(20));
-        opt.set_edns_nsid()?;
+        let mut opt = OptQuery::new(Some(20));
+        opt.set_edns_nsid();
 
         query.push_additional(opt.0);
 

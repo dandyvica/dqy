@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType, qclass::QClass,
-    qtype::QType, question::Question, resource_record::MetaRR,
+    qtype::QType, question::Question,
 };
 
 #[derive(Default, ToNetwork)]
@@ -19,7 +19,7 @@ pub struct Query<'a> {
     pub length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question<'a>,
-    pub additional: Option<Vec<MetaRR<'a>>>,
+    pub additional: Option<Vec<Box<dyn ToNetworkOrder>>>,
 }
 
 impl<'a> Query<'a> {
@@ -33,11 +33,11 @@ impl<'a> Query<'a> {
         msg
     }
 
-    pub fn push_additional(&mut self, additional_rr: MetaRR<'a>) {
+    pub fn push_additional<T: ToNetworkOrder + 'static>(&mut self, additional_rr: T) {
         if let Some(ref mut v) = self.additional {
-            v.push(additional_rr);
+            v.push(Box::new(additional_rr));
         } else {
-            self.additional = Some(vec![additional_rr]);
+            self.additional = Some(vec![Box::new(additional_rr)]);
         }
         self.header.ar_count += 1;
     }
