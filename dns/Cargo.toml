@@ -9,12 +9,12 @@ edition = "2021"
 log = "0.4.20"
 byteorder = "1.5.0"
 rand = "0.8.5"
-# type2network = { path = "/data/projects/rust/type2network" }
-# type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
-type2network = { git = "https://github.com/dandyvica/type2network" }
-type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
-# enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
-enum_from = { path = "/data/projects/rust/enum_from" }
+type2network = { path = "/data/projects/rust/type2network" }
+type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
+# type2network = { git = "https://github.com/dandyvica/type2network" }
+# type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
+enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+# enum_from = { path = "/data/projects/rust/enum_from" }
 base64 = "0.21.5"
 rustls = "0.21.9"
 webpki-roots = "0.25.3"
