@@ -13,10 +13,12 @@ rand = "0.8.5"
 # type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
-enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+# enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+enum_from = { path = "/data/projects/rust/enum_from" }
 base64 = "0.21.5"
 rustls = "0.21.9"
 webpki-roots = "0.25.3"
+either = "1.9.0"
 
 [dev-dependencies]
 pcap-parser = "0.14.1"

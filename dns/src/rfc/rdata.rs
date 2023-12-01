@@ -4,7 +4,7 @@ use type2network::ToNetworkOrder;
 
 use super::{
     a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, ds::DS, hinfo::HINFO, loc::LOC, mx::MX, ns::NS,
-    ptr::PTR, rrsig::RRSIG, soa::SOA, txt::TXT,
+    opt::OptOption, ptr::PTR, rrsig::RRSIG, soa::SOA, txt::TXT,
 };
 
 use crate::buffer::Buffer;
@@ -16,7 +16,7 @@ pub enum RData<'a> {
     CNAME(CNAME<'a>),
     HINFO(HINFO<'a>),
     PTR(PTR<'a>),
-    //OPT(Option<Vec<OPT>>),
+    OPT(Vec<OptOption>),
     SOA(SOA<'a>),
     NS(NS<'a>),
     TXT(TXT<'a>),
@@ -55,6 +55,12 @@ impl<'a> fmt::Display for RData<'a> {
             RData::DNSKEY(a) => write!(f, "{}", a),
             RData::DS(a) => write!(f, "{}", a),
             RData::RRSIG(a) => write!(f, "{}", a),
+            RData::OPT(a) => {
+                for opt in a {
+                    write!(f, "{}", opt)?;
+                }
+                Ok(())
+            }
             RData::UNKNOWN(a) => write!(f, "{}", a),
             _ => unimplemented!(),
         }

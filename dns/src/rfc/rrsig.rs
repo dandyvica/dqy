@@ -5,9 +5,9 @@ use base64::{engine::general_purpose, Engine as _};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::buffer::Buffer;
+use crate::{buffer::Buffer, either::EitherOr};
 
-use super::{domain::DomainName, rtype::RType};
+use super::{domain::DomainName, qtype::QType};
 
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
@@ -36,7 +36,7 @@ use super::{domain::DomainName, rtype::RType};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct RRSIG<'a> {
-    pub type_covered: RType,
+    pub type_covered: EitherOr<QType, u16>,
     pub algorithm: u8,
     pub labels: u8,
     pub ttl: u32,

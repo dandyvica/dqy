@@ -4,26 +4,19 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::ToNetwork;
 
 use super::{
-    a::A,
-    aaaa::AAAA,
-    cname::CNAME,
-    dnskey::DNSKEY,
-    domain::DomainName,
-    hinfo::HINFO,
-    loc::LOC,
-    mx::MX,
-    ns::NS,
-    ptr::PTR,
-    qclass::{Class, QClass},
-    qtype::QType,
-    rdata::RData,
-    soa::SOA,
+    a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC,
+    mx::MX, ns::NS, opt::OptTTL, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA,
     txt::TXT,
 };
 
 use crate::{
     buffer::Buffer,
-    rfc::{ds::DS, rrsig::RRSIG},
+    either::EitherOr,
+    rfc::{
+        ds::DS,
+        opt::{OptOption, OptOptionData},
+        rrsig::RRSIG,
+    },
 };
 
 use log::trace;
@@ -74,8 +67,8 @@ where
 {
     pub name: DomainName<'a>, // an owner name, i.e., the name of the node to which this resource record pertains.
     pub r#type: QType,        // two octets containing one of the RR TYPE codes.
-    pub class: Class, // two octets containing one of the RR CLASS codes or payload size in case of OPT
-    pub ttl: u32, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
+    pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
+    pub ttl: EitherOr<u32, OptTTL>, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
     // that the resource record may be cached before the source
     // of the information should again be consulted. Zero
     // values are interpreted to mean that the RR can only be
@@ -102,7 +95,7 @@ impl<'a> fmt::Display for RR<'a> {
             self.name.to_string(),
             self.r#type.to_string(),
             self.class.to_string(),
-            self.ttl,
+            self.ttl.to_string(),
             self.rd_length
         )?;
 
@@ -128,22 +121,37 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         self.name.deserialize_from(buffer)?;
         self.r#type.deserialize_from(buffer)?;
 
-        let mut cl = 0u16;
-        cl.deserialize_from(buffer)?;
+        // class is either a Qclass or in case of OPT the payload value
+        // TTL is the same
+        self.class = {
+            let mut cl = 0u16;
+            cl.deserialize_from(buffer)?;
 
-        self.class = match self.r#type {
-            QType::OPT => Class::Payload(cl),
-            _ => {
-                let qc = QClass::try_from(cl as u64).unwrap();
-                Class::Qclass(qc)
+            match self.r#type {
+                QType::OPT => EitherOr::new_right(cl),
+                _ => {
+                    let qc = QClass::try_from(cl).unwrap();
+                    EitherOr::new_left(qc)
+                }
             }
         };
 
-        self.ttl.deserialize_from(buffer)?;
+        // TTL is the same
+        self.ttl = if self.r#type == QType::OPT {
+            let mut ext = OptTTL::default();
+            ext.deserialize_from(buffer)?;
+            EitherOr::new_right(ext)
+        } else {
+            let mut ttl = 0u32;
+            ttl.deserialize_from(buffer)?;
+            EitherOr::new_left(ttl)
+        };
+
+        // self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
         trace!(
-            "found RR: name:<{}> type:{:?} ttl: {} RD length:{}",
+            "found RR: name:<{}> type:{:?} ttl:{} RD_length:{}",
             self.name,
             self.r#type,
             self.ttl,
@@ -160,22 +168,23 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::NS => self.r_data = get_rr!(buffer, NS, RData::NS),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
-                // QType::OPT => {
-                //     println!("found OPT");
-                //     let mut v: Vec<OPT> = Vec::new();
-                //     let mut current_length = 0u16;
+                QType::OPT => {
+                    println!("found OPT");
+                    let mut v: Vec<OptOption> = Vec::new();
+                    let mut current_length = 0u16;
 
-                //     while current_length <= self.rd_length {
-                //         let mut opt = OPT::default();
-                //         opt.deserialize_from(buffer)?;
+                    while current_length < self.rd_length {
+                        let mut option = OptOption::default();
+                        option.deserialize_from(buffer)?;
+                        println!("option={:?}", option);
 
-                //         current_length += opt.length;
+                        current_length += option.length + 4;
 
-                //         v.push(opt);
-                //     }
+                        v.push(option);
+                    }
 
-                //     self.r_data = RData::OPT(Some(v))
-                // }
+                    self.r_data = RData::OPT(v)
+                }
                 QType::DNSKEY => {
                     let mut x = DNSKEY::default();
                     x.key = Buffer::new(self.rd_length - 4);
@@ -204,9 +213,9 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 }
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
-                // _ => unimplemented!("the {:?} RR is not yet implemented", self.r#type),
                 _ => {
                     // allocate the buffer to hold the data
+                    println!("_");
                     let mut buf = Buffer::new(self.rd_length);
                     buf.deserialize_from(buffer)?;
                     self.r_data = RData::UNKNOWN(buf);
@@ -217,11 +226,3 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         Ok(())
     }
 }
-
-// fn deserialize_helper<T: Default>(length: u16) -> T {
-//     let mut x: DNSKEY = T::default();
-//     x.key = Vec::with_capacity((self.rd_length - 4) as usize);
-
-//     x.deserialize_from(buffer)?;
-//     self.r_data = RData::DnsKey(x)
-// }

@@ -92,7 +92,7 @@ impl CliOptions {
             }
 
             // otherwise it's a Qtype
-            if let Ok(qt) = QType::from_str(&arg.to_uppercase()) {
+            if let Ok(qt) = QType::try_from(arg.to_uppercase().as_str()) {
                 options.qtype.push(qt);
             }
         }

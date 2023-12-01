@@ -53,27 +53,6 @@ impl<'a> FromNetworkOrder<'a> for CharacterString<'a> {
     /// assert_eq!(std::str::from_utf8(cs.data).unwrap(), "google");
     /// ```    
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
-        // get a reference on [u8]
-        // let position = buffer.position() as usize;
-        // let inner_data = buffer.get_ref();
-
-        // // first char is the string length
-        // self.length = inner_data[position] as u8;
-
-        // // move the cursor forward
-        // buffer.seek(SeekFrom::Current(self.length as i64))?;
-
-        // // save data
-        // self.data = std::str::from_utf8(
-        //     &buffer.get_ref()[position + 1..position + self.length as usize + 1],
-        // )
-        // .map_err(|_| {
-        //     std::io::Error::new(
-        //         std::io::ErrorKind::Other,
-        //         "unable to deserialize CharacterString",
-        //     )
-        // })?;
-
         // copy text length
         self.length.deserialize_from(buffer)?;
         let current_position = buffer.position() as usize;

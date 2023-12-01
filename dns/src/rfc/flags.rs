@@ -3,6 +3,7 @@ use std::io::{Cursor, Result};
 
 use crate::{
     error::{DNSError, InternalError},
+    getter,
     rfc::{opcode::OpCode, response_code::ResponseCode},
 };
 
@@ -74,6 +75,8 @@ pub struct Flags {
                                      //6-15            Reserved for future use.
 }
 
+//getter!(Flags, qr, PacketType);
+
 /// TryFrom implementation for DNSFlags is useful for comparing raw flags as a u16
 /// ```
 /// use std::convert::TryFrom;
@@ -106,10 +109,10 @@ impl TryFrom<u16> for Flags {
             qr
         );
 
-        flags.qr = PacketType::try_from(qr as u64)
+        flags.qr = PacketType::try_from(qr)
             .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowPacketType))?;
 
-        flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u64)
+        flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u8)
             .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowOpCode))?;
 
         flags.authorative_answer = (value >> 10) & 1 == 1;
@@ -119,7 +122,7 @@ impl TryFrom<u16> for Flags {
         flags.z = (value >> 6 & 1) == 1;
         flags.authentic_data = (value >> 5 & 1) == 1;
         flags.checking_disabled = (value >> 4 & 1) == 1;
-        flags.response_code = ResponseCode::try_from((value & 0b1111) as u64)
+        flags.response_code = ResponseCode::try_from((value & 0b1111) as u8)
             .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowOpCode))?;
 
         Ok(flags)

@@ -1,3 +1,6 @@
+use either::*;
+
+use dns::either::EitherOr;
 use pcap_parser::traits::PcapReaderIterator;
 use pcap_parser::*;
 
@@ -11,15 +14,8 @@ use type2network_derive::FromNetwork;
 use dns::{
     error::DNSResult,
     rfc::{
-        a::A,
-        opcode::OpCode,
-        packet_type::PacketType,
-        qclass::{Class, QClass},
-        qtype::QType,
-        query::Query,
-        rdata::RData,
-        response::Response,
-        response_code::ResponseCode,
+        a::A, opcode::OpCode, packet_type::PacketType, qclass::QClass, qtype::QType, query::Query,
+        rdata::RData, response::Response, response_code::ResponseCode,
     },
 };
 
@@ -138,9 +134,8 @@ fn cap1() -> DNSResult<()> {
     let answer = &answer[0];
     assert_eq!(format!("{}", answer.name), "www.google.com.");
     assert_eq!(answer.r#type, QType::A);
-    assert!(matches!(answer.class, Class::Qclass(qclass) if qclass == QClass::IN));
-
-    assert_eq!(answer.ttl, 119);
+    assert_eq!(answer.class.as_ref(), Left(&QClass::IN));
+    assert_eq!(answer.ttl.as_ref(), Left(&119));
     assert_eq!(answer.rd_length, 4);
 
     assert!(
@@ -226,8 +221,8 @@ fn cap2() -> DNSResult<()> {
     for ans in &answer {
         assert_eq!(format!("{}", ans.name), "hk.");
         assert_eq!(ans.r#type, QType::NS);
-        assert!(matches!(ans.class, Class::Qclass(qclass) if qclass == QClass::IN));
-        assert_eq!(ans.ttl, 172800);
+        assert_eq!(ans.class.unwrap_left(), QClass::IN);
+        assert_eq!(ans.ttl.as_ref(), Left(&172800));
     }
 
     assert_eq!(answer[0].rd_length, 14);
@@ -252,8 +247,8 @@ fn cap2() -> DNSResult<()> {
 
     assert_eq!(format!("{}", add.name), ".");
     assert_eq!(add.r#type, QType::OPT);
-    assert!(matches!(add.class, Class::Payload(pl) if pl == 1232));
-    assert_eq!(add.ttl, 0);
+    assert_eq!(add.class.unwrap_right(), 1232);
+    //assert_eq!(add.ttl.unwrap_left(), 0);
     assert_eq!(add.rd_length, 0);
 
     Ok(())

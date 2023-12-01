@@ -3,10 +3,10 @@ use byteorder::{BigEndian, ReadBytesExt};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use enum_from::EnumTryFrom;
+use enum_from::{EnumDisplay, EnumTryFrom};
 
 /// op codes: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-5
-#[derive(Debug, Default, Clone, Copy, PartialEq, FromNetwork, EnumTryFrom)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromNetwork, EnumTryFrom, EnumDisplay)]
 #[repr(u8)]
 pub enum OpCode {
     #[default]
@@ -18,4 +18,16 @@ pub enum OpCode {
     Update = 5, // [RFC2136]
     DOS = 6,    // DNS Stateful Operations (DSO)	[RFC8490]
                 // 7-15 Unassigned
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::from_network_test;
+
+    #[test]
+    fn network() {
+        let q = OpCode::DOS;
+        from_network_test(None, &q, &vec![0x06]);
+    }
 }

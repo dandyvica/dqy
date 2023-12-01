@@ -1,7 +1,20 @@
 pub mod buffer;
+pub mod either;
 pub mod error;
 pub mod network;
 pub mod rfc;
+
+// Macro used to define getters
+#[macro_export]
+macro_rules! getter {
+    ($struct:ident, $field:ident, $field_type:ty) => {
+        impl $struct {
+            pub fn $field(&self) -> $field_type {
+                self.$field
+            }
+        }
+    };
+}
 
 #[cfg(test)]
 use type2network::{FromNetworkOrder, ToNetworkOrder};

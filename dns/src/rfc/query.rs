@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, trace};
 use rand::Rng;
 
 use type2network::ToNetworkOrder;
@@ -69,6 +69,8 @@ impl<'a> Query<'a> {
 
     // Send the query through the wire
     pub fn send(&self, trp: &mut Transport) -> DNSResult<usize> {
+        trace!("question: {}", self.question);
+
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;

@@ -24,7 +24,7 @@ pub struct Response<'a> {
 
 impl<'a> Response<'a> {
     pub fn new(transport_type: &TransportMode) -> Self {
-        let mut msg = Self::default();
+        let msg = Self::default();
 
         // if matches!(transport_type, &TransportMode::Tcp(_)) {
         //     msg.length = Some(0u16);
@@ -52,7 +52,7 @@ impl<'a> Response<'a> {
 
         // check return code
         if self.header.flags.response_code != ResponseCode::NoError {
-            eprintln!("Response error!");
+            eprintln!("response error:{}", self.header.flags.response_code);
             std::process::exit(1);
         }
 
@@ -65,7 +65,7 @@ impl<'a> Response<'a> {
         // flags
         //println!("{}", self.header.flags);
         println!("HEADER: {}\n", self.header);
-        // println!("QUESTION: {}\n", self.question);
+        println!("QUESTION: {}\n", self.question);
 
         // print out anwser, authority, additional if any
         if let Some(answer) = &self.answer {
