@@ -122,7 +122,6 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         self.r#type.deserialize_from(buffer)?;
 
         // class is either a Qclass or in case of OPT the payload value
-        // TTL is the same
         self.class = {
             let mut cl = 0u16;
             cl.deserialize_from(buffer)?;
@@ -169,7 +168,6 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::OPT => {
-                    println!("found OPT");
                     let mut v: Vec<OptOption> = Vec::new();
                     let mut current_length = 0u16;
 
@@ -201,6 +199,8 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 }
                 QType::RRSIG => {
                     let mut x = RRSIG::default();
+
+                    // name & signature are not yet to be deserialized
                     x.deserialize_from(buffer)?;
 
                     // we need this trick to not deserialize the name because its length is unknown yet
@@ -215,7 +215,6 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 _ => {
                     // allocate the buffer to hold the data
-                    println!("_");
                     let mut buf = Buffer::new(self.rd_length);
                     buf.deserialize_from(buffer)?;
                     self.r_data = RData::UNKNOWN(buf);

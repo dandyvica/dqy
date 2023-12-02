@@ -4,9 +4,8 @@ use std::fmt;
 use std::io::{Cursor, Read};
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
-use type2network_derive::ToNetwork;
 
-#[derive(Debug, Default, ToNetwork)]
+#[derive(Debug, Default)]
 pub struct Buffer(Vec<u8>);
 
 impl Buffer {
@@ -24,20 +23,17 @@ impl fmt::Display for Buffer {
     }
 }
 
+// a more efficient serialize_to() for Vec<u8>
+impl ToNetworkOrder for Buffer {
+    fn serialize_to(&self, buffer: &mut Vec<u8>) -> std::io::Result<usize> {
+        let length = self.0.len();
+        buffer.extend(self);
+
+        Ok(length)
+    }
+}
+
 impl<'a> FromNetworkOrder<'a> for Buffer {
-    /// ```
-    /// use std::io::Cursor;
-    /// use type2network::FromNetworkOrder;
-    /// use dns::buffer::Buffer;
-    ///
-    /// let b = vec![0x12, 0x34, 0x56, 0x78];
-    /// let mut buffer = Cursor::new(b.as_slice());
-    /// let mut buf = Buffer::new(2);
-    /// assert!(buf.deserialize_from(&mut buffer).is_ok());
-    /// assert_eq!(buf.as_ref(), &[0x12, 0x34]);
-    /// assert!(buf.deserialize_from(&mut buffer).is_ok());
-    /// assert_eq!(buf.as_ref(), &[0x56, 0x78]);
-    /// ```    
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         buffer.read_exact(self.0.as_mut_slice())?;
         Ok(())
@@ -58,5 +54,29 @@ impl<'a> IntoIterator for &'a Buffer {
 
     fn into_iter(self) -> Self::IntoIter {
         (&self.0).into_iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::to_network_test;
+    use std::io::Cursor;
+    use type2network::FromNetworkOrder;
+
+    #[test]
+    fn network() {
+        // to
+        let mut buf = Buffer::new(3);
+        buf.0 = vec![0, 1, 2];
+        to_network_test(&buf, 3, &[0, 1, 2]);
+
+        let b = vec![0x12, 0x34, 0x56, 0x78];
+        let mut buffer = Cursor::new(b.as_slice());
+        let mut buf = Buffer::new(2);
+        assert!(buf.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(buf.as_ref(), &[0x12, 0x34]);
+        assert!(buf.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(buf.as_ref(), &[0x56, 0x78]);
     }
 }
