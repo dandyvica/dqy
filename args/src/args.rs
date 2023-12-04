@@ -13,7 +13,6 @@ use super::plus::PlusArg;
 use clap::{Arg, ArgAction, Command};
 
 //use simplelog::*;
-use idna::punycode::encode_str;
 use log::debug;
 
 use dns::{
@@ -92,7 +91,7 @@ impl CliOptions {
             }
 
             // otherwise it's a Qtype
-            if let Ok(qt) = QType::try_from(arg.to_uppercase().as_str()) {
+            if let Ok(qt) = QType::from_str(arg.to_uppercase().as_str()) {
                 options.qtype.push(qt);
             }
         }
@@ -266,9 +265,9 @@ impl CliOptions {
         ));
 
         // internal domain name processing
-        // if options.domain.len() != options.domain.chars().count() {
-        //     options.domain = format!("xn--{}", encode_str(options.domain.as_str()).unwrap());
-        // }
+        if options.domain.len() != options.domain.chars().count() {
+            options.domain = idna::domain_to_ascii(options.domain.as_str()).unwrap();
+        }
 
         // if reverse query, ignore all others
         if let Some(ip) = matches.get_one::<String>("ptr") {

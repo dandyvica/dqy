@@ -5,6 +5,8 @@ use type2network_derive::FromNetwork;
 
 use crate::buffer::Buffer;
 
+use super::algorithm::Algorithm;
+
 // The RDATA for a DS RR consists of a 2 octet Key Tag field, a 1 octet
 // Algorithm field, a 1 octet Digest Type field, and a Digest field.
 
@@ -20,7 +22,7 @@ use crate::buffer::Buffer;
 #[derive(Debug, Default, FromNetwork)]
 pub struct DS {
     key_tag: u16,
-    algorithm: u8,
+    algorithm: Algorithm,
     digest_type: u8,
     pub digest: Buffer,
 }

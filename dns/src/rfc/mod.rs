@@ -29,3 +29,4 @@ pub mod response;
 pub mod rrsig;
 pub mod soa;
 pub mod txt;
+pub mod algorithm;

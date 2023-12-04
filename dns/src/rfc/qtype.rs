@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
@@ -113,6 +115,9 @@ pub enum QType {
     // Unassigned	261-32767
     TA = 32768, // DNSSEC Trust Authorities	[Sam_Weiler][http://cameo.library.cmu.edu/][ Deploying DNSSEC Without a Signed Root. Technical Report 1999-19, Information Networking Institute, Carnegie Mellon University, April 2004.]		2005-12-13
     DLV = 32769, // DNSSEC Lookaside Validation (OBSOLETE)	[RFC8749][RFC4431]
+
+    #[fallback]
+    Reserved(u16)
 }
 
 #[cfg(test)]

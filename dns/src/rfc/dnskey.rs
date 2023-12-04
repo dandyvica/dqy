@@ -7,6 +7,8 @@ use base64::{engine::general_purpose, Engine as _};
 
 use crate::buffer::Buffer;
 
+use super::algorithm::Algorithm;
+
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -52,7 +54,7 @@ pub struct DNSKEY {
     // The Algorithm field identifies the public key's cryptographic
     // algorithm and determines the format of the Public Key field.  A list
     // of DNSSEC algorithm types can be found in Appendix A.1
-    pub algorithm: u8,
+    pub algorithm: Algorithm,
 
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
@@ -65,7 +67,7 @@ impl fmt::Display for DNSKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "flags:{} protocol:{} algorithm:{} key:",
+            "{:<4} {:<2} {:<20} ",
             self.flags, self.protocol, self.algorithm
         )?;
 

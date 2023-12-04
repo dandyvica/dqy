@@ -7,7 +7,7 @@ use type2network_derive::FromNetwork;
 
 use crate::{buffer::Buffer, either::EitherOr};
 
-use super::{domain::DomainName, qtype::QType};
+use super::{domain::DomainName, qtype::QType, algorithm::Algorithm};
 
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
@@ -36,8 +36,8 @@ use super::{domain::DomainName, qtype::QType};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct RRSIG<'a> {
-    pub type_covered: EitherOr<QType, u16>,
-    pub algorithm: u8,
+    pub type_covered: QType,
+    pub algorithm: Algorithm,
     pub labels: u8,
     pub ttl: u32,
     pub sign_expiration: u32,
@@ -52,7 +52,7 @@ pub struct RRSIG<'a> {
 
 impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} ", self.type_covered, self.name)?;
+        write!(f, "{:<20} {:<20} {} ", self.type_covered.to_string(), self.algorithm.to_string(), self.name)?;
 
         let b64 = general_purpose::STANDARD.encode(&self.signature);
         write!(f, "{}", b64)?;
