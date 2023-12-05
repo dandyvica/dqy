@@ -117,13 +117,13 @@ pub enum QType {
     DLV = 32769, // DNSSEC Lookaside Validation (OBSOLETE)	[RFC8749][RFC4431]
 
     #[fallback]
-    Reserved(u16)
+    Reserved(u16),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{from_network_test, to_network_test};
+    use crate::tests::{from_network_test, to_network_test};
 
     #[test]
     fn network() {

@@ -40,7 +40,7 @@ use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
 /// assert!(q.serialize_to(&mut buffer).is_ok());
 /// assert_eq!(buffer, sample);
 /// ```
-#[derive(Debug, Default, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
 pub struct Question<'a> {
     pub qname: DomainName<'a>,
     pub qtype: QType,

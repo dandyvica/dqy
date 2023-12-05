@@ -60,7 +60,7 @@ impl<'a> IntoIterator for &'a Buffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::to_network_test;
+    use crate::tests::to_network_test;
     use std::io::Cursor;
     use type2network::FromNetworkOrder;
 

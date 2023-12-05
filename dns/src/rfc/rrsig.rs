@@ -5,9 +5,9 @@ use base64::{engine::general_purpose, Engine as _};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, either::EitherOr};
+use crate::buffer::Buffer;
 
-use super::{domain::DomainName, qtype::QType, algorithm::Algorithm};
+use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
@@ -44,15 +44,22 @@ pub struct RRSIG<'a> {
     pub sign_inception: u32,
     pub key_tag: u16,
 
-    #[deser(no)]
+    // will be deserialized locally
+    #[deser(ignore)]
     pub name: DomainName<'a>,
-    #[deser(no)]
+    #[deser(ignore)]
     pub signature: Buffer,
 }
 
 impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:<20} {:<20} {} ", self.type_covered.to_string(), self.algorithm.to_string(), self.name)?;
+        write!(
+            f,
+            "{:<20} {:<20} {} ",
+            self.type_covered.to_string(),
+            self.algorithm.to_string(),
+            self.name
+        )?;
 
         let b64 = general_purpose::STANDARD.encode(&self.signature);
         write!(f, "{}", b64)?;

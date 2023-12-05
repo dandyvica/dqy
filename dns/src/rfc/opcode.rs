@@ -23,7 +23,7 @@ pub enum OpCode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::from_network_test;
+    use crate::tests::from_network_test;
 
     #[test]
     fn network() {

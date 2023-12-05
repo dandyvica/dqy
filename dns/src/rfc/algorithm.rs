@@ -6,15 +6,7 @@ use type2network_derive::FromNetwork;
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 
 #[derive(
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumFromStr,
-    EnumTryFrom,
-    EnumDisplay,
-    FromNetwork,
+    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
 )]
 #[repr(u8)]
 #[allow(non_camel_case_types)]
@@ -39,5 +31,5 @@ pub enum Algorithm {
     PRIVATEOID = 254,
 
     #[fallback]
-    Reserved(u8)
+    Reserved(u8),
 }

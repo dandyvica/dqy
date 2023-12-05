@@ -8,8 +8,6 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use crate::buffer::Buffer;
 
-use super::ns::NS;
-
 // NSID: https://www.rfc-editor.org/rfc/rfc5001.html
 #[derive(Debug, Default, ToNetwork)]
 pub(super) struct NSID(Option<Buffer>);

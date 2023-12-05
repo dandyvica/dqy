@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::{Cursor, Result};
+use std::slice::Iter;
 
 use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
@@ -20,15 +21,19 @@ impl<'a> DomainName<'a> {
     }
 
     // need to know the length is bytes sometimes
+    /// ```
+    /// use dns::rfc::domain::DomainName;
+    ///
+    /// let mut dn = DomainName::try_from("www.google.com").unwrap();
+    /// assert_eq!(dn.len(), 16);
+    /// ```    
     pub fn len(&self) -> usize {
-        let mut len = 0usize;
+        self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
+    }
 
-        for l in &self.labels {
-            len += l.len() + 1;
-        }
-
-        // we add the sentinel
-        len + 1
+    // iterator on labels
+    fn iter(&self) -> Iter<'_, &str> {
+        self.labels.iter()
     }
 
     /// ```
@@ -114,6 +119,30 @@ impl<'a> DomainName<'a> {
         // );
 
         Ok(index + 1)
+    }
+}
+
+// need to know the length is bytes sometimes
+/// ```
+/// use dns::rfc::domain::DomainName;
+///
+/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
+/// let mut d2 = DomainName::try_from("www.google.fr").unwrap();
+/// assert!(d1 != d2);
+/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
+/// let mut d2 = DomainName::try_from("www.google.org").unwrap();
+/// assert!(d1 != d2);
+/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
+/// let mut d2 = DomainName::try_from("www.google.com").unwrap();
+/// assert!(d1 == d2);
+/// ```  
+impl<'a> PartialEq for DomainName<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        self.iter().zip(other.iter()).all(|x| x.0 == x.1)
     }
 }
 

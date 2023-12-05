@@ -1,4 +1,4 @@
-use std::{default, fmt, io::Cursor};
+use std::{fmt, io::Cursor};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -6,7 +6,7 @@ use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::{buffer::Buffer, either::EitherOr};
+use crate::{buffer::Buffer, either_or::EitherOr};
 
 use super::{nsid::NSID, qtype::QType, resource_record::ResourceRecord};
 
@@ -55,7 +55,7 @@ impl<'a> ResourceRecord<'a, Vec<OptOption>> {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 // 2: | DO|                           Z                               |
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-#[derive(Debug, Default, Eq, PartialEq, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork)]
 pub struct OptTTL {
     pub extended_rcode: u8,
     pub version: u8,

@@ -89,7 +89,7 @@ mod tests {
     use super::*;
     use crate::rfc::qtype::QType;
 
-    use crate::{from_network_test, to_network_test};
+    use crate::tests::to_network_test;
 
     #[test]
     fn either_or() {

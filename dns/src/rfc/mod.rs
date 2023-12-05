@@ -1,3 +1,5 @@
+use either::*;
+
 pub mod char_string;
 pub mod domain;
 pub mod flags;
@@ -13,6 +15,7 @@ pub mod response_code;
 // all RRs
 pub mod a;
 pub mod aaaa;
+pub mod algorithm;
 pub mod cname;
 pub mod dnskey;
 pub mod ds;
@@ -29,4 +32,3 @@ pub mod response;
 pub mod rrsig;
 pub mod soa;
 pub mod txt;
-pub mod algorithm;

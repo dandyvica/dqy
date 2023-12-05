@@ -11,7 +11,7 @@ use super::{
 
 use crate::{
     buffer::Buffer,
-    either::EitherOr,
+    either_or::EitherOr,
     rfc::{
         ds::DS,
         opt::{OptOption, OptOptionData},

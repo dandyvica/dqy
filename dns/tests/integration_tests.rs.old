@@ -1,6 +1,6 @@
 use either::*;
 
-use dns::either::EitherOr;
+use dns::either_or::EitherOr;
 use pcap_parser::traits::PcapReaderIterator;
 use pcap_parser::*;
 
@@ -26,7 +26,7 @@ struct PCapData<'a> {
 }
 
 // to ease the data for tests, some captures are made using tcpdump and dig
-// and data is save as a pcap file.
+// and data is saved as a pcap file.
 // by convention, we just capture the query form dig and the response from the resolver.
 fn read_pcap_sample(pcap_file: &str) -> DNSResult<(Vec<u8>, Vec<u8>)> {
     let mut caps = (Vec::new(), Vec::new());
