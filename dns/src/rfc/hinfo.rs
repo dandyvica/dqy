@@ -8,8 +8,8 @@ use super::char_string::CharacterString;
 // HINFO RR
 #[derive(Debug, Default, FromNetwork)]
 pub struct HINFO<'a> {
-    pub cpu: CharacterString<'a>,
-    pub os: CharacterString<'a>,
+    cpu: CharacterString<'a>,
+    os: CharacterString<'a>,
 }
 
 impl<'a> fmt::Display for HINFO<'a> {

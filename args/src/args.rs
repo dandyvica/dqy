@@ -2,53 +2,62 @@
 use std::str::FromStr;
 use std::time::Duration;
 use std::{
-    fs::{File, OpenOptions},
+    //fs::{File, OpenOptions},
     net::IpAddr,
 };
 
-use crate::plus;
+//use crate::plus;
 
 use super::plus::PlusArg;
 
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, ArgMatches};
 
-//use simplelog::*;
-use log::debug;
+//use log::debug;
 
 use dns::{
     error::DNSResult,
-    network::transport::{IPVersion, TransportMode},
+    transport::mode::{IPVersion, TransportMode},
     rfc::{qclass::QClass, qtype::QType},
 };
 
 use resolver::resolver::Resolvers;
 
-const UDP_PORT: &'static str = "53";
+const UDP_PORT: &str = "53";
 
 /// This structure holds the command line arguments.
 #[derive(Debug, Default)]
 pub struct CliOptions {
+    // list of QTypes to pass
     pub qtype: Vec<QType>,
+
+    // Qclass is IN by default
     pub qclass: QClass,
+
+    // list of resolvers found in the client machine
     pub resolvers: Vec<IpAddr>,
+
+    // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
+
+    // domain name to query. IDNA domains are punycoded before being sent
     pub domain: String,
     //pub debug: bool,
+
+    // UPD, TCP, DoH or DoT
     pub transport_mode: TransportMode,
+
+    // V4 or V6
     pub ip_version: IPVersion,
+
+    //timeout for network operations
     pub timeout: Option<Duration>,
+
+    // if true, elasped time and some stats are printed out
     pub stats: bool,
 
     // server is the name passed after @
     pub server: String,
 }
-
-// OPT specific options
-// #[derive(Debug, Default)]
-// pub struct OptOptions {
-//     use_it: bool,
-//     bufsize: u16,
-// }
 
 impl CliOptions {
     pub fn options(args: &[String]) -> DNSResult<Self> {
@@ -57,7 +66,7 @@ impl CliOptions {
 
         // split arguments into 2 sets: those not starting with a '-' which should be first
         // and the others
-        let dash_pos = args.iter().position(|arg| arg.starts_with("-"));
+        let dash_pos = args.iter().position(|arg| arg.starts_with('-'));
         //println!("dash_pos={:?}", dash_pos);
 
         let (without_dash, with_dash) = match dash_pos {
@@ -72,15 +81,13 @@ impl CliOptions {
 
         // process the arguments not starting with a '-'
         for arg in without_dash {
-            // check if it's a name server
-            if arg.starts_with('@') {
-                options.resolvers = vec![IpAddr::from_str(&arg[1..])?];
-                options.server = arg[1..].to_string();
+            if let Some(s) = arg.strip_prefix('@') {
+                options.server = s.to_string();
                 continue;
             }
 
             // check if this is a domain (should include a dot)
-            if arg.contains(".") {
+            if arg.contains('.') {
                 options.domain = arg.to_string();
                 continue;
             }
@@ -175,16 +182,24 @@ impl CliOptions {
                     .value_name("TCP"),
             )
             .arg(
-                Arg::new("dot")
-                    .short('D')
-                    .long("dot")
-                    .long_help("Set transport to DNS over TLS.")
+                Arg::new("tls")
+                    .short('S')
+                    .long("tls")
+                    .long_help("Set transport to DNS over TLS (DoT).")
                     .action(ArgAction::SetTrue)
-                    .value_name("DOT"),
+                    .value_name("TLS"),
+            )
+            .arg(
+                Arg::new("https")
+                    .short('H')
+                    .long("https")
+                    .long_help("Set transport to DNS over https (DoH).")
+                    .action(ArgAction::SetTrue)
+                    .value_name("https"),
             )
             .arg(
                 Arg::new("stats")
-                    .short('S')
+                    // .short('s')
                     .long("stats")
                     .long_help("Print out statistics around the query.")
                     .action(ArgAction::SetTrue)
@@ -216,21 +231,31 @@ impl CliOptions {
             // )
             .get_matches_from(with_dash);
 
-        // copy values into option struct
+        //---------------------------------------------------------------------------
+        // QType, QClass
+        //---------------------------------------------------------------------------
         if options.qtype.is_empty() {
             options
                 .qtype
                 .push(*matches.get_one::<QType>("type").unwrap());
         }
         options.qclass = *matches.get_one::<QClass>("class").unwrap();
+
+        //---------------------------------------------------------------------------
+        // port number
+        //---------------------------------------------------------------------------
         options.port = *matches.get_one::<u16>("port").unwrap();
 
-        // ip versions
+        //---------------------------------------------------------------------------
+        // ip versions (V4 is by default)
+        //---------------------------------------------------------------------------
         if matches.get_flag("6") {
             options.ip_version = IPVersion::V6;
         }
 
-        // test if we already fill-in the domain
+        //---------------------------------------------------------------------------
+        // if no domain, by default set root (.)
+        //---------------------------------------------------------------------------
         if options.domain.is_empty() {
             options.domain = if let Some(d) = matches.get_one::<String>("domain") {
                 d.clone()
@@ -239,7 +264,9 @@ impl CliOptions {
             };
         }
 
-        // // name server was not provided: so lookup system DNS config
+        //---------------------------------------------------------------------------
+        // name server was not provided: so lookup system DNS config
+        //---------------------------------------------------------------------------
         if options.resolvers.is_empty() {
             let resolvers = Resolvers::get_servers(None);
 
@@ -251,32 +278,43 @@ impl CliOptions {
             }
         }
 
+        //---------------------------------------------------------------------------
         // transport mode
+        //---------------------------------------------------------------------------
         if matches.get_flag("tcp") {
             options.transport_mode = TransportMode::Tcp;
         }
-        if matches.get_flag("dot") {
+        if matches.get_flag("tls") {
             options.transport_mode = TransportMode::DoT;
         }
+        if matches.get_flag("https") {
+            options.transport_mode = TransportMode::DoH;
+        }
 
-
+        //---------------------------------------------------------------------------
+        // timeout
+        //---------------------------------------------------------------------------
         options.timeout = Some(Duration::from_millis(
             *matches.get_one::<u64>("timeout").unwrap(),
         ));
 
-        // internal domain name processing
+        //---------------------------------------------------------------------------
+        // internal domain name processing (IDNA)
+        //---------------------------------------------------------------------------
         if options.domain.len() != options.domain.chars().count() {
             options.domain = idna::domain_to_ascii(options.domain.as_str()).unwrap();
         }
 
-        // if reverse query, ignore all others
+        //---------------------------------------------------------------------------
+        // if reverse query, ignore all other options
+        //---------------------------------------------------------------------------
         if let Some(ip) = matches.get_one::<String>("ptr") {
             // reverse query uses PTR
             options.qtype = vec![QType::PTR];
 
             // new to reverse numbers
             if options.ip_version == IPVersion::V4 {
-                let mut limbs: Vec<_> = ip.split(".").collect();
+                let mut limbs: Vec<_> = ip.split('.').collect();
                 limbs.reverse();
                 options.domain = format!("{}.in-addr.arpa", limbs.join("."));
             }
@@ -289,6 +327,8 @@ impl CliOptions {
         Ok(options)
     }
 }
+
+
 
 // // Initialize logger: either create it or use it
 // fn init_logger(logfile: &str) -> DNSResult<()> {
@@ -331,7 +371,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, ".");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport_mode, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportMode::Udp);
     }
 
     #[test]
@@ -345,7 +385,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport_mode, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportMode::Udp);
     }
 
     #[test]
@@ -359,7 +399,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport_mode, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportMode::Udp);
     }
 
     #[test]
@@ -373,7 +413,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport_mode, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportMode::Udp);
     }
 
     #[test]
@@ -387,7 +427,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V6);
-        assert_eq!(opts.transport_mode, TransportType::Udp);
+        assert_eq!(opts.transport_mode, TransportMode::Udp);
     }
 
     #[test]
@@ -401,7 +441,7 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "www.google.com");
         assert_eq!(opts.ip_version, IPVersion::V6);
-        assert_eq!(opts.transport_mode, TransportType::Tcp);
+        assert_eq!(opts.transport_mode, TransportMode::Tcp);
     }
 
     #[test]
@@ -415,6 +455,6 @@ mod tests {
         assert_eq!(opts.port, 53);
         assert_eq!(&opts.domain, "4.3.2.1.in-addr.arpa");
         assert_eq!(opts.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport_mode, TransportType::Tcp);
+        assert_eq!(opts.transport_mode, TransportMode::Tcp);
     }
 }

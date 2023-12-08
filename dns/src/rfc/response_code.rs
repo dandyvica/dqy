@@ -1,18 +1,10 @@
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::ReadBytesExt;
 
 use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 // response codes: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6
-///
-/// ```
-/// use std::convert::TryFrom;
-/// use dns::rfc::response_code::ResponseCode;
-///
-/// assert_eq!(ResponseCode::try_from(23).unwrap(), ResponseCode::BADCOOKIE);
-/// assert!(ResponseCode::try_from(110).is_err());
-/// ```
 #[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork)]
 #[repr(u8)]
 pub enum ResponseCode {
@@ -40,4 +32,16 @@ pub enum ResponseCode {
     BADALG = 21,    // Algorithm not supported	[RFC2930]
     BADTRUNC = 22,  // 	Bad Truncation	[RFC8945]
     BADCOOKIE = 23, //	Bad/missing Server Cookie	[RFC7873]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_from() {
+        use std::convert::TryFrom;
+        assert_eq!(ResponseCode::try_from(23).unwrap(), ResponseCode::BADCOOKIE);
+        assert!(ResponseCode::try_from(110).is_err());
+    }
 }

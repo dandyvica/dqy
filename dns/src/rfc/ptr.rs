@@ -7,7 +7,7 @@ use super::domain::DomainName;
 
 // CNAME resource record
 #[derive(Debug, Default, FromNetwork)]
-pub struct PTR<'a>(pub DomainName<'a>);
+pub struct PTR<'a>(DomainName<'a>);
 
 impl<'a> fmt::Display for PTR<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

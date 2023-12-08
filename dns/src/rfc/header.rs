@@ -20,25 +20,6 @@ use super::{flags::Flags, packet_type::PacketType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                    ARCOUNT                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-/// ```
-/// use std::io::Cursor;
-/// use dns::rfc::{flags::Flags, header::Header};
-/// use type2network::{FromNetworkOrder, ToNetworkOrder};
-///
-/// let sample = vec![0x49, 0x1e, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
-/// let mut buffer = Cursor::new(sample.as_slice());
-/// let mut h = Header::default();
-/// assert!(h.deserialize_from(&mut buffer).is_ok());
-/// assert_eq!(h.flags, Flags::try_from(0x0120).unwrap());
-/// assert_eq!(h.qd_count, 1);
-/// assert_eq!(h.an_count, 0);
-/// assert_eq!(h.ns_count, 0);
-/// assert_eq!(h.ar_count, 1);
-///
-/// let mut buffer: Vec<u8> = Vec::new();
-/// assert!(h.serialize_to(&mut buffer).is_ok());
-/// assert_eq!(buffer, sample);
-/// ```
 #[derive(Debug, Default, ToNetwork, FromNetwork)]
 pub struct Header {
     pub id: u16, // A 16 bit identifier assigned by the program that
@@ -70,5 +51,34 @@ impl<'a> fmt::Display for Header {
                 self.qd_count, self.an_count, self.ns_count, self.ar_count
             )
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::{from_network_test, to_network_test};
+
+    #[test]
+    fn network() {
+        use crate::rfc::{flags::Flags, header::Header};
+        use std::io::Cursor;
+        use type2network::{FromNetworkOrder, ToNetworkOrder};
+
+        let sample = vec![
+            0x49, 0x1e, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        ];
+        let mut buffer = Cursor::new(sample.as_slice());
+        let mut h = Header::default();
+        assert!(h.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(h.flags, Flags::try_from(0x0120).unwrap());
+        assert_eq!(h.qd_count, 1);
+        assert_eq!(h.an_count, 0);
+        assert_eq!(h.ns_count, 0);
+        assert_eq!(h.ar_count, 1);
+
+        let mut buffer: Vec<u8> = Vec::new();
+        assert!(h.serialize_to(&mut buffer).is_ok());
+        assert_eq!(buffer, sample);
     }
 }

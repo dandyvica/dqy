@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::ReadBytesExt;
 
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;

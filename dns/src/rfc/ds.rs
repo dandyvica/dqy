@@ -24,7 +24,7 @@ pub struct DS {
     key_tag: u16,
     algorithm: Algorithm,
     digest_type: u8,
-    pub digest: Buffer,
+    pub(super) digest: Buffer,
 }
 
 impl fmt::Display for DS {

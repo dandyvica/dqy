@@ -6,16 +6,16 @@ use type2network_derive::FromNetwork;
 // LOC RR (https://datatracker.ietf.org/doc/html/rfc1876)
 #[derive(Debug, Default, FromNetwork)]
 pub struct LOC {
-    pub version: u8,
-    pub size: u8,
-    pub horiz_pre: u8,
-    pub vert_pre: u8,
-    pub latitude1: u16,
-    pub latitude2: u16,
-    pub longitude1: u16,
-    pub longitude2: u16,
-    pub altitude1: u16,
-    pub altitude2: u16,
+    pub(super) version: u8,
+    pub(super) size: u8,
+    pub(super) horiz_pre: u8,
+    pub(super) vert_pre: u8,
+    pub(super) latitude1: u16,
+    pub(super) latitude2: u16,
+    pub(super) longitude1: u16,
+    pub(super) longitude2: u16,
+    pub(super) altitude1: u16,
+    pub(super) altitude2: u16,
 }
 
 impl fmt::Display for LOC {

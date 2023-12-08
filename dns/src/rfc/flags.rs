@@ -3,7 +3,7 @@ use std::io::{Cursor, Result};
 
 use crate::{
     error::{DNSError, InternalError},
-    getter,
+    //getter,
     rfc::{opcode::OpCode, response_code::ResponseCode},
 };
 
@@ -20,81 +20,63 @@ use super::packet_type::PacketType;
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug, Default, PartialEq)]
 pub struct Flags {
-    pub qr: PacketType, // A one bit field that specifies whether this message is a query (0), or a response (1).
-    pub op_code: OpCode, // A four bit field that specifies kind of query in this
+    pub(super) qr: PacketType, // A one bit field that specifies whether this message is a query (0), or a response (1).
+    pub(super) op_code: OpCode, // A four bit field that specifies kind of query in this
     //  message.  This value is set by the originator of a query
     //  and copied into the response.  The values are:
     // 0               a standard query (QUERY)
     // 1               an inverse query (IQUERY)
     // 2               a server status request (STATUS)
     // 3-15            reserved for future use
-    pub authorative_answer: bool, // Authoritative Answer - this bit is valid in responses,
+    pub(super) authorative_answer: bool, // Authoritative Answer - this bit is valid in responses,
     //and specifies that the responding name server is an
     //authority for the domain name in question section.
     //Note that the contents of the answer section may have
     //multiple owner names because of aliases.  The AA bit
     //corresponds to the name which matches the query name, or
     //the first owner name in the answer section.
-    pub truncated: bool, //    TrunCation - specifies that this message was truncated
+    pub(super) truncated: bool, //    TrunCation - specifies that this message was truncated
     //    due to length greater than that permitted on the
     //    transmission channel.
-    pub recursion_desired: bool, // Recursion Desired - this bit may be set in a query and
+    pub(super) recursion_desired: bool, // Recursion Desired - this bit may be set in a query and
     // is copied into the response.  If RD is set, it directs
     // the name server to pursue the query recursively.
     // Recursive query support is optional.
-    pub recursion_available: bool, // Recursion Available - this be is set or cleared in a
+    pub(super) recursion_available: bool, // Recursion Available - this be is set or cleared in a
     //  response, and denotes whether recursive query support is
     //  available in the name server.
-    pub z: bool, // Reserved for future use.  Must be zero in all queries and responses.
-    pub authentic_data: bool,
-    pub checking_disabled: bool,
-    pub response_code: ResponseCode, // Response code - this 4 bit field is set as part of
-                                     //responses.  The values have the following
-                                     //interpretation:
-                                     //0               No error condition
-                                     //1               Format error - The name server was
-                                     //                unable to interpret the query.
-                                     //2               Server failure - The name server was
-                                     //                unable to process this query due to a
-                                     //                problem with the name server.
-                                     //3               Name Error - Meaningful only for
-                                     //                responses from an authoritative name
-                                     //                server, this code signifies that the
-                                     //                domain name referenced in the query does
-                                     //                not exist.
-                                     //4               Not Implemented - The name server does
-                                     //                not support the requested kind of query.
-                                     //5               Refused - The name server refuses to
-                                     //                perform the specified operation for
-                                     //                policy reasons.  For example, a name
-                                     //                server may not wish to provide the
-                                     //                information to the particular requester,
-                                     //                or a name server may not wish to perform
-                                     //                a particular operation (e.g., zone
-                                     //                transfer) for particular data.
-                                     //6-15            Reserved for future use.
+    pub(super) z: bool, // Reserved for future use.  Must be zero in all queries and responses.
+    pub(super) authentic_data: bool,
+    pub(super) checking_disabled: bool,
+    pub(super) response_code: ResponseCode, // Response code - this 4 bit field is set as part of
+                                            //responses.  The values have the following
+                                            //interpretation:
+                                            //0               No error condition
+                                            //1               Format error - The name server was
+                                            //                unable to interpret the query.
+                                            //2               Server failure - The name server was
+                                            //                unable to process this query due to a
+                                            //                problem with the name server.
+                                            //3               Name Error - Meaningful only for
+                                            //                responses from an authoritative name
+                                            //                server, this code signifies that the
+                                            //                domain name referenced in the query does
+                                            //                not exist.
+                                            //4               Not Implemented - The name server does
+                                            //                not support the requested kind of query.
+                                            //5               Refused - The name server refuses to
+                                            //                perform the specified operation for
+                                            //                policy reasons.  For example, a name
+                                            //                server may not wish to provide the
+                                            //                information to the particular requester,
+                                            //                or a name server may not wish to perform
+                                            //                a particular operation (e.g., zone
+                                            //                transfer) for particular data.
+                                            //6-15            Reserved for future use.
 }
 
 //getter!(Flags, qr, PacketType);
 
-/// TryFrom implementation for DNSFlags is useful for comparing raw flags as a u16
-/// ```
-/// use std::convert::TryFrom;
-/// use dns::{rfc::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
-///
-/// let x = 0b_1000_1111_1111_0001;
-/// let v = Flags::try_from(x).unwrap();
-/// assert_eq!(v.qr, PacketType::Response);
-/// assert_eq!(v.op_code, OpCode::IQuery);
-/// assert!(v.authorative_answer);
-/// assert!(v.truncated);
-/// assert!(v.recursion_desired);
-/// assert!(v.recursion_available);
-/// assert!(v.z);
-/// assert!(v.authentic_data);
-/// assert!(v.checking_disabled);
-/// assert_eq!(v.response_code, ResponseCode::FormErr);
-/// ```
 impl TryFrom<u16> for Flags {
     type Error = DNSError;
 
@@ -130,27 +112,6 @@ impl TryFrom<u16> for Flags {
 }
 
 impl ToNetworkOrder for Flags {
-    /// ```
-    /// use type2network::ToNetworkOrder;
-    /// use dns::{rfc::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
-    ///
-    /// let flags = Flags {
-    ///     qr: PacketType::Response,
-    ///     op_code: OpCode::IQuery,
-    ///     authorative_answer: true,
-    ///     truncated: true,
-    ///     recursion_desired: true,
-    ///     recursion_available: true,
-    ///     z: true,
-    ///     authentic_data: true,
-    ///     checking_disabled: true,
-    ///     response_code: ResponseCode::NoError
-    /// };
-    ///
-    /// let mut buffer: Vec<u8> = Vec::new();
-    /// assert!(flags.serialize_to(&mut buffer).is_ok());
-    /// assert_eq!(buffer, &[0b1000_1111, 0b1111_0000]);
-    /// ```   
     fn serialize_to(&self, buffer: &mut Vec<u8>) -> Result<usize> {
         // combine all flags according to structure
         //                                1  1  1  1  1  1
@@ -177,26 +138,6 @@ impl ToNetworkOrder for Flags {
 }
 
 impl<'a> FromNetworkOrder<'a> for Flags {
-    /// ```
-    /// use std::io::Cursor;
-    /// use type2network::FromNetworkOrder;
-    /// use dns::{rfc::{response_code::ResponseCode, opcode::OpCode, packet_type::PacketType, flags::Flags}, error::DNSError};
-    ///
-    /// let b = vec![0b_10001111, 0b_1111_0001];
-    /// let mut buffer = Cursor::new(b.as_slice());
-    /// let mut v = Flags::default();
-    /// assert!(v.deserialize_from(&mut buffer).is_ok());
-    /// assert_eq!(v.qr, PacketType::Response);
-    /// assert_eq!(v.op_code, OpCode::IQuery);
-    /// assert!(v.authorative_answer);
-    /// assert!(v.truncated);
-    /// assert!(v.recursion_desired);
-    /// assert!(v.recursion_available);
-    /// assert!(v.z);
-    /// assert!(v.authentic_data);
-    /// assert!(v.checking_disabled);
-    /// assert_eq!(v.response_code, ResponseCode::FormErr);
-    /// ```
     fn deserialize_from(&mut self, buffer: &mut Cursor<&[u8]>) -> Result<()> {
         // read as u16
         let flags = buffer.read_u16::<BigEndian>()?;
@@ -236,5 +177,76 @@ impl fmt::Display for Flags {
                 flag_display!(f, self.checking_disabled, "cd");
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    use crate::rfc::{
+        flags::Flags, opcode::OpCode, packet_type::PacketType, response_code::ResponseCode,
+    };
+
+    #[test]
+    fn try_from() {
+        use std::convert::TryFrom;
+
+        let x = 0b_1000_1111_1111_0001;
+        let v = Flags::try_from(x).unwrap();
+        assert_eq!(v.qr, PacketType::Response);
+        assert_eq!(v.op_code, OpCode::IQuery);
+        assert!(v.authorative_answer);
+        assert!(v.truncated);
+        assert!(v.recursion_desired);
+        assert!(v.recursion_available);
+        assert!(v.z);
+        assert!(v.authentic_data);
+        assert!(v.checking_disabled);
+        assert_eq!(v.response_code, ResponseCode::FormErr);
+    }
+
+    #[test]
+    fn serialize_to() {
+        use type2network::ToNetworkOrder;
+
+        let flags = Flags {
+            qr: PacketType::Response,
+            op_code: OpCode::IQuery,
+            authorative_answer: true,
+            truncated: true,
+            recursion_desired: true,
+            recursion_available: true,
+            z: true,
+            authentic_data: true,
+            checking_disabled: true,
+            response_code: ResponseCode::NoError,
+        };
+
+        let mut buffer: Vec<u8> = Vec::new();
+        assert!(flags.serialize_to(&mut buffer).is_ok());
+        assert_eq!(buffer, &[0b1000_1111, 0b1111_0000]);
+    }
+
+    #[test]
+    fn deserialize_from() {
+        use std::io::Cursor;
+        use type2network::FromNetworkOrder;
+
+        let b = vec![0b_10001111, 0b_1111_0001];
+        let mut buffer = Cursor::new(b.as_slice());
+        let mut v = Flags::default();
+        assert!(v.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(v.qr, PacketType::Response);
+        assert_eq!(v.op_code, OpCode::IQuery);
+        assert!(v.authorative_answer);
+        assert!(v.truncated);
+        assert!(v.recursion_desired);
+        assert!(v.recursion_available);
+        assert!(v.z);
+        assert!(v.authentic_data);
+        assert!(v.checking_disabled);
+        assert_eq!(v.response_code, ResponseCode::FormErr);
     }
 }

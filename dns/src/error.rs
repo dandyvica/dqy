@@ -12,6 +12,8 @@ pub enum DNSError {
     //DNS(String),
     DNSInternalError(InternalError),
     //Conversion(String),
+    Reqwest(reqwest::Error),
+    Tls(rustls::Error),
 }
 
 #[derive(Debug)]
@@ -44,7 +46,8 @@ impl fmt::Debug for DNSError {
             DNSError::AddrParseError(e) => write!(f, "IP address {}", e),
             //DNSError::DNS(String) => {}
             DNSError::DNSInternalError(e) => write!(f, "internal DNS error {:?}", e),
-            //DNSError::Conversion(String) => {}
+            DNSError::Reqwest(e) => write!(f, "DoH error {:?}", e),
+            DNSError::Tls(e) => write!(f, "TLS error {:?}", e),
         }
     }
 }
@@ -89,8 +92,14 @@ impl From<AddrParseError> for DNSError {
     }
 }
 
-// impl<'a> From<&'a str> for DNSError {
-//     fn from(err: &str) -> Self {
-//         DNSError::Conversion(String::from(err))
-//     }
-// }
+impl<'a> From<reqwest::Error> for DNSError {
+    fn from(err: reqwest::Error) -> Self {
+        DNSError::Reqwest(err)
+    }
+}
+
+impl<'a> From<rustls::Error> for DNSError {
+    fn from(err: rustls::Error) -> Self {
+        DNSError::Tls(err)
+    }
+}

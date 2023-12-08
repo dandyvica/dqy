@@ -11,7 +11,7 @@ use crate::error::{DNSError, DNSResult, InternalError};
 #[derive(Debug, Default)]
 pub struct DomainName<'a> {
     // a domain name is a list of labels as defined in the RFC1035
-    pub labels: Vec<&'a str>,
+    labels: Vec<&'a str>,
 }
 
 impl<'a> DomainName<'a> {
@@ -20,13 +20,6 @@ impl<'a> DomainName<'a> {
         x >= 192
     }
 
-    // need to know the length is bytes sometimes
-    /// ```
-    /// use dns::rfc::domain::DomainName;
-    ///
-    /// let mut dn = DomainName::try_from("www.google.com").unwrap();
-    /// assert_eq!(dn.len(), 16);
-    /// ```    
     pub fn len(&self) -> usize {
         self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
     }
@@ -36,14 +29,6 @@ impl<'a> DomainName<'a> {
         self.labels.iter()
     }
 
-    /// ```
-    /// use dns::rfc::domain::DomainName;
-    ///
-    /// let v = vec![0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00];
-    /// let mut dn = DomainName::default();
-    /// dn.from_position(0usize, &&v[..]).unwrap();
-    /// assert_eq!(dn.labels, &["www", "google", "ie"]);
-    /// ```    
     pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> DNSResult<usize> {
         let mut index = pos;
 
@@ -122,20 +107,6 @@ impl<'a> DomainName<'a> {
     }
 }
 
-// need to know the length is bytes sometimes
-/// ```
-/// use dns::rfc::domain::DomainName;
-///
-/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
-/// let mut d2 = DomainName::try_from("www.google.fr").unwrap();
-/// assert!(d1 != d2);
-/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
-/// let mut d2 = DomainName::try_from("www.google.org").unwrap();
-/// assert!(d1 != d2);
-/// let mut d1 = DomainName::try_from("www.google.com").unwrap();
-/// let mut d2 = DomainName::try_from("www.google.com").unwrap();
-/// assert!(d1 == d2);
-/// ```  
 impl<'a> PartialEq for DomainName<'a> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
@@ -146,15 +117,6 @@ impl<'a> PartialEq for DomainName<'a> {
     }
 }
 
-/// ```
-/// use dns::rfc::domain::DomainName;
-///
-/// let mut dn = DomainName::try_from("www.google.com").unwrap();
-/// assert_eq!(dn.to_string(), "www.google.com.");
-///
-/// let mut dn = DomainName::try_from(".").unwrap();
-/// assert_eq!(dn.to_string(), ".");
-/// ```
 impl<'a> fmt::Display for DomainName<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.labels.is_empty() {
@@ -169,23 +131,6 @@ impl<'a> fmt::Display for DomainName<'a> {
     }
 }
 
-/// ```
-/// use dns::rfc::domain::DomainName;
-///
-/// let dn = DomainName::try_from("www.example.com").unwrap();
-/// assert_eq!(dn.labels.len(), 3);
-/// assert_eq!(dn.labels, &["www", "example", "com"]);
-///
-/// let dn = DomainName::try_from("com.").unwrap();
-/// assert_eq!(dn.labels.len(), 1);
-/// assert_eq!(dn.labels, &["com"]);
-///
-/// let dn = DomainName::try_from(".").unwrap();
-/// assert_eq!(dn.labels.len(), 0);
-/// assert!(dn.labels.is_empty());
-
-/// assert!(DomainName::try_from("").is_err());
-/// ```
 impl<'a> TryFrom<&'a str> for DomainName<'a> {
     type Error = DNSError;
 
@@ -208,16 +153,6 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
 }
 
 impl<'a> ToNetworkOrder for DomainName<'a> {
-    /// ```
-    /// use dns::rfc::domain::DomainName;
-    /// use type2network::ToNetworkOrder;
-    ///
-    /// let dn = DomainName::try_from("www.google.ie").unwrap();
-    /// let mut buffer: Vec<u8> = Vec::new();
-    ///
-    /// assert_eq!(dn.serialize_to(&mut buffer).unwrap(), 15);
-    /// assert_eq!(&buffer, &[0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00]);
-    /// ```    
     fn serialize_to(&self, buffer: &mut Vec<u8>) -> Result<usize> {
         let mut length = 0usize;
 
@@ -234,18 +169,6 @@ impl<'a> ToNetworkOrder for DomainName<'a> {
 }
 
 impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
-    /// ```
-    /// use std::io::Cursor;
-    /// use dns::rfc::domain::DomainName;
-    /// use type2network::FromNetworkOrder;
-    ///
-    /// // with sentinel = 0
-    /// let mut buffer = Cursor::new([0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00].as_slice());
-    /// let mut dn = DomainName::default();
-    /// assert!(dn.deserialize_from(&mut buffer).is_ok());
-    /// assert_eq!(dn.labels.len(), 3);
-    /// assert_eq!(dn.labels, &["www", "google", "ie"]);
-    /// ```    
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> Result<()> {
         //dbg!("============================");
 
@@ -265,5 +188,96 @@ impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
 
         // if a pointer, get pointer value and call
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn len() {
+        let mut dn = DomainName::try_from("www.google.com").unwrap();
+        assert_eq!(dn.len(), 16);
+    }
+
+    #[test]
+    fn from_position() {
+        let v = vec![
+            0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65,
+            0x00,
+        ];
+        let mut dn = DomainName::default();
+        dn.from_position(0usize, &&v[..]).unwrap();
+        assert_eq!(dn.labels, &["www", "google", "ie"]);
+    }
+
+    #[test]
+    fn equal() {
+        let d1 = DomainName::try_from("www.google.com").unwrap();
+        let d2 = DomainName::try_from("www.google.fr").unwrap();
+        assert!(d1 != d2);
+        let d1 = DomainName::try_from("www.google.com").unwrap();
+        let d2 = DomainName::try_from("www.google.org").unwrap();
+        assert!(d1 != d2);
+        let d1 = DomainName::try_from("www.google.com").unwrap();
+        let d2 = DomainName::try_from("www.google.com").unwrap();
+        assert!(d1 == d2);
+    }
+
+    #[test]
+    fn display() {
+        let dn = DomainName::try_from("www.google.com").unwrap();
+        assert_eq!(dn.to_string(), "www.google.com.");
+        let dn = DomainName::try_from(".").unwrap();
+        assert_eq!(dn.to_string(), ".");
+    }
+
+    #[test]
+    fn try_from() {
+        let dn = DomainName::try_from("www.example.com").unwrap();
+        assert_eq!(dn.labels.len(), 3);
+        assert_eq!(dn.labels, &["www", "example", "com"]);
+        let dn = DomainName::try_from("com.").unwrap();
+        assert_eq!(dn.labels.len(), 1);
+        assert_eq!(dn.labels, &["com"]);
+        let dn = DomainName::try_from(".").unwrap();
+        assert_eq!(dn.labels.len(), 0);
+        assert!(dn.labels.is_empty());
+        assert!(DomainName::try_from("").is_err());
+    }
+
+    #[test]
+    fn serialize_to() {
+        use type2network::ToNetworkOrder;
+        let dn = DomainName::try_from("www.google.ie").unwrap();
+        let mut buffer: Vec<u8> = Vec::new();
+        assert_eq!(dn.serialize_to(&mut buffer).unwrap(), 15);
+        assert_eq!(
+            &buffer,
+            &[
+                0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65,
+                0x00
+            ]
+        );
+    }
+
+    #[test]
+    fn deserialize_from() {
+        use std::io::Cursor;
+        use type2network::FromNetworkOrder;
+        // with sentinel = 0
+        let mut buffer = Cursor::new(
+            [
+                0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69,
+                0x65, 0x00,
+            ]
+            .as_slice(),
+        );
+        let mut dn = DomainName::default();
+        assert!(dn.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(dn.labels.len(), 3);
+        assert_eq!(dn.labels, &["www", "google", "ie"]);
     }
 }

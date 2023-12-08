@@ -12,11 +12,7 @@ use super::{
 use crate::{
     buffer::Buffer,
     either_or::EitherOr,
-    rfc::{
-        ds::DS,
-        opt::{OptOption, OptOptionData},
-        rrsig::RRSIG,
-    },
+    rfc::{ds::DS, opt::OptOption, rrsig::RRSIG},
 };
 
 use log::trace;

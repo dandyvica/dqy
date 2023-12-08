@@ -17,29 +17,6 @@ use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                     QCLASS                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-/// ```
-/// use std::io::Cursor;
-/// use dns::{
-///     rfc::question::Question,
-///     rfc::domain::DomainName,
-///     rfc::qtype::QType,
-///     rfc::qclass::QClass
-/// };
-///
-/// use type2network::{FromNetworkOrder, ToNetworkOrder};
-///
-/// let sample = vec![0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01];
-/// let mut buffer = Cursor::new(sample.as_slice());
-/// let mut q = Question::default();
-/// assert!(q.deserialize_from(&mut buffer).is_ok());
-/// assert_eq!(q.qname.to_string(), "www.google.com.");
-/// assert_eq!(q.qtype, QType::A);
-/// assert_eq!(q.qclass, QClass::IN);
-///
-/// let mut buffer: Vec<u8> = Vec::new();
-/// assert!(q.serialize_to(&mut buffer).is_ok());
-/// assert_eq!(buffer, sample);
-/// ```
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
 pub struct Question<'a> {
     pub qname: DomainName<'a>,
@@ -53,20 +30,29 @@ impl<'a> fmt::Display for Question<'a> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::{from_network_test, to_network_test};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use type2network::{FromNetworkOrder, ToNetworkOrder};
 
-//     #[test]
-//     fn network() {
-//         let q = Question {
-//             qname: DomainName::try_from("www.google.com").unwrap(),
-//             qtype: QType::A,
-//             qclass:  QClass::IN
+    #[test]
+    fn network() {
+        use crate::{rfc::qclass::QClass, rfc::qtype::QType, rfc::question::Question};
+        use std::io::Cursor;
 
-//         };
-//         to_network_test(&q, 20, &[0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01]);
-//         //from_network_test(None, &q, &vec![0x00, 0xFF]);
-//     }
-// }
+        let sample = vec![
+            0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f,
+            0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
+        ];
+        let mut buffer = Cursor::new(sample.as_slice());
+        let mut q = Question::default();
+        assert!(q.deserialize_from(&mut buffer).is_ok());
+        assert_eq!(q.qname.to_string(), "www.google.com.");
+        assert_eq!(q.qtype, QType::A);
+        assert_eq!(q.qclass, QClass::IN);
+
+        let mut buffer: Vec<u8> = Vec::new();
+        assert!(q.serialize_to(&mut buffer).is_ok());
+        assert_eq!(buffer, sample);
+    }
+}

@@ -4,10 +4,7 @@ use rand::Rng;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::{
-    error::DNSResult,
-    network::transport::{Transport, TransportMode},
-};
+use crate::{error::DNSResult, transport::Transporter};
 
 use super::{
     domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType, qclass::QClass,
@@ -23,10 +20,10 @@ pub struct Query<'a> {
 }
 
 impl<'a> Query<'a> {
-    pub fn new(transport_mode: &TransportMode) -> Self {
+    pub fn new<T: Transporter>(trp: &T) -> Self {
         let mut msg = Self::default();
 
-        if transport_mode.uses_tcp() {
+        if trp.uses_tcp() {
             msg.length = Some(0u16);
         }
 
@@ -44,7 +41,6 @@ impl<'a> Query<'a> {
 
     pub fn init(&mut self, domain: &'a str, qtype: &QType, qclass: QClass) -> DNSResult<()> {
         // fill header
-
         // create a random ID
         let mut rng = rand::thread_rng();
         self.header.id = rng.gen::<u16>();
@@ -59,21 +55,17 @@ impl<'a> Query<'a> {
         self.question.qtype = *qtype;
         self.question.qclass = qclass;
 
-        // OPT?
-        // if opt.is_some() {
-        //     self.opt = opt;
-        // }
-
         Ok(())
     }
 
     // Send the query through the wire
-    pub fn send(&self, trp: &mut Transport) -> DNSResult<usize> {
-        trace!("question: {}", self.question);
+    pub fn send<T: Transporter>(&mut self, trp: &mut T) -> DNSResult<usize> {
+        trace!("question to send: {}", self.question);
 
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;
+        trace!("buffer to send: {:?}", buffer);
 
         // if using TCP, we need to prepend the message sent with length of message
         if trp.uses_tcp() {

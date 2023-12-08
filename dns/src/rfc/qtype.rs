@@ -1,11 +1,10 @@
-use std::str::FromStr;
-
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
+#[allow(clippy::unnecessary_cast)]
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
 #[derive(
     Debug,
@@ -130,5 +129,9 @@ mod tests {
         let q = QType::AAAA;
         to_network_test(&q, 2, &[0x00, 28]);
         from_network_test(None, &q, &vec![0x00, 28]);
+
+        let q = QType::Reserved(0xFFFE);
+        to_network_test(&q, 2, &[0xFF, 0xFE]);
+        from_network_test(None, &q, &vec![0xFF, 0xFE]);
     }
 }

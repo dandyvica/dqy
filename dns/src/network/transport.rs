@@ -8,6 +8,7 @@ use std::{
 
 use log::debug;
 use rustls::{ClientConnection, Stream};
+use ureq::{Agent, AgentBuilder, Response};
 
 use crate::error::DNSResult;
 
@@ -53,7 +54,11 @@ pub enum Transport<'a> {
     Tcp {
         stream: TcpStream,
     },
-    DoH,
+    DoH {
+        url: String,
+        agent: Agent,
+        resp: Option<Response>,
+    },
     DoT {
         tls_stream: Stream<'a, ClientConnection, TcpStream>,
     },
@@ -80,6 +85,15 @@ impl<'a> Transport<'a> {
                 debug!("created TCP socket to {}:{}", ip, port);
                 Ok(Transport::Tcp { stream })
             }
+            TransportMode::DoH => {
+                let agent = AgentBuilder::new().build();
+
+                Ok(Transport::DoH {
+                    url: String::from("https://dns.google/dns-query"),
+                    agent: agent,
+                    resp: None,
+                })
+            }
             TransportMode::DoT => {
                 let tc = tls_conn.unwrap();
 
@@ -87,8 +101,6 @@ impl<'a> Transport<'a> {
                     tls_stream: rustls::Stream::new(&mut tc.conn, &mut tc.sock),
                 })
             }
-
-            _ => unimplemented!("not implemented"),
         }
     }
 
@@ -119,6 +131,15 @@ impl<'a> Transport<'a> {
                 stream.flush()?;
                 Ok(sent)
             }
+            Transport::DoH { url, agent, resp } => {
+                let response = agent
+                    .post(&url)
+                    .set("Accept", "application/dns-message")
+                    .set("Content-Type", "application/dns-message");
+                *resp = Some(response);
+
+                Ok(0)
+            }
             Transport::DoT { tls_stream } => Ok(tls_stream.write(buffer)?),
             _ => unimplemented!("DoH not implemented"),
         }
@@ -130,6 +151,11 @@ impl<'a> Transport<'a> {
             Transport::Tcp { ref mut stream } => {
                 let mut reader = BufReader::new(stream);
                 Ok(reader.read(buffer)?)
+            }
+            Transport::DoH { url, agent, resp } => {
+                let r = resp.as_ref();
+                let rr = r.unwrap();
+                Ok(rr.into_reader().read(buffer)?)
             }
             Transport::DoT { tls_stream } => Ok(tls_stream.read(buffer)?),
             _ => unimplemented!("DoH not implemented"),

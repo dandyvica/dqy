@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::ReadBytesExt;
 
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
@@ -32,4 +32,19 @@ pub enum Algorithm {
 
     #[fallback]
     Reserved(u8),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::from_network_test;
+
+    #[test]
+    fn network() {
+        let a = Algorithm::ECDSAP256SHA256;
+        from_network_test(None, &a, &vec![13]);
+
+        let a = Algorithm::Reserved(255);
+        from_network_test(None, &a, &vec![255]);
+    }
 }

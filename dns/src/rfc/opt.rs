@@ -57,12 +57,12 @@ impl<'a> ResourceRecord<'a, Vec<OptOption>> {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork)]
 pub struct OptTTL {
-    pub extended_rcode: u8,
-    pub version: u8,
-    pub flags: u16,
+    pub(super) extended_rcode: u8,
+    pub(super) version: u8,
+    pub(super) flags: u16,
 }
 
-impl<'a> fmt::Display for OptTTL {
+impl fmt::Display for OptTTL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -85,12 +85,12 @@ impl<'a> fmt::Display for OptTTL {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[derive(Debug, Default, ToNetwork)]
 pub struct OptOption {
-    pub code: OptOptionCode,
-    pub length: u16,
-    pub data: OptOptionData,
+    pub(super) code: OptOptionCode,
+    pub(super) length: u16,
+    pub(super) data: OptOptionData,
 }
 
-impl<'a> fmt::Display for OptOption {
+impl fmt::Display for OptOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -158,7 +158,7 @@ impl Default for OptOptionData {
     }
 }
 
-impl<'a> fmt::Display for OptOptionData {
+impl fmt::Display for OptOptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptOptionData::NSID(n) => write!(f, "{}", n)?,

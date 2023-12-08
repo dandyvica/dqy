@@ -1,44 +1,30 @@
 use std::io::Cursor;
 
-use log::debug;
+use log::{debug, trace};
 
 use type2network::FromNetworkOrder;
 
-use crate::{
-    error::DNSResult,
-    network::transport::{Transport, TransportMode},
-    rfc::response_code::ResponseCode,
-};
+use crate::{error::DNSResult, rfc::response_code::ResponseCode, transport::Transporter};
 
 use super::{header::Header, question::Question, resource_record::RR};
 
 #[derive(Default)]
 pub struct Response<'a> {
-    pub length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
+    pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
-    pub question: Question<'a>,
-    pub answer: Option<Vec<RR<'a>>>,
-    pub authority: Option<Vec<RR<'a>>>,
-    pub additional: Option<Vec<RR<'a>>>,
+    pub(super) question: Question<'a>,
+    pub(super) answer: Option<Vec<RR<'a>>>,
+    pub(super) authority: Option<Vec<RR<'a>>>,
+    pub(super) additional: Option<Vec<RR<'a>>>,
 }
 
 impl<'a> Response<'a> {
-    pub fn new(transport_type: &TransportMode) -> Self {
-        let msg = Self::default();
-
-        // if matches!(transport_type, &TransportMode::Tcp(_)) {
-        //     msg.length = Some(0u16);
-        // }
-
-        msg
-    }
-
     // Receive message for DNS resolver
-    pub fn recv(&mut self, trp: &mut Transport, buffer: &'a mut [u8]) -> DNSResult<usize> {
+    pub fn recv<T: Transporter>(&mut self, trp: &mut T, buffer: &'a mut [u8]) -> DNSResult<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
-        debug!("buffer {:X?}", &buffer[..received]);
+        trace!("received buffer {:X?}", &buffer[..received]);
 
         // if using TCP, we get rid of 2 bytes which are the length of the message received
         let mut cursor = if trp.uses_tcp() {
@@ -49,6 +35,10 @@ impl<'a> Response<'a> {
 
         // get response
         self.deserialize_from(&mut cursor)?;
+        trace!("response header: {}", self.header);
+        trace!("response query: {}", self.question);
+        trace!("response answer: {:?}", self.answer);
+        trace!("response authority: {:?}", self.authority);
 
         // check return code
         if self.header.flags.response_code != ResponseCode::NoError {
@@ -60,8 +50,6 @@ impl<'a> Response<'a> {
     }
 
     pub fn display(&self) {
-        // header first
-
         // flags
         //println!("{}", self.header.flags);
         println!("HEADER: {}\n", self.header);

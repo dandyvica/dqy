@@ -44,23 +44,23 @@ pub struct DNSKEY {
     // The Flag field MUST be represented as an unsigned decimal integer.
     // Given the currently defined flags, the possible values are: 0, 256,
     // and 257.
-    pub flags: u16,
+    flags: u16,
 
     // The Protocol Field MUST have value 3, and the DNSKEY RR MUST be
     // treated as invalid during signature verification if it is found to be
     // some value other than 3.
-    pub protocol: u8,
+    protocol: u8,
 
     // The Algorithm field identifies the public key's cryptographic
     // algorithm and determines the format of the Public Key field.  A list
     // of DNSSEC algorithm types can be found in Appendix A.1
-    pub algorithm: Algorithm,
+    algorithm: Algorithm,
 
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
     //#[deser(with_code( self.key = Buffer::new(self.rd_length - 4); ))]
-    pub key: Buffer,
+    pub(super) key: Buffer,
 }
 
 impl fmt::Display for DNSKEY {
