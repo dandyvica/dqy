@@ -56,9 +56,6 @@ impl<'a> fmt::Display for Header {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::tests::{from_network_test, to_network_test};
-
     #[test]
     fn network() {
         use crate::rfc::{flags::Flags, header::Header};

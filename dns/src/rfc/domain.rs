@@ -5,7 +5,8 @@ use std::slice::Iter;
 use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
-use crate::error::{DNSError, DNSResult, InternalError};
+use crate::err_internal;
+use crate::error::{DNSResult, Error, ProtocolError};
 
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default)]
@@ -31,18 +32,26 @@ impl<'a> DomainName<'a> {
 
     pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> DNSResult<usize> {
         let mut index = pos;
+        let at_index = *buffer
+            .get(index)
+            .ok_or(err_internal!(CantCreateDomainName))?;
 
         trace!(
             "from_position(): starting at position: 0x{:X?} ({}) with value: 0x{:X?} ({})",
             index,
             index,
-            buffer[index],
-            buffer[index]
+            at_index,
+            at_index
         );
 
         loop {
+            // always check if out of bounds
+            let at_index = *buffer
+                .get(index)
+                .ok_or(err_internal!(CantCreateDomainName))?;
+
             // we reach the sentinel
-            if buffer[index] == 0 {
+            if at_index == 0 {
                 //dbg!("from_position(): found sentinel", &self.labels);
                 break;
             }
@@ -62,9 +71,13 @@ impl<'a> DomainName<'a> {
             //    the start of the message (i.e., the first octet of the ID field in the
             //    domain header).  A zero offset specifies the first byte of the ID field,
             //    etc.
-            if DomainName::is_pointer(buffer[index]) {
+            if DomainName::is_pointer(at_index) {
+                let at_index_plus = *buffer
+                    .get(index + 1)
+                    .ok_or(err_internal!(CantCreateDomainName))?;
+
                 // get pointer which is on 2 bytes
-                let ptr = [buffer[index], buffer[index + 1]];
+                let ptr = [at_index, at_index_plus];
                 let pointer = u16::from_be_bytes(ptr);
 
                 // println!("pointer={:0b}", pointer);
@@ -80,12 +93,21 @@ impl<'a> DomainName<'a> {
             }
 
             // otherwise, regular processing: the first byte is the string length
-            let size = buffer[index] as usize;
+            let size = at_index as usize;
 
             // then we convert the label into UTF8
-            let label = &buffer[index + 1..index + size + 1];
+            //let label = &buffer[index + 1..index + size + 1];
+
+            let label = buffer
+                .get(index + 1..index + size + 1)
+                .ok_or(err_internal!(CantCreateDomainName))?;
+
             //dbg!(label);
             let label_as_utf8 = std::str::from_utf8(label)?;
+
+            if label_as_utf8.len() > 63 {
+                return Err(err_internal!(DomainLabelTooLong));
+            }
             // println!(
             //     "label_as_utf8={}, index={}, buffer[index]={:02X?}",
             //     label_as_utf8, index, buffer[index]
@@ -132,11 +154,11 @@ impl<'a> fmt::Display for DomainName<'a> {
 }
 
 impl<'a> TryFrom<&'a str> for DomainName<'a> {
-    type Error = DNSError;
+    type Error = Error;
 
     fn try_from(domain: &'a str) -> std::result::Result<Self, Self::Error> {
         if domain.is_empty() {
-            return Err(DNSError::DNSInternalError(InternalError::EmptyDomainName));
+            return Err(err_internal!(EmptyDomainName));
         }
 
         // root domain is a special case
@@ -148,7 +170,16 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
                 .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
                 .collect()
         };
-        Ok(DomainName { labels: label_list })
+
+        // test for correctness
+        let dn = DomainName { labels: label_list };
+        if dn.len() > 255 {
+            return Err(err_internal!(DomainNameTooLong));
+        }
+        if dn.labels.iter().any(|x| x.len() > 63) {
+            return Err(err_internal!(DomainLabelTooLong));
+        }
+        Ok(dn)
     }
 }
 
@@ -194,11 +225,10 @@ impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Cursor;
 
     #[test]
     fn len() {
-        let mut dn = DomainName::try_from("www.google.com").unwrap();
+        let dn = DomainName::try_from("www.google.com").unwrap();
         assert_eq!(dn.len(), 16);
     }
 
@@ -246,6 +276,13 @@ mod tests {
         assert_eq!(dn.labels.len(), 0);
         assert!(dn.labels.is_empty());
         assert!(DomainName::try_from("").is_err());
+
+        let long_label = (0..64).map(|_| "X").collect::<String>();
+        let domain = format!("{}.org", long_label);
+        assert!(DomainName::try_from(domain.as_str()).is_err());
+
+        let domain = (0..255).map(|_| "X").collect::<String>();
+        assert!(DomainName::try_from(domain.as_str()).is_err());
     }
 
     #[test]

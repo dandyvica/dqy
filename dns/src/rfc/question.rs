@@ -32,7 +32,6 @@ impl<'a> fmt::Display for Question<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use type2network::{FromNetworkOrder, ToNetworkOrder};
 
     #[test]

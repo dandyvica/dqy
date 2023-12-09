@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::{Cursor, Result};
 
 use crate::{
-    error::{DNSError, InternalError},
+    error::{Error, ProtocolError},
     //getter,
     rfc::{opcode::OpCode, response_code::ResponseCode},
 };
@@ -78,7 +78,7 @@ pub struct Flags {
 //getter!(Flags, qr, PacketType);
 
 impl TryFrom<u16> for Flags {
-    type Error = DNSError;
+    type Error = Error;
 
     fn try_from(value: u16) -> std::result::Result<Self, Self::Error> {
         let mut flags = Self::default();
@@ -92,10 +92,10 @@ impl TryFrom<u16> for Flags {
         );
 
         flags.qr = PacketType::try_from(qr)
-            .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowPacketType))?;
+            .map_err(|_| Error::InternalError(ProtocolError::UnknowPacketType))?;
 
         flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u8)
-            .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowOpCode))?;
+            .map_err(|_| Error::InternalError(ProtocolError::UnknowOpCode))?;
 
         flags.authorative_answer = (value >> 10) & 1 == 1;
         flags.truncated = (value >> 9) & 1 == 1;
@@ -105,7 +105,7 @@ impl TryFrom<u16> for Flags {
         flags.authentic_data = (value >> 5 & 1) == 1;
         flags.checking_disabled = (value >> 4 & 1) == 1;
         flags.response_code = ResponseCode::try_from((value & 0b1111) as u8)
-            .map_err(|_| DNSError::DNSInternalError(InternalError::UnknowOpCode))?;
+            .map_err(|_| Error::InternalError(ProtocolError::UnknowOpCode))?;
 
         Ok(flags)
     }
@@ -182,9 +182,6 @@ impl fmt::Display for Flags {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::io::Cursor;
-
     use crate::rfc::{
         flags::Flags, opcode::OpCode, packet_type::PacketType, response_code::ResponseCode,
     };

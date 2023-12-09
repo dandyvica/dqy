@@ -1,5 +1,4 @@
 #[allow(clippy::unnecessary_cast)]
-
 pub mod char_string;
 pub mod domain;
 pub mod flags;
