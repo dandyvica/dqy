@@ -12,7 +12,7 @@ use super::{
 use crate::{
     buffer::Buffer,
     either_or::EitherOr,
-    rfc::{ds::DS, opt::OptOption, rrsig::RRSIG},
+    rfc::{ds::DS, nsec3::NSEC3, opt::OptOption, rrsig::RRSIG},
 };
 
 use log::trace;
@@ -181,7 +181,8 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 }
                 QType::DNSKEY => {
                     let mut x = DNSKEY::default();
-                    x.key = Buffer::new(self.rd_length - 4);
+                    // x.key = Buffer::new(self.rd_length - 4);
+                    x.length = self.rd_length - 4;
 
                     x.deserialize_from(buffer)?;
                     self.r_data = RData::DNSKEY(x)
@@ -192,6 +193,13 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
 
                     x.deserialize_from(buffer)?;
                     self.r_data = RData::DS(x)
+                }
+                QType::NSEC3 => {
+                    let mut x = NSEC3::default();
+                    x.length = self.rd_length;
+
+                    x.deserialize_from(buffer)?;
+                    self.r_data = RData::NSEC3(x)
                 }
                 QType::RRSIG => {
                     let mut x = RRSIG::default();

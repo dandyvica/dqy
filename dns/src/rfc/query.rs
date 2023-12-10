@@ -1,14 +1,23 @@
+use std::{
+    any::{Any, TypeId},
+    fmt,
+};
+
 use log::{debug, trace};
 use rand::Rng;
 
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::{error::DNSResult, transport::Transporter};
+use crate::{
+    error::DNSResult,
+    rfc::{opt::OptOption, resource_record::ResourceRecord},
+    transport::Transporter,
+};
 
 use super::{
-    domain::DomainName, header::Header, opcode::OpCode, packet_type::PacketType, qclass::QClass,
-    qtype::QType, question::Question,
+    domain::DomainName, header::Header, opcode::OpCode, opt::OptQuery, packet_type::PacketType,
+    qclass::QClass, qtype::QType, question::Question,
 };
 
 #[derive(Default, ToNetwork)]
@@ -60,7 +69,7 @@ impl<'a> Query<'a> {
 
     // Send the query through the wire
     pub fn send<T: Transporter>(&mut self, trp: &mut T) -> DNSResult<usize> {
-        trace!("question to send: {}", self.question);
+        trace!("query ==> {:?}", self);
 
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
@@ -86,6 +95,38 @@ impl<'a> Query<'a> {
         println!("HEADER: {}\n", self.header);
         println!("QUESTION: {}\n", self.question);
     }
+}
+
+impl<'a> fmt::Debug for Query<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "lengh:<{:?}> header:<{:?}> question:<{:?}>",
+            self.length, self.header, self.question
+        )?;
+
+        if let Some(add) = &self.additional {
+            for rr in add {
+                debug_rr(rr, f)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn debug_rr<T: Any>(value: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let value_any = value as &dyn Any;
+    println!(
+        "=> {:?}",
+        value_any.downcast_ref::<ResourceRecord<'_, Vec<OptOption>>>()
+    );
+    if let Some(rr) = value_any.downcast_ref::<OptQuery>() {
+        println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        write!(f, "OPT: <{:?}>", rr)?;
+    }
+    println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    Ok(())
 }
 
 #[cfg(test)]

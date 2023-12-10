@@ -24,13 +24,21 @@ use super::{nsid::NSID, qtype::QType, resource_record::ResourceRecord};
 //#[derive(Debug, Default)]
 pub type OptQuery<'a> = ResourceRecord<'a, Vec<OptOption>>;
 
-impl<'a> ResourceRecord<'a, Vec<OptOption>> {
+impl<'a> OptQuery<'a> {
     pub fn new(bufsize: Option<u16>) -> Self {
         let mut opt = OptQuery::default();
         opt.r#type = QType::OPT;
         opt.class = EitherOr::new_right(bufsize.unwrap_or(1232));
 
         opt
+    }
+
+    // set DNSSEC bit to 1
+    pub fn set_dnssec(&mut self) {
+        let mut opt_ttl = OptTTL::default();
+        opt_ttl.flags = 0x8000;
+
+        self.ttl = EitherOr::new_right(opt_ttl);
     }
 
     // add another OPT data in the OPT record

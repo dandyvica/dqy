@@ -1,23 +1,20 @@
 //! Manage command line arguments here.
+use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use std::{
-    //fs::{File, OpenOptions},
-    net::IpAddr,
-};
 
 //use crate::plus;
 
 use super::plus::PlusArg;
 
-use clap::{Arg, ArgAction, Command, ArgMatches};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 
 //use log::debug;
 
 use dns::{
     error::DNSResult,
-    transport::mode::{IPVersion, TransportMode},
     rfc::{qclass::QClass, qtype::QType},
+    transport::mode::{IPVersion, TransportMode},
 };
 
 use resolver::resolver::Resolvers;
@@ -57,6 +54,9 @@ pub struct CliOptions {
 
     // server is the name passed after @
     pub server: String,
+
+    // set DNSSEC flag in OPT
+    pub dnssec: bool,
 }
 
 impl CliOptions {
@@ -222,13 +222,13 @@ impl CliOptions {
                     .action(ArgAction::Set)
                     .value_name("PTR"),
             )
-            // .arg(
-            //     Arg::new("no-edns")
-            //         .long("no-edns")
-            //         .long_help("Do not add an OPT record to the query.")
-            //         .action(ArgAction::SetTrue)
-            //         .value_name("NO-EDNS"),
-            // )
+            .arg(
+                Arg::new("dnssec")
+                    .long("dnssec")
+                    .long_help("Set DNSSEC bit flag in OPT record.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("DNSSEC FLAG"),
+            )
             .get_matches_from(with_dash);
 
         //---------------------------------------------------------------------------
@@ -320,15 +320,20 @@ impl CliOptions {
             }
         }
 
+        //---------------------------------------------------------------------------
         // manage other options
+        //---------------------------------------------------------------------------
         options.stats = matches.get_flag("stats");
+
+        //---------------------------------------------------------------------------
+        // DNSSEC flag
+        //---------------------------------------------------------------------------
+        options.dnssec = matches.get_flag("dnssec");
 
         // println!("options={:#?}", options);
         Ok(options)
     }
 }
-
-
 
 // // Initialize logger: either create it or use it
 // fn init_logger(logfile: &str) -> DNSResult<()> {

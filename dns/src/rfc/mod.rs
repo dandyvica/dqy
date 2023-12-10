@@ -21,6 +21,7 @@ pub mod hinfo;
 pub mod loc;
 pub mod mx;
 pub mod ns;
+pub mod nsec3;
 pub mod nsid;
 pub mod opt;
 pub mod ptr;

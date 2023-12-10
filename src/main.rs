@@ -51,7 +51,6 @@ fn main() -> DNSResult<()> {
         TransportMode::DoH => {
             let mut https_transport = HttpsTransport::new(&options.server, options.timeout)?;
             send_receive_query(&options, &mut https_transport)?;
-
         }
     }
 
@@ -80,6 +79,11 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
         // manage edns options
         let mut opt = OptQuery::new(Some(1232));
         opt.set_edns_nsid();
+
+        // dnssec flag ?
+        if options.dnssec {
+            opt.set_dnssec();
+        }
 
         query.push_additional(opt);
 

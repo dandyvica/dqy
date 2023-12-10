@@ -41,7 +41,7 @@ impl<'a> Response<'a> {
         trace!("response authority: {:?}", self.authority);
 
         // check return code
-        if self.header.flags.response_code != ResponseCode::NoError {
+        if self.header.flags.response_code != ResponseCode::NoError && self.header.flags.response_code != ResponseCode::NXDomain {
             eprintln!("response error:{}", self.header.flags.response_code);
             std::process::exit(1);
         }
