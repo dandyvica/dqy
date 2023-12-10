@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::{Cursor, Result};
+use std::ops::Deref;
 use std::slice::Iter;
 
 use log::trace;
@@ -8,25 +9,85 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use crate::err_internal;
 use crate::error::{DNSResult, Error, ProtocolError};
 
+//---------------------------------------------------------------------------------------------
+// Define a Label first
+//---------------------------------------------------------------------------------------------
+
+// a label is part of a domain name
+#[derive(Debug, Default)]
+struct Label<'a>(&'a str);
+
+// Deref to ease methods calls on inner value
+impl<'a> Deref for Label<'a> {
+    type Target = &'a str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> fmt::Display for Label<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+// to convert a label into a str
+impl<'a> TryFrom<&'a [u8]> for Label<'a> {
+    type Error = std::str::Utf8Error;
+
+    fn try_from(slice: &'a [u8]) -> std::result::Result<Self, Self::Error> {
+        let s = std::str::from_utf8(slice)?;
+        Ok(Label(s))
+    }
+}
+
+// https://datatracker.ietf.org/doc/html/rfc1035#section-3.1
+// Name servers and resolvers must
+// compare labels in a case-insensitive manner (i.e., A=a), assuming ASCII
+// with zero parity.  Non-alphabetic codes must match exactly.
+impl<'a> PartialEq for Label<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        self.chars()
+            .zip(other.chars())
+            .all(|x| x.0.to_ascii_lowercase() == x.1.to_ascii_lowercase())
+    }
+}
+
+//---------------------------------------------------------------------------------------------
+// Define a domain name as a list of labels
+//---------------------------------------------------------------------------------------------
+
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default)]
 pub struct DomainName<'a> {
     // a domain name is a list of labels as defined in the RFC1035
-    labels: Vec<&'a str>,
+    labels: Vec<Label<'a>>,
 }
 
 impl<'a> DomainName<'a> {
     // this identifies a compressed label
+    // From RFC1035:
+    //
+    // The pointer takes the form of a two octet sequence:
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+    // | 1  1|                OFFSET                   |
+    // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
     fn is_pointer(x: u8) -> bool {
-        x >= 192
+        x >= 0b1100_0000
     }
 
+    // +1 because of the ending 0
     pub fn len(&self) -> usize {
         self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
     }
 
     // iterator on labels
-    fn iter(&self) -> Iter<'_, &str> {
+    fn iter(&self) -> Iter<'_, Label> {
         self.labels.iter()
     }
 
@@ -98,14 +159,17 @@ impl<'a> DomainName<'a> {
             // then we convert the label into UTF8
             //let label = &buffer[index + 1..index + size + 1];
 
-            let label = buffer
+            let limb = buffer
                 .get(index + 1..index + size + 1)
                 .ok_or(err_internal!(CantCreateDomainName))?;
 
-            //dbg!(label);
-            let label_as_utf8 = std::str::from_utf8(label)?;
+            let label = Label::try_from(limb)?;
 
-            if label_as_utf8.len() > 63 {
+            //dbg!(label);
+            //let label_as_utf8 = std::str::from_utf8(label)?;
+            //let label_as_utf8: &str = label.into()?;
+
+            if label.len() > 63 {
                 return Err(err_internal!(DomainLabelTooLong));
             }
             // println!(
@@ -113,7 +177,7 @@ impl<'a> DomainName<'a> {
             //     label_as_utf8, index, buffer[index]
             // );
 
-            self.labels.push(label_as_utf8);
+            self.labels.push(Label(&label));
 
             // adjust index
             index += size + 1;
@@ -168,11 +232,14 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
             domain
                 .split('.')
                 .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
+                .map(|x| Label(x))
                 .collect()
         };
 
-        // test for correctness
+        // create the domain name struct
         let dn = DomainName { labels: label_list };
+
+        // test for correctness
         if dn.len() > 255 {
             return Err(err_internal!(DomainNameTooLong));
         }
@@ -240,7 +307,7 @@ mod tests {
         ];
         let mut dn = DomainName::default();
         dn.from_position(0usize, &&v[..]).unwrap();
-        assert_eq!(dn.labels, &["www", "google", "ie"]);
+        assert_eq!(dn.labels, &[Label("www"), Label("google"), Label("ie")]);
     }
 
     #[test]
@@ -268,10 +335,10 @@ mod tests {
     fn try_from() {
         let dn = DomainName::try_from("www.example.com").unwrap();
         assert_eq!(dn.labels.len(), 3);
-        assert_eq!(dn.labels, &["www", "example", "com"]);
+        assert_eq!(dn.labels, &[Label("www"), Label("example"), Label("com")]);
         let dn = DomainName::try_from("com.").unwrap();
         assert_eq!(dn.labels.len(), 1);
-        assert_eq!(dn.labels, &["com"]);
+        assert_eq!(dn.labels, &[Label("com")]);
         let dn = DomainName::try_from(".").unwrap();
         assert_eq!(dn.labels.len(), 0);
         assert!(dn.labels.is_empty());
@@ -315,6 +382,6 @@ mod tests {
         let mut dn = DomainName::default();
         assert!(dn.deserialize_from(&mut buffer).is_ok());
         assert_eq!(dn.labels.len(), 3);
-        assert_eq!(dn.labels, &["www", "google", "ie"]);
+        assert_eq!(dn.labels, &[Label("www"), Label("google"), Label("ie")]);
     }
 }

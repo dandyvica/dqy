@@ -1,5 +1,6 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
 use std::net::AddrParseError;
+use std::process::Termination;
 use std::str;
 use std::{fmt, io};
 
@@ -19,7 +20,7 @@ pub enum Error {
     // a conversion to str caused an error
     //FromUtf8(std::string::FromUtf8Error),
 
-    // a conversion to str caused an error    
+    // a conversion to str caused an error
     Utf8(str::Utf8Error),
 
     // an str to IP conversion error
