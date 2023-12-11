@@ -55,6 +55,9 @@ pub enum ProtocolError {
 
     // when fetching the domain name from bytes, an index error
     CantCreateDomainName, //UnreachableResolvers,
+
+    // when fetching the NSEC3 type bits, can't extract values
+    CantCreateNSEC3Types, //UnreachableResolvers,
 }
 
 impl fmt::Display for ProtocolError {
@@ -77,6 +80,9 @@ impl fmt::Display for ProtocolError {
             }
             ProtocolError::CantCreateDomainName => {
                 f.write_str("domain name can't be created from RR")
+            }
+            ProtocolError::CantCreateNSEC3Types => {
+                f.write_str("can't extract types from NSEC or NSEC3 RR")
             }
         }
     }

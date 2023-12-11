@@ -31,7 +31,7 @@ impl<'a> fmt::Display for SOA<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "mname:{} rname:{} serial:{} refresh:{} retry:{} expire:{} minimum:{}",
+            "{} {} {} {} {} {} {}",
             self.mname,
             self.rname,
             self.serial,

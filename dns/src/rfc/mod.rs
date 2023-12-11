@@ -22,7 +22,6 @@ pub mod loc;
 pub mod mx;
 pub mod ns;
 pub mod nsec3;
-pub mod nsid;
 pub mod opt;
 pub mod ptr;
 pub mod query;
@@ -31,3 +30,19 @@ pub mod response;
 pub mod rrsig;
 pub mod soa;
 pub mod txt;
+
+// a helper macro to generate the new() method for those struct having the rd_length field
+// helper macro to ease returning the internal DNS errors
+#[macro_export]
+macro_rules! new_rd_length {
+    ($struct:ty) => {
+        impl $struct {
+            pub fn new(len: u16) -> Self {
+                let mut x = Self::default();
+                x.rd_length = len;
+
+                x
+            }
+        }
+    };
+}

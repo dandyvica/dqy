@@ -41,7 +41,9 @@ impl<'a> Response<'a> {
         trace!("response authority: {:?}", self.authority);
 
         // check return code
-        if self.header.flags.response_code != ResponseCode::NoError && self.header.flags.response_code != ResponseCode::NXDomain {
+        if self.header.flags.response_code != ResponseCode::NoError
+            && self.header.flags.response_code != ResponseCode::NXDomain
+        {
             eprintln!("response error:{}", self.header.flags.response_code);
             std::process::exit(1);
         }
@@ -109,7 +111,7 @@ mod tests {
     use super::*;
     use crate::{
         rfc::{
-            a::A, opcode::OpCode, opt::OptTTL, packet_type::PacketType, qclass::QClass,
+            a::A, opcode::OpCode, opt::opt::OptTTL, packet_type::PacketType, qclass::QClass,
             qtype::QType, rdata::RData, response_code::ResponseCode,
         },
         tests::{get_pcap_buffer, read_pcap_sample},

@@ -22,9 +22,11 @@ impl fmt::Display for NSID {
             for c in buf.into_iter() {
                 write!(f, "{:0X?} ", c)?;
             }
+            f.write_str("\"")?;
             for c in buf.into_iter() {
                 write!(f, "{}", *c as char)?;
             }
+            f.write_str("\"")?;
         }
 
         Ok(())

@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::buffer::Buffer;
+use crate::{buffer::Buffer, new_rd_length};
 
 use super::algorithm::Algorithm;
 
@@ -21,11 +21,19 @@ use super::algorithm::Algorithm;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct DS {
+    #[deser(ignore)]
+    pub(super) rd_length: u16,
+
     key_tag: u16,
     algorithm: Algorithm,
     digest_type: u8,
+
+    #[deser(with_code( self.digest = Buffer::new(self.rd_length); ))]
     pub(super) digest: Buffer,
 }
+
+// auto-implement new
+new_rd_length!(DS);
 
 impl fmt::Display for DS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
@@ -116,8 +118,20 @@ pub enum QType {
     DLV = 32769, // DNSSEC Lookaside Validation (OBSOLETE)	[RFC8749][RFC4431]
 
     #[fallback]
-    Reserved(u16),
+    TYPE(u16),
 }
+
+// impl fmt::Display for QType {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         if let QType::Reserved(qt) = self {
+//             write!(f, "TYPE{}", qt)?;
+//         } else {
+//             write!(f, "{}", self.to_string())?;
+//         }
+
+//         Ok(())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -130,7 +144,7 @@ mod tests {
         to_network_test(&q, 2, &[0x00, 28]);
         from_network_test(None, &q, &vec![0x00, 28]);
 
-        let q = QType::Reserved(0xFFFE);
+        let q = QType::TYPE(0xFFFE);
         to_network_test(&q, 2, &[0xFF, 0xFE]);
         from_network_test(None, &q, &vec![0xFF, 0xFE]);
     }

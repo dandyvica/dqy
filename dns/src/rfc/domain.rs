@@ -321,6 +321,9 @@ mod tests {
         let d1 = DomainName::try_from("www.google.com").unwrap();
         let d2 = DomainName::try_from("www.google.com").unwrap();
         assert!(d1 == d2);
+        let d1 = DomainName::try_from("www.google.com").unwrap();
+        let d2 = DomainName::try_from("WWW.google.com").unwrap();
+        assert!(d1 == d2);
     }
 
     #[test]

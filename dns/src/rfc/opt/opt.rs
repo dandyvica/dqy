@@ -6,9 +6,13 @@ use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::{buffer::Buffer, either_or::EitherOr};
+use crate::{
+    buffer::Buffer,
+    either_or::EitherOr,
+    rfc::{opt::nsid::NSID, qtype::QType, resource_record::ResourceRecord},
+};
 
-use super::{nsid::NSID, qtype::QType, resource_record::ResourceRecord};
+use super::{cookie::COOKIE, padding::PADDING};
 
 // This OPT is the one which is sent in the query (additional record)
 // +------------+--------------+------------------------------+
@@ -74,7 +78,7 @@ impl fmt::Display for OptTTL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "extended_rcode:{} version:{} flags:{}",
+            "({} {} {})",
             self.extended_rcode, self.version, self.flags
         )
     }
@@ -94,7 +98,7 @@ impl fmt::Display for OptTTL {
 #[derive(Debug, Default, ToNetwork)]
 pub struct OptOption {
     pub(super) code: OptOptionCode,
-    pub(super) length: u16,
+    pub(crate) length: u16,
     pub(super) data: OptOptionData,
 }
 
@@ -102,7 +106,7 @@ impl fmt::Display for OptOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<10} {:<10} {}",
+            "({}-{}-<{}>)",
             self.code.to_string(),
             self.length,
             self.data
@@ -120,6 +124,11 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 let mut buf: Buffer = Buffer::new(self.length);
                 buf.deserialize_from(buffer)?;
                 self.data = OptOptionData::NSID(NSID::from(buf));
+            }
+            OptOptionCode::Padding => {
+                let mut buf: Buffer = Buffer::new(self.length);
+                buf.deserialize_from(buffer)?;
+                self.data = OptOptionData::PADDING(PADDING::from(buf));
             }
             _ => unimplemented!("option code {} is not yet implemented", self.code),
         }
@@ -158,6 +167,7 @@ pub enum OptOptionCode {
 pub enum OptOptionData {
     NSID(NSID),
     COOKIE(COOKIE),
+    PADDING(PADDING),
 }
 
 impl Default for OptOptionData {
@@ -170,6 +180,7 @@ impl fmt::Display for OptOptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptOptionData::NSID(n) => write!(f, "{}", n)?,
+            OptOptionData::PADDING(p) => write!(f, "{}", p)?,
             _ => unimplemented!(),
         }
         Ok(())
@@ -179,10 +190,3 @@ impl fmt::Display for OptOptionData {
 //---------------------------------------------------------------------------
 // all option data are specified here
 //---------------------------------------------------------------------------
-
-// Cookie: https://www.rfc-editor.org/rfc/rfc5001.html
-#[derive(Debug, Default, ToNetwork)]
-pub struct COOKIE {
-    client_cookie: Vec<u8>,
-    server_cookie: Option<Vec<u8>>,
-}

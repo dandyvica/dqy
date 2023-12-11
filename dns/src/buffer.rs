@@ -9,8 +9,8 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 pub struct Buffer(Vec<u8>);
 
 impl Buffer {
-    pub fn new(len: u16) -> Self {
-        Self(vec![0; len as usize])
+    pub fn new<T: Into<usize>>(len: T) -> Self {
+        Self(vec![0; len.into()])
     }
 }
 
@@ -67,13 +67,13 @@ mod tests {
     #[test]
     fn network() {
         // to
-        let mut buf = Buffer::new(3);
+        let mut buf = Buffer::new(3u16);
         buf.0 = vec![0, 1, 2];
         to_network_test(&buf, 3, &[0, 1, 2]);
 
         let b = vec![0x12, 0x34, 0x56, 0x78];
         let mut buffer = Cursor::new(b.as_slice());
-        let mut buf = Buffer::new(2);
+        let mut buf = Buffer::new(2u16);
         assert!(buf.deserialize_from(&mut buffer).is_ok());
         assert_eq!(buf.as_ref(), &[0x12, 0x34]);
         assert!(buf.deserialize_from(&mut buffer).is_ok());

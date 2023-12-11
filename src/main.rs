@@ -10,7 +10,7 @@ use log::debug;
 // my DNS library
 use dns::{
     error::DNSResult,
-    rfc::{opt::OptQuery, query::Query, response::Response},
+    rfc::{opt::opt::OptQuery, query::Query, response::Response},
     transport::{
         https::HttpsTransport, mode::TransportMode, tcp::TcpTransport, tls::TlsTransport,
         udp::UdpTransport, Transporter,

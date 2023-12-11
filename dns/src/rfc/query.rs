@@ -11,13 +11,13 @@ use type2network_derive::ToNetwork;
 
 use crate::{
     error::DNSResult,
-    rfc::{opt::OptOption, resource_record::ResourceRecord},
+    rfc::{opt::opt::OptOption, resource_record::ResourceRecord},
     transport::Transporter,
 };
 
 use super::{
-    domain::DomainName, header::Header, opcode::OpCode, opt::OptQuery, packet_type::PacketType,
-    qclass::QClass, qtype::QType, question::Question,
+    domain::DomainName, header::Header, opcode::OpCode, opt::opt::OptQuery,
+    packet_type::PacketType, qclass::QClass, qtype::QType, question::Question,
 };
 
 #[derive(Default, ToNetwork)]

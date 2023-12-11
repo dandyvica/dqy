@@ -5,14 +5,19 @@ use type2network_derive::ToNetwork;
 
 use super::{
     a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC,
-    mx::MX, ns::NS, opt::OptTTL, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA,
-    txt::TXT,
+    mx::MX, ns::NS, opt::opt::OptTTL, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData,
+    soa::SOA, txt::TXT,
 };
 
 use crate::{
     buffer::Buffer,
     either_or::EitherOr,
-    rfc::{ds::DS, nsec3::NSEC3, opt::OptOption, rrsig::RRSIG},
+    rfc::{
+        ds::DS,
+        nsec3::{NSEC3, NSEC3PARAM},
+        opt::opt::OptOption,
+        rrsig::RRSIG,
+    },
 };
 
 use log::trace;
@@ -105,8 +110,16 @@ impl<'a> fmt::Display for RR<'a> {
 
 // Macro used to ease the ResourceRecord implementation of the FromNetworkOrder trait
 macro_rules! get_rr {
+    // to deserialize "simple" structs (like A)
     ($buffer:ident, $t:ty, $arm:path) => {{
         let mut x = <$t>::default();
+        x.deserialize_from($buffer)?;
+        $arm(x)
+    }};
+
+    // to deserialize "complex" structs (like DNSKEY)
+    ($buffer:ident, $t:ty, $arm:path, $e:expr) => {{
+        let mut x = <$t>::new($e);
         x.deserialize_from($buffer)?;
         $arm(x)
     }};
@@ -180,27 +193,25 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = RData::OPT(v)
                 }
                 QType::DNSKEY => {
-                    let mut x = DNSKEY::default();
-                    // x.key = Buffer::new(self.rd_length - 4);
-                    x.length = self.rd_length - 4;
-
-                    x.deserialize_from(buffer)?;
-                    self.r_data = RData::DNSKEY(x)
+                    self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length - 4)
                 }
-                QType::DS => {
-                    let mut x = DS::default();
-                    x.digest = Buffer::new(self.rd_length - 4);
+                QType::DS => self.r_data = get_rr!(buffer, DS, RData::DS, self.rd_length - 4),
+                QType::NSEC3 => self.r_data = get_rr!(buffer, NSEC3, RData::NSEC3, self.rd_length),
 
-                    x.deserialize_from(buffer)?;
-                    self.r_data = RData::DS(x)
-                }
-                QType::NSEC3 => {
-                    let mut x = NSEC3::default();
-                    x.length = self.rd_length;
+                // QType::DS => {
+                //     let mut x = DS::new(self.rd_length - 4);
 
-                    x.deserialize_from(buffer)?;
-                    self.r_data = RData::NSEC3(x)
-                }
+                //     x.deserialize_from(buffer)?;
+                //     self.r_data = RData::DS(x)
+                // }
+                // QType::NSEC3 => {
+                //     let mut x = NSEC3::default();
+                //     x.rd_length = self.rd_length;
+
+                //     x.deserialize_from(buffer)?;
+                //     self.r_data = RData::NSEC3(x)
+                // }
+                QType::NSEC3PARAM => self.r_data = get_rr!(buffer, NSEC3PARAM, RData::NSEC3PARAM),
                 QType::RRSIG => {
                     let mut x = RRSIG::default();
 
