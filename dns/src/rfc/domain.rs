@@ -81,6 +81,7 @@ impl<'a> DomainName<'a> {
         x >= 0b1100_0000
     }
 
+    // length of domain name bytes representation
     // +1 because of the ending 0
     pub fn len(&self) -> usize {
         self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
@@ -283,6 +284,8 @@ impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
         // set new position
         buffer.set_position(new_position as u64);
         //println!("domain============>{}, new_pos={}", self, new_position);
+
+        trace!("create domain: <{}>, length={}", self, self.len());
 
         // if a pointer, get pointer value and call
         Ok(())

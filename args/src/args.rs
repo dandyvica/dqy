@@ -5,6 +5,8 @@ use std::time::Duration;
 
 //use crate::plus;
 
+use crate::plus::PlusArgList;
+
 use super::plus::PlusArg;
 
 use clap::{Arg, ArgAction, ArgMatches, Command};
@@ -17,6 +19,7 @@ use dns::{
     transport::mode::{IPVersion, TransportMode},
 };
 
+use log::trace;
 use resolver::resolver::Resolvers;
 
 const UDP_PORT: &str = "53";
@@ -55,8 +58,12 @@ pub struct CliOptions {
     // server is the name passed after @
     pub server: String,
 
-    // set DNSSEC flag in OPT
+    // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the additional section of the query.
     pub dnssec: bool,
+
+    //-------------------------------------------------------
+    // plus args could be also clap options
+    pub short: bool,
 }
 
 impl CliOptions {
@@ -74,10 +81,11 @@ impl CliOptions {
             None => (&args[..], &[] as &[String]),
         };
 
+        // hold the + arguments like +short, +bufsize=4096 or +noaaflag
         let mut plus_args = Vec::new();
 
-        // println!("without_dash={:?}", without_dash);
-        // println!("with_dash={:?}", with_dash);
+        trace!("without_dash={:?}", without_dash);
+        trace!("with_dash={:?}", with_dash);
 
         // process the arguments not starting with a '-'
         for arg in without_dash {
@@ -102,7 +110,13 @@ impl CliOptions {
                 options.qtype.push(qt);
             }
         }
-        //println!("plus args={:?}", plus_args);
+
+        // manage plus args
+        trace!("plus args={:?}", plus_args);
+        let plus_list = PlusArgList(plus_args);
+
+        options.dnssec = plus_list.contains("dnssec");
+        options.short = plus_list.contains("short");
 
         // now process the arguments starting with a '-'
         let matches = Command::new("DNS query tool")
@@ -222,13 +236,13 @@ impl CliOptions {
                     .action(ArgAction::Set)
                     .value_name("PTR"),
             )
-            .arg(
-                Arg::new("dnssec")
-                    .long("dnssec")
-                    .long_help("Set DNSSEC bit flag in OPT record.")
-                    .action(ArgAction::SetTrue)
-                    .value_name("DNSSEC FLAG"),
-            )
+            // .arg(
+            //     Arg::new("dnssec")
+            //         .long("dnssec")
+            //         .long_help("Set DNSSEC bit flag in OPT record.")
+            //         .action(ArgAction::SetTrue)
+            //         .value_name("DNSSEC FLAG"),
+            // )
             .get_matches_from(with_dash);
 
         //---------------------------------------------------------------------------
@@ -328,7 +342,7 @@ impl CliOptions {
         //---------------------------------------------------------------------------
         // DNSSEC flag
         //---------------------------------------------------------------------------
-        options.dnssec = matches.get_flag("dnssec");
+        //options.dnssec = matches.get_flag("dnssec");
 
         // println!("options={:#?}", options);
         Ok(options)

@@ -14,6 +14,7 @@ use crate::{
     either_or::EitherOr,
     rfc::{
         ds::DS,
+        nsec::NSEC,
         nsec3::{NSEC3, NSEC3PARAM},
         opt::opt::OptOption,
         rrsig::RRSIG,
@@ -196,6 +197,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length - 4)
                 }
                 QType::DS => self.r_data = get_rr!(buffer, DS, RData::DS, self.rd_length - 4),
+                QType::NSEC => self.r_data = get_rr!(buffer, NSEC, RData::NSEC, self.rd_length),
                 QType::NSEC3 => self.r_data = get_rr!(buffer, NSEC3, RData::NSEC3, self.rd_length),
 
                 // QType::DS => {

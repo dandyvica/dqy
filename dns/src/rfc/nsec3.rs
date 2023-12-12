@@ -1,6 +1,7 @@
 use std::{
     fmt,
     io::{Cursor, Read},
+    slice::Iter,
 };
 
 use log::trace;
@@ -11,7 +12,8 @@ use type2network_derive::FromNetwork;
 use crate::{
     buffer::Buffer,
     err_internal,
-    error::{Error, ProtocolError}, new_rd_length,
+    error::{Error, ProtocolError},
+    new_rd_length,
 };
 
 use super::qtype::QType;
@@ -75,29 +77,38 @@ pub struct NSEC3 {
     // transmistted through RR deserialization
     pub(super) rd_length: u16,
 
-    // algorithm: u8,
-    // flags: u8,
-    // iterations: u16,
-    // salt_length: u8,
-    // salt: Buffer,
     params: NSEC3PARAM,
-
     hash_length: u8,
     owner_name: Buffer,
     types: TypeBitMaps,
 }
 
-
 // auto-implement new
 new_rd_length!(NSEC3);
 
 #[derive(Debug, Default)]
-struct TypeBitMaps {
+pub(super) struct TypeBitMaps {
     // this field is used to pass the total length of the bitmaps from incoming RR
-    types_length: u16,
+    pub(super) types_length: u16,
 
     // types as a result of the NSEC3 query
     types: Vec<QType>,
+}
+
+impl TypeBitMaps {
+    pub fn new<T: Into<u16> + std::fmt::Debug>(len: T) -> Self {
+        dbg!(&len);
+        Self {
+            types_length: len.into(),
+            types: Vec::new(),
+        }
+    }
+}
+
+impl TypeBitMaps {
+    pub fn iter(&self) -> Iter<'_, QType> {
+        self.types.iter()
+    }
 }
 
 // a window in NSEC3/NSEC RR is a list of types
@@ -200,6 +211,7 @@ impl<'a> TryFrom<WindowList<'a>> for Vec<QType> {
 impl<'a> FromNetworkOrder<'a> for TypeBitMaps {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         // read exactly the number of bytes of the whole type bit maps
+        trace!("TypeBitMaps length {}",self.types_length );
         let mut buf = vec![0u8; self.types_length as usize];
         buffer.read_exact(&mut buf)?;
 
