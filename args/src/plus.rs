@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 // Manage the + command line option (e.g.: +bufsize=4096 or +short)
 #[derive(Debug, Default)]
 pub struct PlusArg<'a> {

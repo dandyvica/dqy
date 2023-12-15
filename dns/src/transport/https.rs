@@ -82,4 +82,8 @@ impl<'a> Transporter for HttpsTransport<'a> {
     fn uses_tcp(&self) -> bool {
         false
     }
+
+    fn is_udp(&self) -> bool {
+        false
+    }
 }

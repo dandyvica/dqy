@@ -1,16 +1,17 @@
 //! A DNS resource query tool
 //!
-//! TODO: add trace for buffer in response
 //! TODO: specialize RUST_LOG
-//! TODO: add DoH
 use std::time::Instant;
 
-use log::debug;
+use log::{debug, error, info, trace};
 
 // my DNS library
 use dns::{
     error::DNSResult,
-    rfc::{opt::opt::OptQuery, query::Query, response::Response},
+    rfc::{
+        opt::opt::OptQuery, qtype::QType, query::Query, response::Response,
+        response_code::ResponseCode,
+    },
     transport::{
         https::HttpsTransport, mode::TransportMode, tcp::TcpTransport, tls::TlsTransport,
         udp::UdpTransport, Transporter,
@@ -69,42 +70,86 @@ fn main() -> DNSResult<()> {
 
 // This sends and receive queries using a transport
 fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSResult<()> {
-    let mut recv_buf = [0u8; 4096];
+    let mut buffer = [0u8; 4096];
 
     for qt in &options.qtype {
-        //let mut query = Query::new(&options.transport_mode);
-        let mut query = Query::new(trp);
-        query.init(&options.domain, qt, options.qclass)?;
+        // send query, response is depending on TC falg if UDP
+        let query = send_query(options, qt, trp)?;
+        let response = receive_response(trp, &mut buffer)?;
 
-        // manage edns options
-        let mut opt = OptQuery::new(Some(1232));
-        opt.set_edns_nsid();
+        // check for the truncation (TC) header flag. If set and UDP, resend using TCP
+        if response.header.flags.truncated && trp.is_udp() {
+            info!("query for {} caused truncation", qt);
+            let mut buffer = [0u8; 4096];
 
-        // dnssec flag ?
-        if options.dnssec {
-            opt.set_dnssec();
-        }
+            let mut tcp_transport =
+                TcpTransport::new(&options.resolvers[0], options.port, options.timeout)?;
+            let query = send_query(options, qt, &mut tcp_transport)?;
+            let response = receive_response(&mut tcp_transport, &mut buffer)?;
 
-        query.push_additional(opt);
-
-        query.send(trp)?;
-
-        //let mut response = Response::new(&options.transport_mode);
-        let mut response = Response::default();
-        let _ = response.recv(trp, &mut recv_buf)?;
-
-        // check whether message ID is the one sent
-        if response.header.id != query.header.id {
-            eprintln!(
-                "query and response ID are not equal, discarding answer for type {:?}",
-                qt
-            );
+            check_response_vs_query(&query, &response);
+            println!("{}", response);
             continue;
         }
 
-        //println!("{}", DisplayWrapper(&response));
-        response.display();
+        check_response_vs_query(&query, &response);
+        println!("{}", response);
     }
 
     Ok(())
+}
+
+// send the query to the resolver
+fn send_query<'a, T: Transporter>(
+    options: &'a CliOptions,
+    qt: &QType,
+    trp: &mut T,
+) -> DNSResult<Query<'a>> {
+    let mut query = Query::new(trp);
+    query.init(&options.domain, qt, options.qclass)?;
+
+    // manage edns options
+    let mut opt = OptQuery::new(Some(1232));
+    opt.set_edns_nsid();
+
+    // dnssec flag ?
+    if options.dnssec {
+        opt.set_dnssec();
+    }
+
+    query.push_additional(opt);
+
+    // send using the chosen transport
+    let bytes = query.send(trp)?;
+    trace!("sent query of {} bytes", bytes);
+
+    Ok(query)
+}
+
+// receive response from resolver
+fn receive_response<'a, T: Transporter>(
+    trp: &mut T,
+    buffer: &'a mut [u8],
+) -> DNSResult<Response<'a>> {
+    let mut response = Response::default();
+    let _ = response.recv(trp, buffer)?;
+
+    Ok(response)
+}
+
+// check if response corresponds to what the client sent
+fn check_response_vs_query<'a>(query: &Query<'a>, response: &Response<'a>) {
+    if response.header.id != query.header.id || query.question != response.question {
+        error!(
+            "query and response ID are not equal, discarding answer for type {:?}",
+            query.question.qtype
+        );
+    }
+
+    // check return code
+    if response.rcode() != ResponseCode::NoError
+        || (response.rcode() == ResponseCode::NXDomain && response.ns_count() == 0)
+    {
+        eprintln!("response error:{}", response.rcode());
+    }
 }

@@ -68,4 +68,8 @@ impl<'a> Transporter for TlsTransport<'a> {
     fn uses_tcp(&self) -> bool {
         true
     }
+
+    fn is_udp(&self) -> bool {
+        false
+    }
 }

@@ -14,6 +14,7 @@ pub mod response_code;
 pub mod a;
 pub mod aaaa;
 pub mod algorithm;
+pub mod caa;
 pub mod cname;
 pub mod dnskey;
 pub mod ds;
@@ -27,18 +28,25 @@ pub mod opt;
 pub mod ptr;
 pub mod query;
 pub mod rdata;
+// pub mod rdhelper;
+pub mod openpgpkey;
 pub mod response;
 pub mod rrsig;
 pub mod soa;
+pub mod tkey;
 pub mod txt;
 
 // a helper macro to generate the new() method for those struct having the rd_length field
 // helper macro to ease returning the internal DNS errors
 #[macro_export]
 macro_rules! new_rd_length {
-    ($struct:ty) => {
-        impl $struct {
+    // this macro works also for struct with lifetimes
+    // see: https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+    ($rr:ident $(< $lf:lifetime >)? ) => {
+        impl $(< $lf >)? $rr $(< $lf >)? {
             pub fn new(len: u16) -> Self {
+                log::trace!("RR {}: receive length {}", stringify!($rr), len);
+
                 let mut x = Self::default();
                 x.rd_length = len;
 

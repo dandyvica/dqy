@@ -12,6 +12,11 @@ impl Buffer {
     pub fn new<T: Into<usize>>(len: T) -> Self {
         Self(vec![0; len.into()])
     }
+
+    // when printing out some RRs, it's easier to use this
+    pub fn to_string(&self) -> String {
+        String::from_utf8_lossy(&self.0).to_string()
+    }
 }
 
 impl fmt::Display for Buffer {

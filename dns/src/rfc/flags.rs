@@ -35,7 +35,7 @@ pub struct Flags {
     //multiple owner names because of aliases.  The AA bit
     //corresponds to the name which matches the query name, or
     //the first owner name in the answer section.
-    pub(super) truncated: bool, //    TrunCation - specifies that this message was truncated
+    pub truncated: bool, //    TrunCation - specifies that this message was truncated
     //    due to length greater than that permitted on the
     //    transmission channel.
     pub(super) recursion_desired: bool, // Recursion Desired - this bit may be set in a query and

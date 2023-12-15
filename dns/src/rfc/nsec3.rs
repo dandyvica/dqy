@@ -211,7 +211,7 @@ impl<'a> TryFrom<WindowList<'a>> for Vec<QType> {
 impl<'a> FromNetworkOrder<'a> for TypeBitMaps {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         // read exactly the number of bytes of the whole type bit maps
-        trace!("TypeBitMaps length {}",self.types_length );
+        trace!("TypeBitMaps length {}", self.types_length);
         let mut buf = vec![0u8; self.types_length as usize];
         buffer.read_exact(&mut buf)?;
 

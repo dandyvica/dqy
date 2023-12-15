@@ -19,9 +19,9 @@ use super::algorithm::Algorithm;
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct DNSKEY {
+pub(super) struct DNSKEY {
     #[deser(ignore)]
-    pub(super) rd_length: u16,
+    rd_length: u16,
 
     // Bit 7 of the Flags field is the Zone Key flag.  If bit 7 has value 1,
     // then the DNSKEY record holds a DNS zone key, and the DNSKEY RR's
@@ -62,8 +62,8 @@ pub struct DNSKEY {
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
-    #[deser(with_code( self.key = Buffer::new(self.rd_length); ))]
-    pub(super) key: Buffer,
+    #[deser(with_code( self.key = Buffer::new(self.rd_length - 4); ))]
+    key: Buffer,
 }
 
 // auto-implement new

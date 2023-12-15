@@ -42,4 +42,8 @@ impl Transporter for UdpTransport {
     fn uses_tcp(&self) -> bool {
         false
     }
+
+    fn is_udp(&self) -> bool {
+        true
+    }
 }

@@ -5,7 +5,7 @@ use base64::{engine::general_purpose, Engine as _};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::buffer::Buffer;
+use crate::{buffer::Buffer, date_time::DateTime, new_rd_length};
 
 use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 
@@ -36,29 +36,38 @@ use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct RRSIG<'a> {
+    #[deser(ignore)]
+    pub(super) rd_length: u16,
+
     pub type_covered: QType,
     pub algorithm: Algorithm,
     pub labels: u8,
     pub ttl: u32,
-    pub sign_expiration: u32,
-    pub sign_inception: u32,
+    pub sign_expiration: DateTime,
+    pub sign_inception: DateTime,
     pub key_tag: u16,
 
     // will be deserialized locally
-    #[deser(ignore)]
+    // #[deser(ignore)]
     pub name: DomainName<'a>,
-    #[deser(ignore)]
+    #[deser(with_code( self.signature = Buffer::new(self.rd_length - 18 - self.name.len() as u16); ))]
     pub signature: Buffer,
 }
+
+// auto-implement new
+new_rd_length!(RRSIG<'a>);
 
 impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<20} {:<20} {} ",
+            "{:<20} {:<20} {} {} {} {} ",
             self.type_covered.to_string(),
             self.algorithm.to_string(),
-            self.name
+            self.name,
+            self.sign_expiration,
+            self.sign_inception,
+            self.key_tag
         )?;
 
         let b64 = general_purpose::STANDARD.encode(&self.signature);

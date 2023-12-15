@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{fmt, io::Cursor};
 
 use log::{debug, trace};
 
@@ -12,10 +12,21 @@ use super::{header::Header, question::Question, resource_record::RR};
 pub struct Response<'a> {
     pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
-    pub(super) question: Question<'a>,
+    pub question: Question<'a>,
     pub(super) answer: Option<Vec<RR<'a>>>,
     pub(super) authority: Option<Vec<RR<'a>>>,
     pub(super) additional: Option<Vec<RR<'a>>>,
+}
+
+// hide internal fields
+impl<'a> Response<'a> {
+    pub fn rcode(&self) -> ResponseCode {
+        self.header.flags.response_code
+    }
+
+    pub fn ns_count(&self) -> u16 {
+        self.header.ns_count
+    }
 }
 
 impl<'a> Response<'a> {
@@ -40,41 +51,58 @@ impl<'a> Response<'a> {
         trace!("response answer: {:?}", self.answer);
         trace!("response authority: {:?}", self.authority);
 
-        // check return code
-        if self.header.flags.response_code != ResponseCode::NoError
-            && self.header.flags.response_code != ResponseCode::NXDomain
-        {
-            eprintln!("response error:{}", self.header.flags.response_code);
-            std::process::exit(1);
-        }
-
         Ok(received)
     }
 
-    pub fn display(&self) {
-        // flags
-        //println!("{}", self.header.flags);
-        println!("HEADER: {}\n", self.header);
-        println!("QUESTION: {}\n", self.question);
+    // pub fn display(&self) {
+    //     // flags
+    //     //println!("{}", self.header.flags);
+    //     println!("HEADER: {}\n", self.header);
+    //     println!("QUESTION: {}\n", self.question);
 
+    //     // print out anwser, authority, additional if any
+    //     if let Some(answer) = &self.answer {
+    //         for a in answer {
+    //             println!("{}", a);
+    //         }
+    //     }
+
+    //     if let Some(auth) = &self.authority {
+    //         for a in auth {
+    //             println!("{}", a);
+    //         }
+    //     }
+
+    //     if let Some(add) = &self.additional {
+    //         for a in add {
+    //             println!("{}", a);
+    //         }
+    //     }
+    // }
+}
+
+impl<'a> fmt::Display for Response<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // print out anwser, authority, additional if any
         if let Some(answer) = &self.answer {
             for a in answer {
-                println!("{}", a);
+                writeln!(f, "{}", a)?;
             }
         }
 
         if let Some(auth) = &self.authority {
             for a in auth {
-                println!("{}", a);
+                writeln!(f, "{}", a)?;
             }
         }
 
         if let Some(add) = &self.additional {
             for a in add {
-                println!("{}", a);
+                writeln!(f, "{}", a)?;
             }
         }
+
+        Ok(())
     }
 }
 

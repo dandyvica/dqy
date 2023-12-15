@@ -1,5 +1,3 @@
-use std::fmt;
-
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
