@@ -38,7 +38,7 @@ impl<'a> Response<'a> {
         trace!("received buffer {:X?}", &buffer[..received]);
 
         // if using TCP, we get rid of 2 bytes which are the length of the message received
-        let mut cursor = if trp.uses_tcp() {
+        let mut cursor = if trp.uses_leading_length() {
             Cursor::new(&buffer[2..received])
         } else {
             Cursor::new(&buffer[..received])

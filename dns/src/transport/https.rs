@@ -79,7 +79,7 @@ impl<'a> Transporter for HttpsTransport<'a> {
     }
 
     // don't add the message length even if it's TCP
-    fn uses_tcp(&self) -> bool {
+    fn uses_leading_length(&self) -> bool {
         false
     }
 

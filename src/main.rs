@@ -3,6 +3,7 @@
 //! TODO: specialize RUST_LOG
 use std::time::Instant;
 
+use env_logger::{Builder, Env};
 use log::{debug, error, info, trace};
 
 // my DNS library
@@ -23,7 +24,8 @@ use args::args::CliOptions;
 fn main() -> DNSResult<()> {
     let now = Instant::now();
 
-    env_logger::init();
+    let env = Env::new().filter("DQY_LOG");
+    env_logger::init_from_env(env);
 
     // get arguments
     let args: Vec<String> = std::env::args().skip(1).collect();

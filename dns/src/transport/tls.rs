@@ -65,7 +65,7 @@ impl<'a> Transporter for TlsTransport<'a> {
         Ok(self.tls_stream.read(buffer)?)
     }
 
-    fn uses_tcp(&self) -> bool {
+    fn uses_leading_length(&self) -> bool {
         true
     }
 

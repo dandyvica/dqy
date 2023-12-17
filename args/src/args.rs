@@ -20,7 +20,7 @@ use dns::{
 };
 
 use log::trace;
-use resolver::resolver::Resolvers;
+use resolver::ResolverList;
 
 const UDP_PORT: &str = "53";
 
@@ -268,7 +268,7 @@ impl CliOptions {
         }
 
         //---------------------------------------------------------------------------
-        // if no domain, by default set root (.)
+        // if no domain to query, by default set root (.)
         //---------------------------------------------------------------------------
         if options.domain.is_empty() {
             options.domain = if let Some(d) = matches.get_one::<String>("domain") {
@@ -282,14 +282,15 @@ impl CliOptions {
         // name server was not provided: so lookup system DNS config
         //---------------------------------------------------------------------------
         if options.resolvers.is_empty() {
-            let resolvers = Resolvers::get_servers(None);
+            let resolvers = ResolverList::get()?;
+            options.resolvers = resolvers.to_ip_vec().to_vec();
 
-            if resolvers.is_err() {
-                eprintln!("error {:?} fetching resolvers", resolvers.unwrap_err());
-                std::process::exit(1);
-            } else {
-                options.resolvers = resolvers.unwrap().v4;
-            }
+            // if resolvers.is_err() {
+            //     eprintln!("error {:?} fetching resolvers", resolvers.unwrap_err());
+            //     std::process::exit(1);
+            // } else {
+            //     options.resolvers = resolvers.to_ip_vec();
+            // }
         }
 
         //---------------------------------------------------------------------------

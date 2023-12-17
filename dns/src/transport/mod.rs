@@ -15,7 +15,7 @@ pub trait Transporter {
 
     // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
     // for the message length prepended in the query
-    fn uses_tcp(&self) -> bool;
+    fn uses_leading_length(&self) -> bool;
 
     // only true for UDP
     fn is_udp(&self) -> bool;

@@ -15,6 +15,7 @@ rand = "0.8.5"
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+resolver = { git = "https://github.com/dandyvica/resolver.git" }
 base64 = "0.21.5"
 rustls = "0.21.9"
 webpki-roots = "0.25.3"

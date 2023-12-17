@@ -20,6 +20,7 @@ use crate::{
         openpgpkey::OPENPGPKEY,
         opt::opt::OptOption,
         rrsig::RRSIG,
+        tlsa::TLSA,
     },
 };
 
@@ -222,6 +223,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length)
                 }
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
+                QType::TLSA => self.r_data = get_rr!(buffer, TLSA, RData::TLSA, self.rd_length),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 _ => {
                     // allocate the buffer to hold the data

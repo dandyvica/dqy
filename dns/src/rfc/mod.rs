@@ -10,6 +10,7 @@ pub mod qtype;
 pub mod question;
 pub mod resource_record;
 pub mod response_code;
+
 // all RRs
 pub mod a;
 pub mod aaaa;
@@ -24,16 +25,16 @@ pub mod mx;
 pub mod ns;
 pub mod nsec;
 pub mod nsec3;
+pub mod openpgpkey;
 pub mod opt;
 pub mod ptr;
 pub mod query;
 pub mod rdata;
-// pub mod rdhelper;
-pub mod openpgpkey;
 pub mod response;
 pub mod rrsig;
 pub mod soa;
 pub mod tkey;
+pub mod tlsa;
 pub mod txt;
 
 // a helper macro to generate the new() method for those struct having the rd_length field

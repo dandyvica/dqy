@@ -34,6 +34,9 @@ pub enum Error {
 
     // TLS error when using DoT
     Tls(rustls::Error),
+
+    // Error <hen fetching resolvers
+    Resolv(resolver::error::Error)
 }
 
 #[derive(Debug)]
@@ -109,6 +112,7 @@ impl fmt::Debug for Error {
             Error::InternalError(e) => write!(f, "internal DNS error {:?}", e),
             Error::Reqwest(e) => write!(f, "DoH error {:?}", e),
             Error::Tls(e) => write!(f, "TLS error {:?}", e),
+            Error::Resolv(e) => write!(f, "error {:?} fetching resolvers", e),
         }
     }
 }
@@ -162,5 +166,11 @@ impl<'a> From<reqwest::Error> for Error {
 impl<'a> From<rustls::Error> for Error {
     fn from(err: rustls::Error) -> Self {
         Error::Tls(err)
+    }
+}
+
+impl<'a> From<resolver::error::Error> for Error {
+    fn from(err: resolver::error::Error) -> Self {
+        Error::Resolv(err)
     }
 }

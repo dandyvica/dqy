@@ -36,7 +36,7 @@ impl Transporter for TcpTransport {
         Ok(reader.read(buffer)?)
     }
 
-    fn uses_tcp(&self) -> bool {
+    fn uses_leading_length(&self) -> bool {
         true
     }
 

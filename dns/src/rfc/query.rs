@@ -32,7 +32,7 @@ impl<'a> Query<'a> {
     pub fn new<T: Transporter>(trp: &T) -> Self {
         let mut msg = Self::default();
 
-        if trp.uses_tcp() {
+        if trp.uses_leading_length() {
             msg.length = Some(0u16);
         }
 
@@ -69,7 +69,7 @@ impl<'a> Query<'a> {
 
     // Send the query through the wire
     pub fn send<T: Transporter>(&mut self, trp: &mut T) -> DNSResult<usize> {
-        trace!("query ==> {:?}", self);
+        trace!("query ==> {:#?}", self);
 
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
@@ -77,7 +77,7 @@ impl<'a> Query<'a> {
         trace!("buffer to send: {:?}", buffer);
 
         // if using TCP, we need to prepend the message sent with length of message
-        if trp.uses_tcp() {
+        if trp.uses_leading_length() {
             let bytes = (message_size - 2).to_be_bytes();
             buffer[0] = bytes[0];
             buffer[1] = bytes[1];
@@ -117,15 +117,13 @@ impl<'a> fmt::Debug for Query<'a> {
 
 fn debug_rr<T: Any>(value: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let value_any = value as &dyn Any;
-    println!(
-        "=> {:?}",
-        value_any.downcast_ref::<ResourceRecord<'_, Vec<OptOption>>>()
-    );
+    // println!(
+    //     "=> {:?}",
+    //     value_any.downcast_ref::<ResourceRecord<'_, Vec<OptOption>>>()
+    // );
     if let Some(rr) = value_any.downcast_ref::<OptQuery>() {
-        println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         write!(f, "OPT: <{:?}>", rr)?;
     }
-    println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     Ok(())
 }
 

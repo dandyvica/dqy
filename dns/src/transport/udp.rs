@@ -39,7 +39,7 @@ impl Transporter for UdpTransport {
         Ok(self.sock.recv(buffer)?)
     }
 
-    fn uses_tcp(&self) -> bool {
+    fn uses_leading_length(&self) -> bool {
         false
     }
 

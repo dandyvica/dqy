@@ -20,6 +20,7 @@ use super::{
     ptr::PTR,
     rrsig::RRSIG,
     soa::SOA,
+    tlsa::TLSA,
     txt::TXT,
 };
 
@@ -45,6 +46,7 @@ pub(super) enum RData<'a> {
     PTR(PTR<'a>),
     RRSIG(RRSIG<'a>),
     SOA(SOA<'a>),
+    TLSA(TLSA),
     TXT(TXT<'a>),
     UNKNOWN(Buffer),
 }
@@ -86,6 +88,7 @@ impl<'a> fmt::Display for RData<'a> {
             RData::PTR(a) => write!(f, "{}", a),
             RData::RRSIG(a) => write!(f, "{}", a),
             RData::SOA(a) => write!(f, "{}", a),
+            RData::TLSA(a) => write!(f, "{}", a),
             RData::TXT(a) => write!(f, "{}", a),
             RData::UNKNOWN(a) => write!(f, "NOT YET IMPLEMENTED: {}", a),
             _ => unimplemented!(),

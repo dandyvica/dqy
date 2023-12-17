@@ -16,10 +16,6 @@ pub struct MX<'a> {
 
 impl<'a> fmt::Display for MX<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "preference:{} exchange:{}",
-            self.preference, self.exchange,
-        )
+        write!(f, "{} {}", self.preference, self.exchange,)
     }
 }
