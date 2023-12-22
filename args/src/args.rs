@@ -319,10 +319,10 @@ impl CliOptions {
         if matches.get_flag("tcp") || options.tcp {
             options.transport_mode = TransportMode::Tcp;
         }
-        if matches.get_flag("tls") || options.tls {
+        if matches.get_flag("tls") || options.tls || options.dot {
             options.transport_mode = TransportMode::DoT;
         }
-        if matches.get_flag("https") {
+        if matches.get_flag("https") || options.https || options.doh {
             options.transport_mode = TransportMode::DoH;
         }
 
