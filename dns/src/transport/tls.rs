@@ -1,34 +1,32 @@
 // Specific TLS handling
 use std::{
     io::{Read, Write},
-    net::TcpStream,
+    net::{TcpStream, ToSocketAddrs},
     sync::Arc,
     time::Duration,
 };
 
+use log::debug;
 // use log::debug;
 use rustls::{ClientConnection, Stream};
 
-use crate::error::DNSResult;
+use crate::error::{DNSResult, Error};
 
-use super::Transporter;
+use super::{mode::TransportMode, Transporter};
 
 pub struct TlsTransport<'a> {
     tls_stream: Stream<'a, ClientConnection, TcpStream>,
 }
 
 impl<'a> TlsTransport<'a> {
-    pub fn new(
-        tls: &'a mut (TcpStream, ClientConnection),
-        timeout: Option<Duration>,
-    ) -> DNSResult<Self> {
-        tls.0.set_read_timeout(timeout)?;
-        tls.0.set_write_timeout(timeout)?;
+    pub fn new(tls: &'a mut (TcpStream, ClientConnection), timeout: Duration) -> DNSResult<Self> {
+        tls.0.set_read_timeout(Some(timeout))?;
+        tls.0.set_write_timeout(Some(timeout))?;
         let tls_stream = rustls::Stream::new(&mut tls.1, &mut tls.0);
         Ok(Self { tls_stream })
     }
 
-    pub fn init_tls(server: &str, port: usize) -> DNSResult<(TcpStream, ClientConnection)> {
+    pub fn init_tls(server: &str, port: u16) -> DNSResult<(TcpStream, ClientConnection)> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
         let mut root_store = rustls::RootCertStore::empty();
@@ -46,13 +44,19 @@ impl<'a> TlsTransport<'a> {
             .with_root_certificates(root_store)
             .with_no_client_auth();
 
-        let server_name = server.try_into().unwrap();
+        // create the stream to the endpoint
         let destination = format!("{}:{}", server, port);
+        let stream = TcpStream::connect(&destination)?;
+        debug!("created TLS-TCP socket to {destination}");
 
-        let sock = TcpStream::connect(destination)?;
+        // build ServerName type which is used by ClientConnection::new()
+        let server_name = server
+            .try_into()
+            .map_err(|_e| Error::Tls(rustls::Error::EncryptError))?;
+
         let conn = ClientConnection::new(Arc::new(config), server_name)?;
 
-        Ok((sock, conn))
+        Ok((stream, conn))
     }
 }
 
@@ -69,7 +73,7 @@ impl<'a> Transporter for TlsTransport<'a> {
         true
     }
 
-    fn is_udp(&self) -> bool {
-        false
+    fn mode(&self) -> TransportMode {
+        TransportMode::DoT
     }
 }

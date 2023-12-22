@@ -1,10 +1,14 @@
 use crate::error::DNSResult;
 
+use self::mode::TransportMode;
+
 pub mod https;
 pub mod mode;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
+// pub mod udp2;
+pub mod endpoint;
 
 pub trait Transporter {
     // send query using the underlying transport
@@ -17,6 +21,6 @@ pub trait Transporter {
     // for the message length prepended in the query
     fn uses_leading_length(&self) -> bool;
 
-    // only true for UDP
-    fn is_udp(&self) -> bool;
+    // return the transport mode
+    fn mode(&self) -> TransportMode;
 }

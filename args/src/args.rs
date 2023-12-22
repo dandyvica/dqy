@@ -1,7 +1,7 @@
 //! Manage command line arguments here.
-use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
+use std::{net::IpAddr, net::SocketAddr};
 
 //use crate::plus;
 
@@ -16,13 +16,20 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use dns::{
     error::DNSResult,
     rfc::{qclass::QClass, qtype::QType},
-    transport::mode::{IPVersion, TransportMode},
+    transport::{
+        endpoint::{Endpoint, EndpointAddrs},
+        mode::{IPVersion, TransportMode},
+    },
 };
 
 use log::trace;
 use resolver::ResolverList;
 
-const UDP_PORT: &str = "53";
+macro_rules! plus_arg_bool {
+    ($opt:ident, $field:ident, $map:ident) => {
+        $opt.$field = $map.contains_key(stringify!($field));
+    };
+}
 
 /// This structure holds the command line arguments.
 #[derive(Debug, Default)]
@@ -34,7 +41,7 @@ pub struct CliOptions {
     pub qclass: QClass,
 
     // list of resolvers found in the client machine
-    pub resolvers: Vec<IpAddr>,
+    pub resolvers: Vec<SocketAddr>,
 
     // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
@@ -50,10 +57,7 @@ pub struct CliOptions {
     pub ip_version: IPVersion,
 
     //timeout for network operations
-    pub timeout: Option<Duration>,
-
-    // if true, elasped time and some stats are printed out
-    pub stats: bool,
+    pub timeout: Duration,
 
     // server is the name passed after @
     pub server: String,
@@ -61,9 +65,29 @@ pub struct CliOptions {
     // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the additional section of the query.
     pub dnssec: bool,
 
-    //-------------------------------------------------------
+    pub resolver: String,
+
+    //------------------------------------------------------------------------------------------
     // plus args could be also clap options
+    //------------------------------------------------------------------------------------------
     pub short: bool,
+
+    // if true, elasped time and some stats are printed out
+    pub stats: bool,
+
+    // buffer size of EDNS0
+    pub bufsize: u16,
+
+    // true if TLS/DoT
+    pub tls: bool,
+    pub dot: bool,
+
+    // true if TCP
+    pub tcp: bool,
+
+    // true if HTTPS/DOH
+    pub https: bool,
+    pub doh: bool,
 }
 
 impl CliOptions {
@@ -101,8 +125,8 @@ impl CliOptions {
             }
 
             // manage + options
-            if arg.starts_with('+') {
-                plus_args.push(PlusArg::new(arg));
+            if arg.starts_with('+') && arg.len() > 1 {
+                plus_args.push(PlusArg::new(arg).unwrap());
             }
 
             // otherwise it's a Qtype
@@ -111,12 +135,29 @@ impl CliOptions {
             }
         }
 
+        //---------------------------------------------------------------------------
         // manage plus args
+        //---------------------------------------------------------------------------
         trace!("plus args={:?}", plus_args);
-        let plus_list = PlusArgList(plus_args);
+        let plus_map = PlusArgList::new(&plus_args);
 
-        options.dnssec = plus_list.contains("dnssec");
-        options.short = plus_list.contains("short");
+        plus_arg_bool!(options, dnssec, plus_map);
+        plus_arg_bool!(options, short, plus_map);
+
+        // options.dnssec = plus_map.contains_key("dnssec");
+        // options.short = plus_map.contains_key("short");
+        options.bufsize = plus_map.get_value("bufsize", 1232);
+
+        plus_arg_bool!(options, tcp, plus_map);
+        plus_arg_bool!(options, tls, plus_map);
+        plus_arg_bool!(options, dot, plus_map);
+        plus_arg_bool!(options, https, plus_map);
+        plus_arg_bool!(options, doh, plus_map);
+        // plus_arg_bool!(options, tcp, plus_map);
+        // //options.tcp = plus_map.contains_key("tcp");
+        // options.tls = plus_map.contains_key("tls");
+        // options.dot = plus_map.contains_key("dot");
+        // options.https = plus_map.contains_key("https");
 
         // now process the arguments starting with a '-'
         let matches = Command::new("DNS query tool")
@@ -168,7 +209,6 @@ impl CliOptions {
                     .long_help("DNS port number.")
                     .action(ArgAction::Set)
                     .value_name("PORT")
-                    .default_value(UDP_PORT)
                     .value_parser(clap::value_parser!(u16)),
             )
             .arg(
@@ -256,11 +296,6 @@ impl CliOptions {
         options.qclass = *matches.get_one::<QClass>("class").unwrap();
 
         //---------------------------------------------------------------------------
-        // port number
-        //---------------------------------------------------------------------------
-        options.port = *matches.get_one::<u16>("port").unwrap();
-
-        //---------------------------------------------------------------------------
         // ip versions (V4 is by default)
         //---------------------------------------------------------------------------
         if matches.get_flag("6") {
@@ -279,27 +314,12 @@ impl CliOptions {
         }
 
         //---------------------------------------------------------------------------
-        // name server was not provided: so lookup system DNS config
-        //---------------------------------------------------------------------------
-        if options.resolvers.is_empty() {
-            let resolvers = ResolverList::get()?;
-            options.resolvers = resolvers.to_ip_vec().to_vec();
-
-            // if resolvers.is_err() {
-            //     eprintln!("error {:?} fetching resolvers", resolvers.unwrap_err());
-            //     std::process::exit(1);
-            // } else {
-            //     options.resolvers = resolvers.to_ip_vec();
-            // }
-        }
-
-        //---------------------------------------------------------------------------
         // transport mode
         //---------------------------------------------------------------------------
-        if matches.get_flag("tcp") {
+        if matches.get_flag("tcp") || options.tcp {
             options.transport_mode = TransportMode::Tcp;
         }
-        if matches.get_flag("tls") {
+        if matches.get_flag("tls") || options.tls {
             options.transport_mode = TransportMode::DoT;
         }
         if matches.get_flag("https") {
@@ -307,11 +327,40 @@ impl CliOptions {
         }
 
         //---------------------------------------------------------------------------
+        // port number is depending on transport mode
+        //---------------------------------------------------------------------------
+        options.port = *matches
+            .get_one::<u16>("port")
+            .unwrap_or(&options.transport_mode.default_port());
+
+        //---------------------------------------------------------------------------
+        // build the list of SocketAddrs
+        //---------------------------------------------------------------------------
+        // no server provided
+        if options.server.is_empty() {
+            // fetch the resolvers
+            let resolvers = ResolverList::new()?;
+
+            // convert to a vector of SocketAddrs
+            options.resolvers = resolvers.to_socketaddresses(options.port);
+
+            // DoT needs the server name
+            if options.transport_mode == TransportMode::DoT {
+                options.server = resolvers[0].ip_list()[0].to_string();
+            }
+        }
+        // a server or ip address is provided
+        else {
+            if options.transport_mode != TransportMode::DoH {
+                let s = SocketAddr::from_str(&format!("{}:{}", options.server, options.port))?;
+                options.resolvers = vec![s];
+            }
+        }
+
+        //---------------------------------------------------------------------------
         // timeout
         //---------------------------------------------------------------------------
-        options.timeout = Some(Duration::from_millis(
-            *matches.get_one::<u64>("timeout").unwrap(),
-        ));
+        options.timeout = Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap());
 
         //---------------------------------------------------------------------------
         // internal domain name processing (IDNA)
@@ -348,6 +397,27 @@ impl CliOptions {
         // println!("options={:#?}", options);
         Ok(options)
     }
+
+    // a local function to create the endpoints
+    // fn build_endpoint(server: &str, port: u16) -> DNSResult<EndpointAddrs> {
+    //     let endpoint = if server.is_empty() {
+    //         let resolvers = ResolverList::get()?;
+    //         let ips = resolvers.to_ip_vec().to_vec();
+
+    //         let addrs = EndpointAddrs {
+    //             port: port,
+    //             endpoint: Endpoint::from(ips.as_slice()),
+    //         };
+    //         addrs
+    //     } else {
+    //         EndpointAddrs {
+    //             port: port,
+    //             endpoint: Endpoint::from(server),
+    //         }
+    //     };
+
+    //     Ok(endpoint)
+    // }
 }
 
 // // Initialize logger: either create it or use it

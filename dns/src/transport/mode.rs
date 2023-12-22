@@ -1,3 +1,5 @@
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
+
 #[derive(Debug, Default, PartialEq)]
 pub enum IPVersion {
     #[default]
@@ -15,17 +17,13 @@ pub enum TransportMode {
 }
 
 impl TransportMode {
-    pub fn is_dot(&self) -> bool {
-        matches!(self, TransportMode::DoT)
-    }
-
-    pub fn uses_tcp(&self) -> bool {
-        matches!(self, TransportMode::Tcp)
-            || matches!(self, TransportMode::DoT)
-            || matches!(self, TransportMode::DoH)
-    }
-
-    pub fn uses_tls(&self) -> bool {
-        matches!(self, TransportMode::DoT) || matches!(self, TransportMode::DoH)
+    // default port number for transport or port
+    pub fn default_port(&self) -> u16 {
+        match self {
+            TransportMode::Udp => 53,
+            TransportMode::Tcp => 53,
+            TransportMode::DoT => 853,
+            TransportMode::DoH => 443,
+        }
     }
 }

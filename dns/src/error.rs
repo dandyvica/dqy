@@ -35,8 +35,8 @@ pub enum Error {
     // TLS error when using DoT
     Tls(rustls::Error),
 
-    // Error <hen fetching resolvers
-    Resolv(resolver::error::Error)
+    // Error when fetching resolvers
+    Resolv(resolver::error::Error),
 }
 
 #[derive(Debug)]
@@ -60,7 +60,10 @@ pub enum ProtocolError {
     CantCreateDomainName, //UnreachableResolvers,
 
     // when fetching the NSEC3 type bits, can't extract values
-    CantCreateNSEC3Types, //UnreachableResolvers,
+    CantCreateNSEC3Types,
+
+    // no resolver is reachable
+    UnreachableResolvers,
 }
 
 impl fmt::Display for ProtocolError {
@@ -87,6 +90,7 @@ impl fmt::Display for ProtocolError {
             ProtocolError::CantCreateNSEC3Types => {
                 f.write_str("can't extract types from NSEC or NSEC3 RR")
             }
+            ProtocolError::UnreachableResolvers => f.write_str("can't contact any resolver"),
         }
     }
 }

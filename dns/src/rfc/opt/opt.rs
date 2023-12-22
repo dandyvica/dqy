@@ -29,10 +29,10 @@ use super::{cookie::COOKIE, padding::PADDING};
 pub type OptQuery<'a> = ResourceRecord<'a, Vec<OptOption>>;
 
 impl<'a> OptQuery<'a> {
-    pub fn new(bufsize: Option<u16>) -> Self {
+    pub fn new(bufsize: u16) -> Self {
         let mut opt = OptQuery::default();
         opt.r#type = QType::OPT;
-        opt.class = EitherOr::new_right(bufsize.unwrap_or(1232));
+        opt.class = EitherOr::new_right(bufsize);
 
         opt
     }

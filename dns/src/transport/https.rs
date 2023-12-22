@@ -12,7 +12,7 @@ use reqwest::{
 
 use crate::error::DNSResult;
 
-use super::Transporter;
+use super::{mode::TransportMode, Transporter};
 
 pub struct HttpsTransport<'a> {
     server: &'a str,
@@ -21,7 +21,7 @@ pub struct HttpsTransport<'a> {
 }
 
 impl<'a> HttpsTransport<'a> {
-    pub fn new(server: &'a str, timeout: Option<Duration>) -> DNSResult<Self> {
+    pub fn new(server: &'a str, timeout: Duration) -> DNSResult<Self> {
         let client = Client::builder()
             // same headers for all requests
             .default_headers(Self::construct_headers())
@@ -83,7 +83,7 @@ impl<'a> Transporter for HttpsTransport<'a> {
         false
     }
 
-    fn is_udp(&self) -> bool {
-        false
+    fn mode(&self) -> TransportMode {
+        TransportMode::DoH
     }
 }

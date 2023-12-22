@@ -1,6 +1,6 @@
 use std::{
     io::{BufReader, Read, Write},
-    net::{IpAddr, TcpStream},
+    net::{IpAddr, TcpStream, ToSocketAddrs},
     time::Duration,
 };
 
@@ -8,18 +8,20 @@ use log::debug;
 
 use crate::error::DNSResult;
 
-use super::Transporter;
+use super::{mode::TransportMode, Transporter};
 
 pub struct TcpTransport {
     stream: TcpStream,
 }
 
 impl TcpTransport {
-    pub fn new(ip: &IpAddr, port: u16, timeout: Option<Duration>) -> DNSResult<Self> {
-        let stream = TcpStream::connect((*ip, port))?;
-        stream.set_read_timeout(timeout)?;
-        stream.set_write_timeout(timeout)?;
-        debug!("created TCP socket to {}:{}", ip, port);
+    pub fn new<A: ToSocketAddrs>(addr: A, timeout: Duration) -> DNSResult<Self> {
+        let stream = TcpStream::connect(addr)?;
+
+        stream.set_read_timeout(Some(timeout))?;
+        stream.set_write_timeout(Some(timeout))?;
+
+        debug!("created TCP socket to {}", stream.peer_addr()?);
         Ok(Self { stream: stream })
     }
 }
@@ -40,7 +42,7 @@ impl Transporter for TcpTransport {
         true
     }
 
-    fn is_udp(&self) -> bool {
-        false
+    fn mode(&self) -> TransportMode {
+        TransportMode::Tcp
     }
 }

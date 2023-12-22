@@ -36,12 +36,12 @@ fn main() -> DNSResult<()> {
     match options.transport_mode {
         TransportMode::Udp => {
             let mut udp_transport =
-                UdpTransport::new(&options.resolvers[0], options.port, options.timeout)?;
+                UdpTransport::new(&options.resolvers.as_slice(), options.timeout)?;
             send_receive_query(&options, &mut udp_transport)?;
         }
         TransportMode::Tcp => {
             let mut tcp_transport =
-                TcpTransport::new(&options.resolvers[0], options.port, options.timeout)?;
+                TcpTransport::new(&options.resolvers.as_slice(), options.timeout)?;
             send_receive_query(&options, &mut tcp_transport)?;
         }
         TransportMode::DoT => {
@@ -80,12 +80,12 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
         let response = receive_response(trp, &mut buffer)?;
 
         // check for the truncation (TC) header flag. If set and UDP, resend using TCP
-        if response.header.flags.truncated && trp.is_udp() {
+        if response.header.flags.truncated && trp.mode() == TransportMode::Udp {
             info!("query for {} caused truncation", qt);
             let mut buffer = [0u8; 4096];
 
             let mut tcp_transport =
-                TcpTransport::new(&options.resolvers[0], options.port, options.timeout)?;
+                TcpTransport::new(&options.resolvers.as_slice(), options.timeout)?;
             let query = send_query(options, qt, &mut tcp_transport)?;
             let response = receive_response(&mut tcp_transport, &mut buffer)?;
 
@@ -111,7 +111,7 @@ fn send_query<'a, T: Transporter>(
     query.init(&options.domain, qt, options.qclass)?;
 
     // manage edns options
-    let mut opt = OptQuery::new(Some(1232));
+    let mut opt = OptQuery::new(options.bufsize);
     opt.set_edns_nsid();
 
     // dnssec flag ?
