@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, net::Ipv4Addr};
 
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
@@ -9,6 +9,6 @@ pub struct A(pub(super) u32);
 
 impl fmt::Display for A {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", std::net::Ipv4Addr::from(self.0))
+        write!(f, "{}", Ipv4Addr::from(self.0))
     }
 }

@@ -64,6 +64,9 @@ pub enum ProtocolError {
 
     // no resolver is reachable
     UnreachableResolvers,
+
+    // can't convert the server name or ip address to a socket address
+    CantCreateSocketAddress,
 }
 
 impl fmt::Display for ProtocolError {
@@ -91,6 +94,9 @@ impl fmt::Display for ProtocolError {
                 f.write_str("can't extract types from NSEC or NSEC3 RR")
             }
             ProtocolError::UnreachableResolvers => f.write_str("can't contact any resolver"),
+            ProtocolError::CantCreateSocketAddress => {
+                f.write_str("can't create a socket address from input")
+            }
         }
     }
 }

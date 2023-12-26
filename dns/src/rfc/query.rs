@@ -1,7 +1,4 @@
-use std::{
-    any::{Any, TypeId},
-    fmt,
-};
+use std::{any::Any, fmt};
 
 use log::{debug, trace};
 use rand::Rng;
@@ -11,7 +8,7 @@ use type2network_derive::ToNetwork;
 
 use crate::{
     error::DNSResult,
-    rfc::{opt::opt::OptOption, resource_record::ResourceRecord},
+    //rfc::{opt::opt::OptOption, resource_record::ResourceRecord},
     transport::Transporter,
 };
 
@@ -56,7 +53,7 @@ impl<'a> Query<'a> {
 
         self.header.flags.qr = PacketType::Query;
         self.header.flags.op_code = OpCode::Query;
-        self.header.flags.recursion_desired = true;
+        //self.header.flags.recursion_desired = true;
         self.header.qd_count = 1;
 
         // fill question
@@ -69,12 +66,9 @@ impl<'a> Query<'a> {
 
     // Send the query through the wire
     pub fn send<T: Transporter>(&mut self, trp: &mut T) -> DNSResult<usize> {
-        trace!("query ==> {:#?}", self);
-
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;
-        trace!("buffer to send: {:?}", buffer);
 
         // if using TCP, we need to prepend the message sent with length of message
         if trp.uses_leading_length() {
@@ -82,8 +76,10 @@ impl<'a> Query<'a> {
             buffer[0] = bytes[0];
             buffer[1] = bytes[1];
         };
+        trace!("buffer to send: {:?}", buffer);
 
         // send packet through the wire
+        trace!("query ==> {:#?}", self);
         let sent = trp.send(&buffer)?;
         debug!("sent {} bytes", sent);
 
@@ -101,7 +97,7 @@ impl<'a> fmt::Debug for Query<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "lengh:<{:?}> header:<{:?}> question:<{:?}>",
+            "length:<{:?}> header:<{:?}> question:<{:?}>",
             self.length, self.header, self.question
         )?;
 

@@ -10,7 +10,7 @@ use super::{header::Header, question::Question, resource_record::RR};
 
 #[derive(Default)]
 pub struct Response<'a> {
-    pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
+    //pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question<'a>,
     pub(super) answer: Option<Vec<RR<'a>>>,
@@ -38,11 +38,12 @@ impl<'a> Response<'a> {
         trace!("received buffer {:X?}", &buffer[..received]);
 
         // if using TCP, we get rid of 2 bytes which are the length of the message received
-        let mut cursor = if trp.uses_leading_length() {
-            Cursor::new(&buffer[2..received])
-        } else {
-            Cursor::new(&buffer[..received])
-        };
+        // let mut cursor = if trp.uses_leading_length() {
+        //     Cursor::new(&buffer[2..received])
+        // } else {
+        //     Cursor::new(&buffer[..received])
+        // };
+        let mut cursor = Cursor::new(&buffer[..received]);
 
         // get response
         self.deserialize_from(&mut cursor)?;
@@ -109,7 +110,10 @@ impl<'a> fmt::Display for Response<'a> {
 impl<'a> FromNetworkOrder<'a> for Response<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.header.deserialize_from(buffer)?;
+        trace!("deserialized header: {}", self.header);
+
         self.question.deserialize_from(buffer)?;
+        trace!("deserialized question: {}", self.header);
 
         // for answer, additional, authorative, same process: allocate
         // vector to the number received

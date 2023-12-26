@@ -3,7 +3,7 @@ use std::convert::AsRef;
 use std::fmt;
 use std::io::{Cursor, Read};
 
-use type2network::{FromNetworkOrder, ToNetworkOrder};
+use type2network::FromNetworkOrder;
 
 #[derive(Debug, Default)]
 pub struct BufferMut<'a> {

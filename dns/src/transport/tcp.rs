@@ -1,6 +1,6 @@
 use std::{
-    io::{BufReader, Read, Write},
-    net::{IpAddr, TcpStream, ToSocketAddrs},
+    io::Write,
+    net::{TcpStream, ToSocketAddrs},
     time::Duration,
 };
 
@@ -34,8 +34,18 @@ impl Transporter for TcpTransport {
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
-        let mut reader = BufReader::new(&self.stream);
-        Ok(reader.read(buffer)?)
+        // let mut bytes = 0usize;
+        // let mut reader = BufReader::new(&self.stream);
+        // while bytes < 2059 {
+        //     let x = reader.read(buffer)?;
+        //     println!("============> read {x}");
+        //     bytes += x;
+
+        // }
+
+        // Ok(bytes)
+        // //Ok(reader.read(buffer)?)
+        <TcpTransport as Transporter>::tcp_read(&mut self.stream, buffer)
     }
 
     fn uses_leading_length(&self) -> bool {

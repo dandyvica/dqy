@@ -5,7 +5,7 @@ use type2network_derive::FromNetwork;
 
 use crate::{buffer::Buffer, new_rd_length};
 
-use super::{algorithm::Algorithm, domain::DomainName};
+use super::domain::DomainName;
 
 // https://www.rfc-editor.org/rfc/rfc2930#section-2
 // Algorithm:   domain

@@ -13,18 +13,24 @@ use crate::{
     buffer::Buffer,
     either_or::EitherOr,
     rfc::{
+        afsdb::AFSDB,
+        apl::APL,
         caa::CAA,
         ds::DS,
+        naptr::NAPTR,
         nsec::NSEC,
         nsec3::{NSEC3, NSEC3PARAM},
         openpgpkey::OPENPGPKEY,
         opt::opt::OptOption,
+        rp::RP,
         rrsig::RRSIG,
         tlsa::TLSA,
+        uri::URI,
+        zonemd::ZONEMD,
     },
 };
 
-use log::trace;
+use log::{debug, trace};
 
 // 4.1.3. Resource record format
 
@@ -162,18 +168,18 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         // self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
-        trace!(
-            "found RR: name:<{}> type:{:?} ttl:{} RD_length:{}",
-            self.name,
-            self.r#type,
-            self.ttl,
-            self.rd_length
+        debug!(
+            "found RR: type:{:?} name:<{}> ttl:{} RD_length:{}",
+            self.r#type, self.name, self.ttl, self.rd_length
         );
 
         if self.rd_length != 0 {
             match self.r#type {
+                // RData enum
                 QType::A => self.r_data = get_rr!(buffer, A, RData::A),
                 QType::AAAA => self.r_data = get_rr!(buffer, AAAA, RData::AAAA),
+                QType::AFSDB => self.r_data = get_rr!(buffer, AFSDB, RData::AFSDB),
+                QType::APL => self.r_data = get_rr!(buffer, APL, RData::APL, self.rd_length),
                 QType::CAA => self.r_data = get_rr!(buffer, CAA, RData::CAA, self.rd_length),
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
                 QType::DNSKEY => {
@@ -183,6 +189,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
+                QType::NAPTR => self.r_data = get_rr!(buffer, NAPTR, RData::NAPTR),
                 QType::NS => self.r_data = get_rr!(buffer, NS, RData::NS),
                 QType::NSEC => self.r_data = get_rr!(buffer, NSEC, RData::NSEC, self.rd_length),
                 QType::NSEC3 => self.r_data = get_rr!(buffer, NSEC3, RData::NSEC3, self.rd_length),
@@ -207,24 +214,15 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = RData::OPT(v)
                 }
                 QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::PTR),
-                QType::RRSIG => {
-                    // let mut x = RRSIG::default();
-
-                    // // name & signature are not yet to be deserialized
-                    // x.deserialize_from(buffer)?;
-
-                    // // we need this trick to not deserialize the name because its length is unknown yet
-                    // // we need the length to allocate the Buffer for the signature
-                    // x.name.deserialize_from(buffer)?;
-                    // x.signature = Buffer::new(self.rd_length - 18 - x.name.len() as u16);
-                    // x.signature.deserialize_from(buffer)?;
-
-                    // self.r_data = RData::RRSIG(x)
-                    self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length)
-                }
+                QType::RP => self.r_data = get_rr!(buffer, RP, RData::RP),
+                QType::RRSIG => self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::TLSA => self.r_data = get_rr!(buffer, TLSA, RData::TLSA, self.rd_length),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
+                QType::URI => self.r_data = get_rr!(buffer, URI, RData::URI, self.rd_length),
+                QType::ZONEMD => {
+                    self.r_data = get_rr!(buffer, ZONEMD, RData::ZONEMD, self.rd_length)
+                }
                 _ => {
                     // allocate the buffer to hold the data
                     let mut buf = Buffer::new(self.rd_length);

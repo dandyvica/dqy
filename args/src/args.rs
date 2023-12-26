@@ -1,7 +1,7 @@
 //! Manage command line arguments here.
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::str::FromStr;
 use std::time::Duration;
-use std::{net::IpAddr, net::SocketAddr};
 
 //use crate::plus;
 
@@ -13,13 +13,11 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 
 //use log::debug;
 
+use dns::err_internal;
 use dns::{
-    error::DNSResult,
+    error::{DNSResult, Error, ProtocolError},
     rfc::{qclass::QClass, qtype::QType},
-    transport::{
-        endpoint::{Endpoint, EndpointAddrs},
-        mode::{IPVersion, TransportMode},
-    },
+    transport::mode::{IPVersion, TransportMode},
 };
 
 use log::trace;
@@ -349,11 +347,26 @@ impl CliOptions {
                 options.server = resolvers[0].ip_list()[0].to_string();
             }
         }
-        // a server or ip address is provided
+        // a server name or ip address is provided: we need to buld the SocketAddr from either a dot address or a domain name
+        // e.g.: 1.1.1.1 or ns1.google.com
         else {
             if options.transport_mode != TransportMode::DoH {
-                let s = SocketAddr::from_str(&format!("{}:{}", options.server, options.port))?;
-                options.resolvers = vec![s];
+                // build the SocketAddr
+                let addr_s = format!("{}:{}", options.server, options.port);
+                let addr = addr_s.to_socket_addrs()?;
+
+                // new to filter for either IPV4 or IPV6
+                let sock_addr = if options.ip_version == IPVersion::V4 {
+                    addr.filter(|x| x.is_ipv4()).nth(0)
+                } else {
+                    addr.filter(|x| x.is_ipv6()).nth(0)
+                };
+
+                if sock_addr.is_none() {
+                    return Err(err_internal!(CantCreateSocketAddress));
+                }
+
+                options.resolvers = vec![sock_addr.unwrap()];
             }
         }
 
@@ -397,27 +410,6 @@ impl CliOptions {
         // println!("options={:#?}", options);
         Ok(options)
     }
-
-    // a local function to create the endpoints
-    // fn build_endpoint(server: &str, port: u16) -> DNSResult<EndpointAddrs> {
-    //     let endpoint = if server.is_empty() {
-    //         let resolvers = ResolverList::get()?;
-    //         let ips = resolvers.to_ip_vec().to_vec();
-
-    //         let addrs = EndpointAddrs {
-    //             port: port,
-    //             endpoint: Endpoint::from(ips.as_slice()),
-    //         };
-    //         addrs
-    //     } else {
-    //         EndpointAddrs {
-    //             port: port,
-    //             endpoint: Endpoint::from(server),
-    //         }
-    //     };
-
-    //     Ok(endpoint)
-    // }
 }
 
 // // Initialize logger: either create it or use it

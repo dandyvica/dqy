@@ -25,6 +25,9 @@ pub enum QClass {
     CH = 3, // the CHAOS class
     HS = 4, // Hesiod [Dyer 87]
     ANY = 255,
+
+    #[fallback]
+    CLASS(u16),
 }
 
 #[cfg(test)]

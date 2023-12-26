@@ -1,6 +1,5 @@
 use std::fmt;
 
-use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
@@ -41,9 +40,8 @@ impl fmt::Display for CAA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{} {} \"{}\"",
             self.flags,
-            self.tag_length,
             self.tag_key.to_string(),
             self.tag_value.to_string()
         )?;

@@ -2,6 +2,7 @@
 use std::convert::AsRef;
 use std::fmt;
 use std::io::{Cursor, Read};
+use std::ops::Deref;
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
@@ -16,6 +17,14 @@ impl Buffer {
     // when printing out some RRs, it's easier to use this
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.0).to_string()
+    }
+}
+
+impl Deref for Buffer {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

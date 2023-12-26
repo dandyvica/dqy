@@ -1,5 +1,5 @@
 use std::{
-    net::{IpAddr, ToSocketAddrs, UdpSocket},
+    net::{ToSocketAddrs, UdpSocket},
     time::Duration,
 };
 
@@ -7,21 +7,26 @@ use log::debug;
 
 use crate::error::DNSResult;
 
-use super::{mode::TransportMode, Transporter};
+use super::{
+    mode::{IPVersion, TransportMode},
+    Transporter,
+};
 
 pub struct UdpTransport {
     sock: UdpSocket,
 }
 
 impl UdpTransport {
-    pub fn new<A: ToSocketAddrs>(addr: A, timeout: Duration) -> DNSResult<Self> {
-        // let sock = if addr.is_ipv4() {
-        //     UdpSocket::bind("0.0.0.0:0")?
-        // } else {
-        //     UdpSocket::bind("::")?
-        // };
-
-        let sock = UdpSocket::bind("0.0.0.0:0")?;
+    pub fn new<A: ToSocketAddrs>(
+        addr: A,
+        ip_version: &IPVersion,
+        timeout: Duration,
+    ) -> DNSResult<Self> {
+        let sock = if ip_version == &IPVersion::V4 {
+            UdpSocket::bind("0.0.0.0:0")?
+        } else {
+            UdpSocket::bind("::")?
+        };
 
         sock.set_read_timeout(Some(timeout))?;
         sock.set_write_timeout(Some(timeout))?;

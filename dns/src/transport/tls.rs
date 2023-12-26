@@ -1,10 +1,5 @@
 // Specific TLS handling
-use std::{
-    io::{Read, Write},
-    net::{TcpStream, ToSocketAddrs},
-    sync::Arc,
-    time::Duration,
-};
+use std::{io::Write, net::TcpStream, sync::Arc, time::Duration};
 
 use log::debug;
 // use log::debug;
@@ -62,11 +57,14 @@ impl<'a> TlsTransport<'a> {
 
 impl<'a> Transporter for TlsTransport<'a> {
     fn send(&mut self, buffer: &[u8]) -> DNSResult<usize> {
-        Ok(self.tls_stream.write(buffer)?)
+        let sent = self.tls_stream.write(buffer)?;
+        Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
-        Ok(self.tls_stream.read(buffer)?)
+        <TlsTransport as Transporter>::tcp_read(&mut self.tls_stream, buffer)
+
+        //Ok(self.tls_stream.read(buffer)?)
     }
 
     fn uses_leading_length(&self) -> bool {

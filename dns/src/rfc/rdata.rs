@@ -5,6 +5,8 @@ use type2network::ToNetworkOrder;
 use super::{
     a::A,
     aaaa::AAAA,
+    afsdb::AFSDB,
+    apl::APL,
     caa::CAA,
     cname::CNAME,
     dnskey::DNSKEY,
@@ -12,24 +14,31 @@ use super::{
     hinfo::HINFO,
     loc::LOC,
     mx::MX,
+    naptr::NAPTR,
     ns::NS,
     nsec::NSEC,
     nsec3::{NSEC3, NSEC3PARAM},
     openpgpkey::OPENPGPKEY,
     opt::opt::OptOption,
     ptr::PTR,
+    rp::RP,
     rrsig::RRSIG,
     soa::SOA,
     tlsa::TLSA,
     txt::TXT,
+    uri::URI,
+    zonemd::ZONEMD,
 };
 
 use crate::buffer::Buffer;
 
 #[derive(Debug)]
 pub(super) enum RData<'a> {
+    // RData definition
     A(A),
     AAAA(AAAA),
+    AFSDB(AFSDB<'a>),
+    APL(APL),
     CAA(CAA),
     CNAME(CNAME<'a>),
     DNSKEY(DNSKEY),
@@ -37,6 +46,7 @@ pub(super) enum RData<'a> {
     HINFO(HINFO<'a>),
     LOC(LOC),
     MX(MX<'a>),
+    NAPTR(NAPTR<'a>),
     NS(NS<'a>),
     NSEC(NSEC<'a>),
     NSEC3(NSEC3),
@@ -44,11 +54,14 @@ pub(super) enum RData<'a> {
     OPENPGPKEY(OPENPGPKEY),
     OPT(Vec<OptOption>),
     PTR(PTR<'a>),
+    RP(RP<'a>),
     RRSIG(RRSIG<'a>),
     SOA(SOA<'a>),
     TLSA(TLSA),
     TXT(TXT<'a>),
     UNKNOWN(Buffer),
+    URI(URI),
+    ZONEMD(ZONEMD),
 }
 
 impl<'a> Default for RData<'a> {
@@ -66,14 +79,19 @@ impl<'a> ToNetworkOrder for RData<'a> {
 impl<'a> fmt::Display for RData<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            // RData Display
             RData::A(a) => write!(f, "{}", a),
             RData::AAAA(a) => write!(f, "{}", a),
+            RData::AFSDB(a) => write!(f, "{}", a),
+            RData::APL(a) => write!(f, "{}", a),
             RData::CAA(a) => write!(f, "{}", a),
             RData::CNAME(a) => write!(f, "{}", a),
             RData::DNSKEY(a) => write!(f, "{}", a),
             RData::DS(a) => write!(f, "{}", a),
             RData::HINFO(a) => write!(f, "{}", a),
+            RData::LOC(a) => write!(f, "{}", a),
             RData::MX(a) => write!(f, "{}", a),
+            RData::NAPTR(a) => write!(f, "{}", a),
             RData::NS(a) => write!(f, "{}", a),
             RData::NSEC(a) => write!(f, "{}", a),
             RData::NSEC3(a) => write!(f, "{}", a),
@@ -86,12 +104,15 @@ impl<'a> fmt::Display for RData<'a> {
                 Ok(())
             }
             RData::PTR(a) => write!(f, "{}", a),
+            RData::RP(a) => write!(f, "{}", a),
             RData::RRSIG(a) => write!(f, "{}", a),
             RData::SOA(a) => write!(f, "{}", a),
             RData::TLSA(a) => write!(f, "{}", a),
             RData::TXT(a) => write!(f, "{}", a),
+            RData::URI(a) => write!(f, "{}", a),
             RData::UNKNOWN(a) => write!(f, "NOT YET IMPLEMENTED: {}", a),
-            _ => unimplemented!(),
+            RData::ZONEMD(a) => write!(f, "{}", a),
+            _ => unimplemented!("not yet implemented"),
         }
     }
 }
