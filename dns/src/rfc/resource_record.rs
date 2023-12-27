@@ -17,6 +17,9 @@ use crate::{
         apl::APL,
         caa::CAA,
         ds::DS,
+        eui48::EUI48,
+        eui64::EUI64,
+        kx::KX,
         naptr::NAPTR,
         nsec::NSEC,
         nsec3::{NSEC3, NSEC3PARAM},
@@ -186,7 +189,10 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
                 }
                 QType::DS => self.r_data = get_rr!(buffer, DS, RData::DS, self.rd_length),
+                QType::EUI48 => self.r_data = get_rr!(buffer, EUI48, RData::EUI48),
+                QType::EUI64 => self.r_data = get_rr!(buffer, EUI64, RData::EUI64),
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
+                QType::KX => self.r_data = get_rr!(buffer, KX, RData::KX),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
                 QType::NAPTR => self.r_data = get_rr!(buffer, NAPTR, RData::NAPTR),

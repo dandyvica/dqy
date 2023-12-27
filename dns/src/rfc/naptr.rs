@@ -35,7 +35,7 @@ impl<'a> fmt::Display for NAPTR<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} ",
+            "{} {} \"{}\" \"{}\" \"{}\" {} ",
             self.order, self.preference, self.flags, self.services, self.regex, self.replacement
         )?;
 

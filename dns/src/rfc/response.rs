@@ -13,7 +13,7 @@ pub struct Response<'a> {
     //pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question<'a>,
-    pub(super) answer: Option<Vec<RR<'a>>>,
+    pub(crate) answer: Option<Vec<RR<'a>>>,
     pub(super) authority: Option<Vec<RR<'a>>>,
     pub(super) additional: Option<Vec<RR<'a>>>,
 }

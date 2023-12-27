@@ -27,6 +27,7 @@ mod tests {
     use pcap_parser::*;
 
     use crate::error::DNSResult;
+    use crate::rfc::response::Response;
 
     pub(crate) fn to_network_test<T: ToNetworkOrder>(val: &T, size: usize, v: &[u8]) {
         let mut buffer: Vec<u8> = Vec::new();
@@ -103,4 +104,38 @@ mod tests {
             buf_resp: Cursor::new(v.1.as_slice()),
         }
     }
+
+    // helpr function to extract answers
+    // pub(crate) fn get_response<'a>(pcap_file: &str) -> DNSResult<Response<'a>> {
+    //     let pcap = read_pcap_sample(pcap_file)?;
+    //     let mut buffer = get_pcap_buffer(&pcap);
+
+    //     let mut resp = Response::default();
+    //     resp.deserialize_from(&mut buffer.buf_resp)?;
+
+    //     Ok(resp)
+    // }
+
+    // // helper macro to create a function which extract inner RData type
+    // #[macro_export]
+    // macro_rules! extract_rdata {
+    //     ($file:literal, $arm:path) => {
+    //         {
+    //             let pcap = read_pcap_sample($file)?;
+    //             let mut buffer = get_pcap_buffer(&pcap);
+
+    //             let mut resp = Response::default();
+    //             resp.deserialize_from(&mut buffer.buf_resp)?;
+
+    //             let answer = resp.answer.unwrap();
+    //             let answer = &answer[0];
+
+    //             if let $arm(x) = &answer.r_data {
+    //                 x
+    //             } else {
+    //                 panic!("no found")
+    //             }
+    //         }
+    //     };
+    // }
 }

@@ -40,7 +40,7 @@ impl fmt::Display for InnerAPL {
         let length = (self.afdlength << 1) >> 1;
 
         // prepend address with '!' if N == 1
-        let n =if self.afdlength >> 7 == 1 {
+        let n = if self.afdlength >> 7 == 1 {
             String::from('!')
         } else {
             String::new()

@@ -1,5 +1,3 @@
-use std::fmt;
-
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
