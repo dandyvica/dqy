@@ -2,7 +2,6 @@ use std::{fmt, io::Cursor};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use bytes::buf;
 use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
@@ -13,7 +12,7 @@ use crate::{
     rfc::{opt::nsid::NSID, qtype::QType, resource_record::ResourceRecord},
 };
 
-use super::{client_subnet::CLIENT_SUBNET, cookie::COOKIE, padding::PADDING};
+use super::{client_subnet::ClientSubnet, cookie::COOKIE, padding::PADDING};
 
 // This OPT is the one which is sent in the query (additional record)
 // +------------+--------------+------------------------------+
@@ -134,10 +133,10 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 self.data = OptOptionData::PADDING(PADDING::from(buf));
             }
             OptOptionCode::EdnsClientSubnet => {
-                let mut subnet = CLIENT_SUBNET::default();
+                let mut subnet = ClientSubnet::default();
                 subnet.address = Buffer::new(self.length - 4);
                 subnet.deserialize_from(buffer)?;
-                self.data = OptOptionData::CLIENT_SUBNET(subnet);
+                self.data = OptOptionData::ClientSubnet(subnet);
             }
             _ => unimplemented!("option code {} is not yet implemented", self.code),
         }
@@ -177,7 +176,7 @@ pub enum OptOptionData {
     NSID(NSID),
     COOKIE(COOKIE),
     PADDING(PADDING),
-    CLIENT_SUBNET(CLIENT_SUBNET),
+    ClientSubnet(ClientSubnet),
 }
 
 impl Default for OptOptionData {
@@ -191,7 +190,7 @@ impl fmt::Display for OptOptionData {
         match self {
             OptOptionData::NSID(n) => write!(f, "{}", n)?,
             OptOptionData::PADDING(p) => write!(f, "{}", p)?,
-            OptOptionData::CLIENT_SUBNET(p) => write!(f, "{} {}", p.family, p.address)?,
+            OptOptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
             _ => unimplemented!(),
         }
         Ok(())

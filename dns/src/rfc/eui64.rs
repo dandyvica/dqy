@@ -21,6 +21,28 @@ impl fmt::Display for EUI64 {
             .iter()
             .map(|c| format!("{:x?}", c))
             .collect();
-        write!(f, "{} ", buf.join("-"))
+        write!(f, "{}", buf.join("-"))
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::EUI64;
+
+    test_rdata!(
+        "./tests/eui64.pcap",
+        RData::EUI64,
+        (|x: &EUI64, _| {
+            assert_eq!(&x.to_string(), "be-a2-b9-ff-fe-82-32-a7");
+        })
+    );
 }

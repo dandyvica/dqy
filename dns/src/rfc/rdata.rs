@@ -3,33 +3,10 @@ use std::fmt::{self};
 use type2network::ToNetworkOrder;
 
 use super::{
-    a::A,
-    aaaa::AAAA,
-    afsdb::AFSDB,
-    apl::APL,
-    caa::CAA,
-    cname::CNAME,
-    dnskey::DNSKEY,
-    ds::DS,
-    eui48::EUI48,
-    eui64::EUI64,
-    hinfo::HINFO,
-    kx::KX,
-    loc::LOC,
-    mx::MX,
-    naptr::NAPTR,
-    ns::NS,
-    nsec::NSEC,
-    nsec3::{NSEC3, NSEC3PARAM},
-    openpgpkey::OPENPGPKEY,
-    opt::opt::OptOption,
-    ptr::PTR,
-    rp::RP,
-    rrsig::RRSIG,
-    soa::SOA,
-    tlsa::TLSA,
-    txt::TXT,
-    uri::URI,
+    a::A, aaaa::AAAA, afsdb::AFSDB, apl::APL, caa::CAA, cert::CERT, cname::CNAME, csync::CSYNC,
+    dnskey::DNSKEY, ds::DS, eui48::EUI48, eui64::EUI64, hinfo::HINFO, kx::KX, loc::LOC, mx::MX,
+    naptr::NAPTR, ns::NS, nsec::NSEC, nsec3::NSEC3, nsec3param::NSEC3PARAM, openpgpkey::OPENPGPKEY,
+    opt::opt::OptOption, ptr::PTR, rp::RP, rrsig::RRSIG, soa::SOA, tlsa::TLSA, txt::TXT, uri::URI,
     zonemd::ZONEMD,
 };
 
@@ -43,7 +20,9 @@ pub(super) enum RData<'a> {
     AFSDB(AFSDB<'a>),
     APL(APL),
     CAA(CAA),
+    CERT(CERT),
     CNAME(CNAME<'a>),
+    CSYNC(CSYNC),
     DNSKEY(DNSKEY),
     DS(DS),
     EUI48(EUI48),
@@ -83,6 +62,7 @@ impl<'a> ToNetworkOrder for RData<'a> {
 }
 
 impl<'a> fmt::Display for RData<'a> {
+    #[allow(unreachable_patterns)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             // RData Display
@@ -91,7 +71,9 @@ impl<'a> fmt::Display for RData<'a> {
             RData::AFSDB(a) => write!(f, "{}", a),
             RData::APL(a) => write!(f, "{}", a),
             RData::CAA(a) => write!(f, "{}", a),
+            RData::CERT(a) => write!(f, "{}", a),
             RData::CNAME(a) => write!(f, "{}", a),
+            RData::CSYNC(a) => write!(f, "{}", a),
             RData::DNSKEY(a) => write!(f, "{}", a),
             RData::DS(a) => write!(f, "{}", a),
             RData::EUI48(a) => write!(f, "{}", a),
@@ -119,7 +101,7 @@ impl<'a> fmt::Display for RData<'a> {
             RData::TLSA(a) => write!(f, "{}", a),
             RData::TXT(a) => write!(f, "{}", a),
             RData::URI(a) => write!(f, "{}", a),
-            RData::UNKNOWN(a) => write!(f, "NOT YET IMPLEMENTED: {}", a),
+            RData::UNKNOWN(a) => write!(f, "RR NOT YET IMPLEMENTED: {}", a),
             RData::ZONEMD(a) => write!(f, "{}", a),
             _ => unimplemented!("not yet implemented"),
         }

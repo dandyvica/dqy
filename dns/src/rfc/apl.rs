@@ -2,18 +2,13 @@ use std::{
     fmt,
     io::Cursor,
     net::{Ipv4Addr, Ipv6Addr},
-    ops::Deref,
 };
 
 use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
-
 use crate::{buffer::Buffer, new_rd_length};
-
-use super::algorithm::Algorithm;
 
 // https://www.rfc-editor.org/rfc/rfc3123.html
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
@@ -51,13 +46,13 @@ impl fmt::Display for InnerAPL {
                 let mut ip = [0u8; 4];
                 (0..length).for_each(|i| ip[i as usize] = self.afdpart[i as usize]);
                 let ip = Ipv4Addr::from(ip);
-                write!(f, "{}{}:{}/{} ", n, self.address_family, ip, self.prefix)?;
+                write!(f, "{}{}:{}/{}", n, self.address_family, ip, self.prefix)?;
             }
             2 => {
                 let mut ip = [0u8; 16];
                 (0..length).for_each(|i| ip[i as usize] = self.afdpart[i as usize]);
                 let ip = Ipv6Addr::from(ip);
-                write!(f, "{}{}:{}/{} ", n, self.address_family, ip, self.prefix)?;
+                write!(f, "{}{}:{}/{}", n, self.address_family, ip, self.prefix)?;
             }
             _ => unimplemented!("only IPV4 or V6 for APL"),
         }
@@ -103,4 +98,30 @@ impl fmt::Display for APL {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::APL;
+
+    test_rdata!(
+        "./tests/apl.pcap",
+        RData::APL,
+        (|x: &APL, _| {
+            assert_eq!(x.apl.len(), 4);
+            assert_eq!(&x.apl[0].to_string(), "1:192.168.32.0/21");
+            assert_eq!(&x.apl[1].to_string(), "!1:192.168.38.0/28");
+            assert_eq!(&x.apl[2].to_string(), "2:2001:db8::/32");
+            assert_eq!(&x.apl[3].to_string(), "!2:2001:470:30:84::/64");
+        })
+    );
 }

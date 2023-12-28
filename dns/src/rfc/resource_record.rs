@@ -13,22 +13,9 @@ use crate::{
     buffer::Buffer,
     either_or::EitherOr,
     rfc::{
-        afsdb::AFSDB,
-        apl::APL,
-        caa::CAA,
-        ds::DS,
-        eui48::EUI48,
-        eui64::EUI64,
-        kx::KX,
-        naptr::NAPTR,
-        nsec::NSEC,
-        nsec3::{NSEC3, NSEC3PARAM},
-        openpgpkey::OPENPGPKEY,
-        opt::opt::OptOption,
-        rp::RP,
-        rrsig::RRSIG,
-        tlsa::TLSA,
-        uri::URI,
+        afsdb::AFSDB, apl::APL, caa::CAA, cert::CERT, csync::CSYNC, ds::DS, eui48::EUI48,
+        eui64::EUI64, kx::KX, naptr::NAPTR, nsec::NSEC, nsec3::NSEC3, nsec3param::NSEC3PARAM,
+        openpgpkey::OPENPGPKEY, opt::opt::OptOption, rp::RP, rrsig::RRSIG, tlsa::TLSA, uri::URI,
         zonemd::ZONEMD,
     },
 };
@@ -184,7 +171,9 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::AFSDB => self.r_data = get_rr!(buffer, AFSDB, RData::AFSDB),
                 QType::APL => self.r_data = get_rr!(buffer, APL, RData::APL, self.rd_length),
                 QType::CAA => self.r_data = get_rr!(buffer, CAA, RData::CAA, self.rd_length),
+                QType::CERT => self.r_data = get_rr!(buffer, CERT, RData::CERT, self.rd_length),
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
+                QType::CSYNC => self.r_data = get_rr!(buffer, CSYNC, RData::CSYNC, self.rd_length),
                 QType::DNSKEY => {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
                 }

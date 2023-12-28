@@ -42,3 +42,28 @@ impl<'a> fmt::Display for SOA<'a> {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::SOA;
+
+    test_rdata!(
+        "./tests/soa.pcap",
+        RData::SOA,
+        (|x: &SOA, _| {
+            assert_eq!(
+                &x.to_string(),
+                "panix.netmeister.org. jschauma.netmeister.org. 2021072599 3600 300 3600000 3600"
+            );
+        })
+    );
+}

@@ -13,39 +13,27 @@ pub(super) struct AFSDB<'a> {
 
 impl<'a> fmt::Display for AFSDB<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} ", self.subtype, self.hostname)?;
-
-        Ok(())
+        write!(f, "{} {} ", self.subtype, self.hostname)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv6Addr;
-
     use crate::{
         error::DNSResult,
         rfc::{afsdb::AFSDB, rdata::RData, response::Response},
+        test_rdata,
         tests::{get_pcap_buffer, read_pcap_sample},
     };
 
     use type2network::FromNetworkOrder;
 
-    #[test]
-    fn rr_aaaa() -> DNSResult<()> {
-        let pcap = read_pcap_sample("./tests/afsdb.pcap")?;
-        let mut buffer = get_pcap_buffer(&pcap);
-
-        let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer.buf_resp)?;
-
-        let answer = resp.answer.unwrap();
-        let answer = &answer[0];
-
-        assert!(
-            matches!(&answer.r_data, RData::AFSDB(AFSDB { subtype: x, hostname }) if x == &1u16 && &hostname.to_string() == "panix.netmeister.org.")
-        );
-
-        Ok(())
-    }
+    test_rdata!(
+        "./tests/afsdb.pcap",
+        RData::AFSDB,
+        (|x: &AFSDB, _| {
+            assert_eq!(x.subtype, 1u16);
+            assert_eq!(x.hostname.to_string(), "panix.netmeister.org.");
+        })
+    );
 }

@@ -9,7 +9,8 @@ base=/data/projects/rust/dqy
 module=${1:l}
 
 # copy from another RR
-cp $base/dns/src/rfc/dnskey.rs $base/dns/src/rfc/$module.rs
+./add_rr.py $module >$base/dns/src/rfc/$module.rs
+# cp $base/dns/src/rfc/dnskey.rs $base/dns/src/rfc/$module.rs
 
 # add ref to this new RR in the RData defition
 sed -i "/RData definition/a $1($1)," $base/dns/src/rfc/rdata.rs

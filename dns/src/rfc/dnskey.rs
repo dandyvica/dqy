@@ -7,8 +7,9 @@ use base64::{engine::general_purpose, Engine as _};
 
 use crate::{buffer::Buffer, new_rd_length};
 
-use super::algorithm::Algorithm;
+use super::algorithm::DNSSECAlgorithmTypes;
 
+// https://www.rfc-editor.org/rfc/rfc4034.html
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -57,7 +58,7 @@ pub(super) struct DNSKEY {
     // The Algorithm field identifies the public key's cryptographic
     // algorithm and determines the format of the Public Key field.  A list
     // of DNSSEC algorithm types can be found in Appendix A.1
-    algorithm: Algorithm,
+    algorithm: DNSSECAlgorithmTypes,
 
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
@@ -71,15 +72,33 @@ new_rd_length!(DNSKEY);
 
 impl fmt::Display for DNSKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:<4} {:<2} {:<20} ",
-            self.flags, self.protocol, self.algorithm
-        )?;
+        write!(f, "{} {} {} ", self.flags, self.protocol, self.algorithm)?;
 
         let b64 = general_purpose::STANDARD.encode(&self.key);
         write!(f, "{}", b64)?;
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::DNSKEY;
+
+    test_rdata!(
+        "./tests/dnskey.pcap",
+        RData::DNSKEY,
+        (|x: &DNSKEY, _| {
+            assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 XEn4q8CbG2a4Hw47Ih244BDkwY1tOuprXWKEzMyLPtjO9iIRVt4HLLbx9YaeaYzRcH91mvCstP8I5liQ0Mn1bA==");
+        })
+    );
 }

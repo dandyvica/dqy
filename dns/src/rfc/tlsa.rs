@@ -39,3 +39,28 @@ impl fmt::Display for TLSA {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::TLSA;
+
+    test_rdata!(
+        "./tests/tlsa.pcap",
+        RData::TLSA,
+        (|x: &TLSA, _| {
+            assert_eq!(
+                &x.to_string(),
+                "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
+            );
+        })
+    );
+}

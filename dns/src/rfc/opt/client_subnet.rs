@@ -5,7 +5,7 @@ use crate::buffer::Buffer;
 
 // https://www.rfc-editor.org/rfc/rfc7871
 #[derive(Debug, Default, ToNetwork, FromNetwork)]
-pub struct CLIENT_SUBNET {
+pub struct ClientSubnet {
     pub(super) family: u16,
     pub(super) source_prefix_length: u8,
     pub(super) scope_prefix_length: u8,

@@ -5,6 +5,7 @@ use type2network_derive::FromNetwork;
 
 use crate::{buffer::Buffer, new_rd_length};
 
+// https://datatracker.ietf.org/doc/html/rfc8659
 //-------------------------------------------------------------------------------------
 // CAA
 //-------------------------------------------------------------------------------------
@@ -44,8 +45,33 @@ impl fmt::Display for CAA {
             self.flags,
             self.tag_key.to_string(),
             self.tag_value.to_string()
-        )?;
-
-        Ok(())
+        )
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::CAA;
+
+    test_rdata!(
+        "./tests/caa.pcap",
+        RData::CAA,
+        (|x: &CAA, i: usize| {
+            match i {
+                0 => assert_eq!(x.to_string(), "0 issue \";\""),
+                1 => assert_eq!(x.to_string(), "0 issuewild \";\""),
+                2 => assert_eq!(x.to_string(), "0 iodef \"mailto:abuse@netmeister.org\""),
+                _ => panic!("data not is the pcap file"),
+            }
+        })
+    );
 }

@@ -35,8 +35,11 @@ fn main() -> DNSResult<()> {
     // depending on mode, different processing
     match options.transport_mode {
         TransportMode::Udp => {
-            let mut udp_transport =
-                UdpTransport::new(&options.resolvers.as_slice(), &options.ip_version, options.timeout)?;
+            let mut udp_transport = UdpTransport::new(
+                &options.resolvers.as_slice(),
+                &options.ip_version,
+                options.timeout,
+            )?;
             send_receive_query(&options, &mut udp_transport)?;
         }
         TransportMode::Tcp => {

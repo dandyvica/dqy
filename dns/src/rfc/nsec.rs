@@ -1,14 +1,10 @@
 use std::fmt;
 
-use log::trace;
+// use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use super::{domain::DomainName, nsec3::TypeBitMaps};
-
-//-------------------------------------------------------------------------------------
-// NSEC3PARAM
-//-------------------------------------------------------------------------------------
+use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
 
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -42,12 +38,28 @@ impl<'a> NSEC<'a> {
 
 impl<'a> fmt::Display for NSEC<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ", self.domain)?;
-
-        for qt in self.types.iter() {
-            write!(f, "{} ", qt)?;
-        }
-
-        Ok(())
+        write!(f, "{} {}", self.domain, self.types)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::NSEC;
+
+    test_rdata!(
+        "./tests/nsec.pcap",
+        RData::NSEC,
+        (|x: &NSEC, _| {
+            assert_eq!(&x.to_string(), "nsec3.dns.netmeister.org. TXT RRSIG NSEC");
+        })
+    );
 }

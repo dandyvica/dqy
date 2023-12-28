@@ -61,7 +61,7 @@ impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<20} {:<20} {} {} {} {} ",
+            "{} {} {} {} {} {} ",
             self.type_covered.to_string(),
             self.algorithm.to_string(),
             self.name,
@@ -75,4 +75,30 @@ impl<'a> fmt::Display for RRSIG<'a> {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::RRSIG;
+
+    test_rdata!(
+        "./tests/rrsig.pcap",
+        RData::RRSIG,
+        (|x: &RRSIG, i: usize| {
+            match i {
+                0 => assert_eq!(x.to_string(), "TXT ECDSAP256SHA256 dns.netmeister.org. 20240105225356 20231222220918 61102 1dKF+G83fLep6Hk1ylM0c5VEkoj8ZTHQj9O30iH0Ldz2+bisTRE7WtDVXCnz0OHL8OOnwpGTLZItfj9kpuvpDw=="),
+                1 => assert_eq!(x.to_string(), "NSEC ECDSAP256SHA256 dns.netmeister.org. 20240105225356 20231222220918 61102 OQ2AxONxJbZG2MtoEp+QrmolHnTlWxchO0zmUzgBAdTPDeOJmjfVqpM0MOfOnZ3qk1oss+EyhYwNvaFYSo3fpw=="),
+                _ => panic!("data not is the pcap file"),
+            }
+        })
+    );
 }

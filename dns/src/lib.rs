@@ -90,7 +90,7 @@ mod tests {
                 Err(PcapError::Incomplete) => {
                     reader.refill().unwrap();
                 }
-                Err(e) => panic!("error while reading: {:?}", e),
+                Err(e) => panic!("error while reading pcap file: {:?}", e),
             }
         }
 
@@ -105,37 +105,34 @@ mod tests {
         }
     }
 
-    // helpr function to extract answers
-    // pub(crate) fn get_response<'a>(pcap_file: &str) -> DNSResult<Response<'a>> {
-    //     let pcap = read_pcap_sample(pcap_file)?;
-    //     let mut buffer = get_pcap_buffer(&pcap);
+    // helper macro to create a function to test all RRs
+    // allow to test several RRs in the answer
+    #[macro_export]
+    macro_rules! test_rdata {
+        ($file:literal, $arm:path, $closure:tt) => {
+            #[test]
+            fn test_rdata() -> DNSResult<()> {
+                {
+                    let pcap = read_pcap_sample($file)?;
+                    let mut buffer = get_pcap_buffer(&pcap);
 
-    //     let mut resp = Response::default();
-    //     resp.deserialize_from(&mut buffer.buf_resp)?;
+                    let mut resp = Response::default();
+                    resp.deserialize_from(&mut buffer.buf_resp)?;
 
-    //     Ok(resp)
-    // }
+                    let answer = resp.answer.unwrap();
 
-    // // helper macro to create a function which extract inner RData type
-    // #[macro_export]
-    // macro_rules! extract_rdata {
-    //     ($file:literal, $arm:path) => {
-    //         {
-    //             let pcap = read_pcap_sample($file)?;
-    //             let mut buffer = get_pcap_buffer(&pcap);
+                    for (i, a) in answer.iter().enumerate() {
+                        if let $arm(x) = &a.r_data {
+                            $closure(&x, i);
+                            //Ok(())
+                        } else {
+                            panic!("RData not found in file {}", $file)
+                        }
+                    }
 
-    //             let mut resp = Response::default();
-    //             resp.deserialize_from(&mut buffer.buf_resp)?;
-
-    //             let answer = resp.answer.unwrap();
-    //             let answer = &answer[0];
-
-    //             if let $arm(x) = &answer.r_data {
-    //                 x
-    //             } else {
-    //                 panic!("no found")
-    //             }
-    //         }
-    //     };
-    // }
+                    Ok(())
+                }
+            }
+        };
+    }
 }

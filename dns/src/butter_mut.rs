@@ -1,7 +1,7 @@
 // A specific management for the Vec<u8> type for the FromNetworkOrder trait
 use std::convert::AsRef;
 use std::fmt;
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 
 use type2network::FromNetworkOrder;
 

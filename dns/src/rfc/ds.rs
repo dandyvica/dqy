@@ -41,12 +41,28 @@ impl fmt::Display for DS {
             f,
             "{} {} {} {}",
             self.key_tag, self.algorithm, self.digest_type, self.digest
-        )?;
-
-        // for c in &self.digest {
-        //     write!(f, "{:X?}", c)?;
-        // }
-
-        Ok(())
+        )
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::DS;
+
+    test_rdata!(
+        "./tests/ds.pcap",
+        RData::DS,
+        (|x: &DS, _| {
+            assert_eq!(&x.to_string(), "56393 ECDSAP256SHA256 2 BD36DD608262A02683721FA19E2F7B474F531BB3179CC0A0C38FF0CA11657");
+        })
+    );
 }

@@ -22,7 +22,7 @@ impl fmt::Display for LOC {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "version:{} size:{} horiz_pre:{} vert_pre:{} latitude1:{} latitude2:{} longitude1:{} longitude2:{} altitude1:{} altitude2:{}",
+            "{} {} {} {} {} {} {} {} {} {}",
             self.version,
             self.size,
             self.horiz_pre,
@@ -35,4 +35,29 @@ impl fmt::Display for LOC {
             self.altitude2,
         )
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::{get_pcap_buffer, read_pcap_sample},
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::LOC;
+
+    test_rdata!(
+        "./tests/loc.pcap",
+        RData::LOC,
+        (|x: &LOC, _| {
+            assert_eq!(
+                &x.to_string(),
+                "0 18 22 19 35005 44968 28703 37840 152 39528"
+            );
+        })
+    );
 }
