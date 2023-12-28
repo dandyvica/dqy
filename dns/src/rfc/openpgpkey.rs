@@ -1,6 +1,5 @@
 use std::fmt;
 
-use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 

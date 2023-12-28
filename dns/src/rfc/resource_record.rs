@@ -13,10 +13,10 @@ use crate::{
     buffer::Buffer,
     either_or::EitherOr,
     rfc::{
-        afsdb::AFSDB, apl::APL, caa::CAA, cert::CERT, csync::CSYNC, ds::DS, eui48::EUI48,
-        eui64::EUI64, kx::KX, naptr::NAPTR, nsec::NSEC, nsec3::NSEC3, nsec3param::NSEC3PARAM,
-        openpgpkey::OPENPGPKEY, opt::opt::OptOption, rp::RP, rrsig::RRSIG, tlsa::TLSA, uri::URI,
-        zonemd::ZONEMD,
+        afsdb::AFSDB, apl::APL, caa::CAA, cert::CERT, csync::CSYNC, dhcid::DHCID, ds::DS,
+        eui48::EUI48, eui64::EUI64, kx::KX, naptr::NAPTR, nsec::NSEC, nsec3::NSEC3,
+        nsec3param::NSEC3PARAM, openpgpkey::OPENPGPKEY, opt::opt::OptOption, rp::RP, rrsig::RRSIG,
+        tlsa::TLSA, uri::URI, zonemd::ZONEMD, sshfp::SSHFP,
     },
 };
 
@@ -174,6 +174,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::CERT => self.r_data = get_rr!(buffer, CERT, RData::CERT, self.rd_length),
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
                 QType::CSYNC => self.r_data = get_rr!(buffer, CSYNC, RData::CSYNC, self.rd_length),
+                QType::DHCID => self.r_data = get_rr!(buffer, DHCID, RData::DHCID, self.rd_length),
                 QType::DNSKEY => {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
                 }
@@ -212,6 +213,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::RP => self.r_data = get_rr!(buffer, RP, RData::RP),
                 QType::RRSIG => self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
+                QType::SSHFP => self.r_data = get_rr!(buffer, SSHFP, RData::SSHFP, self.rd_length),
                 QType::TLSA => self.r_data = get_rr!(buffer, TLSA, RData::TLSA, self.rd_length),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::URI => self.r_data = get_rr!(buffer, URI, RData::URI, self.rd_length),
