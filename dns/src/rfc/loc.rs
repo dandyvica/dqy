@@ -51,6 +51,7 @@ mod tests {
     use super::LOC;
 
     test_rdata!(
+        rdata,
         "./tests/loc.pcap",
         RData::LOC,
         (|x: &LOC, _| {

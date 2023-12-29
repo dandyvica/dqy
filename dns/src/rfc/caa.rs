@@ -63,6 +63,7 @@ mod tests {
     use super::CAA;
 
     test_rdata!(
+        rdata,
         "./tests/caa.pcap",
         RData::CAA,
         (|x: &CAA, i: usize| {

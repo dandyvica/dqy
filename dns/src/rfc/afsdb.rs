@@ -29,6 +29,7 @@ mod tests {
     use type2network::FromNetworkOrder;
 
     test_rdata!(
+        rdata,
         "./tests/afsdb.pcap",
         RData::AFSDB,
         (|x: &AFSDB, _| {

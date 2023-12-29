@@ -114,6 +114,7 @@ mod tests {
     use super::APL;
 
     test_rdata!(
+        rdata,
         "./tests/apl.pcap",
         RData::APL,
         (|x: &APL, _| {

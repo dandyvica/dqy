@@ -29,6 +29,7 @@ mod tests {
     use super::NS;
 
     test_rdata!(
+        rdata,
         "./tests/ns.pcap",
         RData::NS,
         (|x: &NS, _| {

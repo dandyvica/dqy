@@ -56,6 +56,7 @@ mod tests {
     use super::CSYNC;
 
     test_rdata!(
+        rdata,
         "./tests/csync.pcap",
         RData::CSYNC,
         (|x: &CSYNC, _| {

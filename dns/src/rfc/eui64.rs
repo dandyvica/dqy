@@ -39,6 +39,7 @@ mod tests {
     use super::EUI64;
 
     test_rdata!(
+        rdata,
         "./tests/eui64.pcap",
         RData::EUI64,
         (|x: &EUI64, _| {

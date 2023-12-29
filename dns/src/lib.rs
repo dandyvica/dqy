@@ -109,9 +109,10 @@ mod tests {
     // allow to test several RRs in the answer
     #[macro_export]
     macro_rules! test_rdata {
-        ($file:literal, $arm:path, $closure:tt) => {
+        // pass function name, pcap file name, RData arm, closure containing unit tests
+        ($fname:ident, $file:literal, $arm:path, $closure:tt) => {
             #[test]
-            fn test_rdata() -> DNSResult<()> {
+            fn $fname() -> DNSResult<()> {
                 {
                     let pcap = read_pcap_sample($file)?;
                     let mut buffer = get_pcap_buffer(&pcap);
@@ -133,6 +134,9 @@ mod tests {
                     Ok(())
                 }
             }
-        };
+        }; // same but with a single fn
+           // ($file:literal, $arm:path, $closure:tt) => {
+           //     test_rdata!(rdata,rdata, $file, $arm, $closure);
+           // };
     }
 }

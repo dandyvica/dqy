@@ -32,6 +32,7 @@ mod tests {
     use super::HINFO;
 
     test_rdata!(
+        rdata,
         "./tests/hinfo.pcap",
         RData::HINFO,
         (|x: &HINFO, _| {

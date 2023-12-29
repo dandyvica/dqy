@@ -57,6 +57,7 @@ mod tests {
     use super::SOA;
 
     test_rdata!(
+        rdata,
         "./tests/soa.pcap",
         RData::SOA,
         (|x: &SOA, _| {

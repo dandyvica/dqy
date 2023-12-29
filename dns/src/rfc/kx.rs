@@ -37,6 +37,7 @@ mod tests {
     use super::KX;
 
     test_rdata!(
+        rdata,
         "./tests/kx.pcap",
         RData::KX,
         (|x: &KX, _| {

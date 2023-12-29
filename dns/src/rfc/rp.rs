@@ -31,6 +31,7 @@ mod tests {
     use super::RP;
 
     test_rdata!(
+        rdata,
         "./tests/rp.pcap",
         RData::RP,
         (|x: &RP, _| {

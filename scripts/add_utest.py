@@ -14,7 +14,7 @@ mod tests {{
 
     use super::{0};
 
-    test_rdata!(
+    test_rdata!(rdata,
         "./tests/{1}.pcap",
         RData::{2},
         (|x: &{3}, _| {{

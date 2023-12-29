@@ -40,6 +40,9 @@ impl fmt::Display for TLSA {
     }
 }
 
+// https://datatracker.ietf.org/doc/html/rfc8162
+pub(super) type SMIMEA = TLSA;
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -51,9 +54,10 @@ mod tests {
 
     use type2network::FromNetworkOrder;
 
-    use super::TLSA;
+    use super::{SMIMEA, TLSA};
 
     test_rdata!(
+        rdata_tlsa,
         "./tests/tlsa.pcap",
         RData::TLSA,
         (|x: &TLSA, _| {
@@ -63,4 +67,16 @@ mod tests {
             );
         })
     );
+
+    // test_rdata!(
+    //     rdata_smimea,
+    //     "./tests/smimea.pcap",
+    //     RData::SMIMEA,
+    //     (|x: &SMIMEA, _| {
+    //         assert_eq!(
+    //             &x.to_string(),
+    //             "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
+    //         );
+    //     })
+    // );
 }

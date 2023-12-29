@@ -27,6 +27,7 @@ mod tests {
     use type2network::FromNetworkOrder;
 
     test_rdata!(
+        rdata,
         "./tests/aaaa.pcap",
         RData::AAAA,
         (|x: &AAAA, _| {

@@ -34,6 +34,7 @@ mod tests {
     use super::EUI48;
 
     test_rdata!(
+        rdata,
         "./tests/eui48.pcap",
         RData::EUI48,
         (|x: &EUI48, _| {

@@ -56,6 +56,7 @@ mod tests {
     use super::URI;
 
     test_rdata!(
+        rdata,
         "./tests/uri.pcap",
         RData::URI,
         (|x: &URI, _| {

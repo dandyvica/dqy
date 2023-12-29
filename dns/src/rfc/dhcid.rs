@@ -45,6 +45,7 @@ mod tests {
     use super::DHCID;
 
     test_rdata!(
+        rdata,
         "./tests/dhcid.pcap",
         RData::DHCID,
         (|x: &DHCID, _| {

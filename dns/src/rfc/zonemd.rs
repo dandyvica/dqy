@@ -57,6 +57,7 @@ mod tests {
     use super::ZONEMD;
 
     test_rdata!(
+        rdata,
         "./tests/zonemd.pcap",
         RData::ZONEMD,
         (|x: &ZONEMD, _| {

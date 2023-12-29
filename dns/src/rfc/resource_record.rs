@@ -13,10 +13,30 @@ use crate::{
     buffer::Buffer,
     either_or::EitherOr,
     rfc::{
-        afsdb::AFSDB, apl::APL, caa::CAA, cert::CERT, csync::CSYNC, dhcid::DHCID, ds::DS,
-        eui48::EUI48, eui64::EUI64, kx::KX, naptr::NAPTR, nsec::NSEC, nsec3::NSEC3,
-        nsec3param::NSEC3PARAM, openpgpkey::OPENPGPKEY, opt::opt::OptOption, rp::RP, rrsig::RRSIG,
-        tlsa::TLSA, uri::URI, zonemd::ZONEMD, sshfp::SSHFP,
+        afsdb::AFSDB,
+        apl::APL,
+        caa::CAA,
+        cert::CERT,
+        csync::CSYNC,
+        dhcid::DHCID,
+        ds::{DLV, DS},
+        eui48::EUI48,
+        eui64::EUI64,
+        hip::HIP,
+        kx::KX,
+        naptr::NAPTR,
+        nsec::NSEC,
+        nsec3::NSEC3,
+        nsec3param::NSEC3PARAM,
+        openpgpkey::OPENPGPKEY,
+        opt::opt::OptOption,
+        rp::RP,
+        rrsig::RRSIG,
+        sshfp::SSHFP,
+        svcb::SVCB,
+        tlsa::{SMIMEA, TLSA},
+        uri::URI,
+        zonemd::ZONEMD,
     },
 };
 
@@ -175,6 +195,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
                 QType::CSYNC => self.r_data = get_rr!(buffer, CSYNC, RData::CSYNC, self.rd_length),
                 QType::DHCID => self.r_data = get_rr!(buffer, DHCID, RData::DHCID, self.rd_length),
+                QType::DLV => self.r_data = get_rr!(buffer, DLV, RData::DLV, self.rd_length),
                 QType::DNSKEY => {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
                 }
@@ -182,6 +203,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::EUI48 => self.r_data = get_rr!(buffer, EUI48, RData::EUI48),
                 QType::EUI64 => self.r_data = get_rr!(buffer, EUI64, RData::EUI64),
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
+                QType::HIP => self.r_data = get_rr!(buffer, HIP, RData::HIP, self.rd_length),
                 QType::KX => self.r_data = get_rr!(buffer, KX, RData::KX),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
@@ -212,8 +234,12 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::PTR),
                 QType::RP => self.r_data = get_rr!(buffer, RP, RData::RP),
                 QType::RRSIG => self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length),
+                QType::SMIMEA => {
+                    self.r_data = get_rr!(buffer, SMIMEA, RData::SMIMEA, self.rd_length)
+                }
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::SSHFP => self.r_data = get_rr!(buffer, SSHFP, RData::SSHFP, self.rd_length),
+                QType::SVCB => self.r_data = get_rr!(buffer, SVCB, RData::SVCB, self.rd_length),
                 QType::TLSA => self.r_data = get_rr!(buffer, TLSA, RData::TLSA, self.rd_length),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::URI => self.r_data = get_rr!(buffer, URI, RData::URI, self.rd_length),

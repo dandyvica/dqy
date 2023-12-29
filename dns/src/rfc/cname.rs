@@ -29,6 +29,7 @@ mod tests {
     use super::CNAME;
 
     test_rdata!(
+        rdata,
         "./tests/cname.pcap",
         RData::CNAME,
         (|x: &CNAME, _| {

@@ -95,6 +95,7 @@ mod tests {
     use super::DNSKEY;
 
     test_rdata!(
+        rdata,
         "./tests/dnskey.pcap",
         RData::DNSKEY,
         (|x: &DNSKEY, _| {

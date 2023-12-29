@@ -56,6 +56,7 @@ mod tests {
     use super::NSEC;
 
     test_rdata!(
+        rdata,
         "./tests/nsec.pcap",
         RData::NSEC,
         (|x: &NSEC, _| {

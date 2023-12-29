@@ -1,7 +1,7 @@
 use std::fmt;
 
 // use log::trace;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
@@ -84,7 +84,7 @@ impl fmt::Display for CERT {
 
 //     use super::CERT;
 
-//     test_rdata!(
+//     test_rdata!(rdata,
 //         "./tests/cert.pcap",
 //         RData::CERT,
 //         (|x: &CERT, i: usize| {

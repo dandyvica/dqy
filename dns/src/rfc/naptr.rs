@@ -55,6 +55,7 @@ mod tests {
     use super::NAPTR;
 
     test_rdata!(
+        rdata,
         "./tests/naptr.pcap",
         RData::NAPTR,
         (|x: &NAPTR, i: usize| {

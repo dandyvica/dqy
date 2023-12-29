@@ -55,6 +55,7 @@ mod tests {
     use super::NSEC3PARAM;
 
     test_rdata!(
+        rdata,
         "./tests/nsec3param.pcap",
         RData::NSEC3PARAM,
         (|x: &NSEC3PARAM, _| {

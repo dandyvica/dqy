@@ -34,6 +34,7 @@ mod tests {
     use super::MX;
 
     test_rdata!(
+        rdata,
         "./tests/mx.pcap",
         RData::MX,
         (|x: &MX, _| {

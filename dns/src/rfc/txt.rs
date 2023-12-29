@@ -29,6 +29,7 @@ mod tests {
     use super::TXT;
 
     test_rdata!(
+        rdata,
         "./tests/txt.pcap",
         RData::TXT,
         (|x: &TXT, i: usize| {

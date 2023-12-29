@@ -43,7 +43,7 @@ impl fmt::Display for OPENPGPKEY {
 
 //     use super::OPENPGPKEY;
 
-//     test_rdata!(
+//     test_rdata!(rdata,
 //         "./tests/openpgpkey.pcap",
 //         RData::OPENPGPKEY,
 //         (|x: &OPENPGPKEY, _| {

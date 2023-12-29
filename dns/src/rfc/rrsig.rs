@@ -91,6 +91,7 @@ mod tests {
     use super::RRSIG;
 
     test_rdata!(
+        rdata,
         "./tests/rrsig.pcap",
         RData::RRSIG,
         (|x: &RRSIG, i: usize| {
