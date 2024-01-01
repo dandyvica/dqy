@@ -46,6 +46,7 @@ impl fmt::Display for DS {
 }
 
 pub(super) type DLV = DS;
+pub(super) type CDS = DS;
 
 #[cfg(test)]
 mod tests {
@@ -73,6 +74,15 @@ mod tests {
         rdata_dlv,
         "./tests/dlv.pcap",
         RData::DLV,
+        (|x: &DS, _| {
+            assert_eq!(&x.to_string(), "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F");
+        })
+    );
+
+    test_rdata!(
+        rdata_cds,
+        "./tests/cds.pcap",
+        RData::CDS,
         (|x: &DS, _| {
             assert_eq!(&x.to_string(), "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F");
         })

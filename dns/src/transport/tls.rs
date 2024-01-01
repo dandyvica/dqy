@@ -1,5 +1,10 @@
 // Specific TLS handling
-use std::{io::Write, net::TcpStream, sync::Arc, time::Duration};
+use std::{
+    io::Write,
+    net::{SocketAddr, TcpStream},
+    sync::Arc,
+    time::Duration,
+};
 
 use log::debug;
 // use log::debug;
@@ -73,5 +78,9 @@ impl<'a> Transporter for TlsTransport<'a> {
 
     fn mode(&self) -> TransportMode {
         TransportMode::DoT
+    }
+
+    fn peer(&self) -> std::io::Result<SocketAddr> {
+        self.tls_stream.sock.peer_addr()
     }
 }

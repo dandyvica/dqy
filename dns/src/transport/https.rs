@@ -1,6 +1,6 @@
 // Transport for sending DNS messages
 
-use std::time::Duration;
+use std::{net::SocketAddr, time::Duration};
 
 use bytes::Bytes;
 //use log::debug;
@@ -15,9 +15,17 @@ use crate::error::DNSResult;
 use super::{mode::TransportMode, Transporter};
 
 pub struct HttpsTransport<'a> {
+    // URL endpoint
     server: &'a str,
+
+    // reqwest client used to send DNS messages
     client: Client,
+
+    // data received from Response
     bytes_recv: Bytes,
+
+    // peer address to which the client is connected
+    peer: Option<SocketAddr>,
 }
 
 impl<'a> HttpsTransport<'a> {
@@ -34,6 +42,7 @@ impl<'a> HttpsTransport<'a> {
             server,
             client,
             bytes_recv: Bytes::default(),
+            peer: None,
         })
     }
 
@@ -64,6 +73,9 @@ impl<'a> Transporter for HttpsTransport<'a> {
             .body(bytes_sent)
             .send()?;
 
+        // save remote address
+        self.peer = resp.remote_addr();
+
         // and extract the bytes received
         self.bytes_recv = resp.bytes()?;
 
@@ -85,5 +97,11 @@ impl<'a> Transporter for HttpsTransport<'a> {
 
     fn mode(&self) -> TransportMode {
         TransportMode::DoH
+    }
+
+    fn peer(&self) -> std::io::Result<SocketAddr> {
+        self.peer.ok_or(std::io::Error::other(
+            "unable to get remote peer from HTTPS response",
+        ))
     }
 }

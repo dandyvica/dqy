@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    net::{TcpStream, ToSocketAddrs},
+    net::{SocketAddr, TcpStream, ToSocketAddrs},
     time::Duration,
 };
 
@@ -34,17 +34,6 @@ impl Transporter for TcpTransport {
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
-        // let mut bytes = 0usize;
-        // let mut reader = BufReader::new(&self.stream);
-        // while bytes < 2059 {
-        //     let x = reader.read(buffer)?;
-        //     println!("============> read {x}");
-        //     bytes += x;
-
-        // }
-
-        // Ok(bytes)
-        // //Ok(reader.read(buffer)?)
         <TcpTransport as Transporter>::tcp_read(&mut self.stream, buffer)
     }
 
@@ -54,5 +43,9 @@ impl Transporter for TcpTransport {
 
     fn mode(&self) -> TransportMode {
         TransportMode::Tcp
+    }
+
+    fn peer(&self) -> std::io::Result<SocketAddr> {
+        self.stream.peer_addr()
     }
 }

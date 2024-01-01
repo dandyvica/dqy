@@ -142,8 +142,6 @@ impl CliOptions {
         plus_arg_bool!(options, dnssec, plus_map);
         plus_arg_bool!(options, short, plus_map);
 
-        // options.dnssec = plus_map.contains_key("dnssec");
-        // options.short = plus_map.contains_key("short");
         options.bufsize = plus_map.get_value("bufsize", 1232);
 
         plus_arg_bool!(options, tcp, plus_map);
@@ -151,11 +149,29 @@ impl CliOptions {
         plus_arg_bool!(options, dot, plus_map);
         plus_arg_bool!(options, https, plus_map);
         plus_arg_bool!(options, doh, plus_map);
-        // plus_arg_bool!(options, tcp, plus_map);
-        // //options.tcp = plus_map.contains_key("tcp");
-        // options.tls = plus_map.contains_key("tls");
-        // options.dot = plus_map.contains_key("dot");
-        // options.https = plus_map.contains_key("https");
+
+        // verbositiy without setting env variable
+        if plus_map.contains_key("v") {
+            env_logger::Builder::new()
+                .filter_level(log::LevelFilter::Info)
+                .init();
+        } else if plus_map.contains_key("vv") || plus_map.contains_key("v2") {
+            env_logger::Builder::new()
+                .filter_level(log::LevelFilter::Warn)
+                .init();
+        } else if plus_map.contains_key("vvv") || plus_map.contains_key("v3") {
+            env_logger::Builder::new()
+                .filter_level(log::LevelFilter::Error)
+                .init();
+        } else if plus_map.contains_key("vvvv") || plus_map.contains_key("v4") {
+            env_logger::Builder::new()
+                .filter_level(log::LevelFilter::Debug)
+                .init();
+        } else if plus_map.contains_key("vvvvvv") || plus_map.contains_key("v5") {
+            env_logger::Builder::new()
+                .filter_level(log::LevelFilter::Trace)
+                .init();
+        }
 
         // now process the arguments starting with a '-'
         let matches = Command::new("DNS query tool")

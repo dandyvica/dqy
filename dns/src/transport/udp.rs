@@ -1,9 +1,9 @@
 use std::{
-    net::{ToSocketAddrs, UdpSocket},
+    net::{SocketAddr, ToSocketAddrs, UdpSocket},
     time::Duration,
 };
 
-use log::debug;
+use log::{debug, trace};
 
 use crate::error::DNSResult;
 
@@ -23,8 +23,10 @@ impl UdpTransport {
         timeout: Duration,
     ) -> DNSResult<Self> {
         let sock = if ip_version == &IPVersion::V4 {
+            trace!("binding UDP socket to 0.0.0.0:0");
             UdpSocket::bind("0.0.0.0:0")?
         } else {
+            trace!("binding UDP socket to ::");
             UdpSocket::bind("::")?
         };
 
@@ -52,5 +54,9 @@ impl Transporter for UdpTransport {
 
     fn mode(&self) -> TransportMode {
         TransportMode::Udp
+    }
+
+    fn peer(&self) -> std::io::Result<SocketAddr> {
+        self.sock.peer_addr()
     }
 }

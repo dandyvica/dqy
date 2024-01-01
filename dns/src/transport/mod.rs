@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::io::Read;
+use std::net::SocketAddr;
 
 use log::trace;
 
@@ -49,4 +50,7 @@ pub trait Transporter {
 
         Ok(length)
     }
+
+    // return the remote address used by the transport
+    fn peer(&self) -> std::io::Result<SocketAddr>;
 }

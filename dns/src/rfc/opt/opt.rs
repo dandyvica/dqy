@@ -119,8 +119,6 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
         self.code.deserialize_from(buffer)?;
         self.length.deserialize_from(buffer)?;
 
-        println!("=================> {}", self.code);
-
         match self.code {
             OptOptionCode::NSID => {
                 let mut buf: Buffer = Buffer::new(self.length);

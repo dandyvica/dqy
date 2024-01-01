@@ -11,3 +11,4 @@ log = "0.4.20"
 resolver = { git = "https://github.com/dandyvica/resolver.git" }
 dns = { path = "../dns" }
 idna = "0.4.0"
+env_logger = "0.10.1"

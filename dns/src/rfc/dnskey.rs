@@ -81,6 +81,8 @@ impl fmt::Display for DNSKEY {
     }
 }
 
+pub(super) type CDNSKEY = DNSKEY;
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -95,11 +97,20 @@ mod tests {
     use super::DNSKEY;
 
     test_rdata!(
-        rdata,
+        rdata_dnskey,
         "./tests/dnskey.pcap",
         RData::DNSKEY,
         (|x: &DNSKEY, _| {
             assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 XEn4q8CbG2a4Hw47Ih244BDkwY1tOuprXWKEzMyLPtjO9iIRVt4HLLbx9YaeaYzRcH91mvCstP8I5liQ0Mn1bA==");
+        })
+    );
+
+    test_rdata!(
+        rdata_cdnskey,
+        "./tests/cdnskey.pcap",
+        RData::CDNSKEY,
+        (|x: &DNSKEY, _| {
+            assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 JErBf5lZ1osSWg7r51+4VfEiWIdONph0L70X0ToT7DkbikKQIp+qvuOOZri7j3qVComv7tgTIBhKxeDQercdKQ==");
         })
     );
 }

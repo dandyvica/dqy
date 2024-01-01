@@ -19,7 +19,9 @@ use crate::{
         cert::CERT,
         csync::CSYNC,
         dhcid::DHCID,
-        ds::{DLV, DS},
+        dname::DNAME,
+        dnskey::CDNSKEY,
+        ds::{CDS, DLV, DS},
         eui48::EUI48,
         eui64::EUI64,
         hip::HIP,
@@ -32,6 +34,7 @@ use crate::{
         opt::opt::OptOption,
         rp::RP,
         rrsig::RRSIG,
+        srv::SRV,
         sshfp::SSHFP,
         svcb::SVCB,
         tlsa::{SMIMEA, TLSA},
@@ -190,11 +193,16 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::AAAA => self.r_data = get_rr!(buffer, AAAA, RData::AAAA),
                 QType::AFSDB => self.r_data = get_rr!(buffer, AFSDB, RData::AFSDB),
                 QType::APL => self.r_data = get_rr!(buffer, APL, RData::APL, self.rd_length),
+                QType::CDNSKEY => {
+                    self.r_data = get_rr!(buffer, CDNSKEY, RData::CDNSKEY, self.rd_length)
+                }
                 QType::CAA => self.r_data = get_rr!(buffer, CAA, RData::CAA, self.rd_length),
+                QType::CDS => self.r_data = get_rr!(buffer, CDS, RData::CDS, self.rd_length),
                 QType::CERT => self.r_data = get_rr!(buffer, CERT, RData::CERT, self.rd_length),
                 QType::CNAME => self.r_data = get_rr!(buffer, CNAME, RData::CNAME),
                 QType::CSYNC => self.r_data = get_rr!(buffer, CSYNC, RData::CSYNC, self.rd_length),
                 QType::DHCID => self.r_data = get_rr!(buffer, DHCID, RData::DHCID, self.rd_length),
+                QType::DNAME => self.r_data = get_rr!(buffer, DNAME, RData::DNAME),
                 QType::DLV => self.r_data = get_rr!(buffer, DLV, RData::DLV, self.rd_length),
                 QType::DNSKEY => {
                     self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
@@ -222,7 +230,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     while current_length < self.rd_length {
                         let mut option = OptOption::default();
                         option.deserialize_from(buffer)?;
-                        println!("option={:?}", option);
+                        trace!("option={:?}", option);
 
                         current_length += option.length + 4;
 
@@ -237,6 +245,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::SMIMEA => {
                     self.r_data = get_rr!(buffer, SMIMEA, RData::SMIMEA, self.rd_length)
                 }
+                QType::SRV => self.r_data = get_rr!(buffer, SRV, RData::SRV),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::SSHFP => self.r_data = get_rr!(buffer, SSHFP, RData::SSHFP, self.rd_length),
                 QType::SVCB => self.r_data = get_rr!(buffer, SVCB, RData::SVCB, self.rd_length),

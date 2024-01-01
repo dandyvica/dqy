@@ -1,14 +1,13 @@
 //! A DNS resource query tool
 //!
 //! TODO: specialize RUST_LOG
-use std::time::Instant;
+use std::{process::ExitCode, time::Instant};
 
-use env_logger::{Builder, Env};
 use log::{debug, error, info, trace};
 
 // my DNS library
 use dns::{
-    error::DNSResult,
+    error::{DNSResult, Error},
     rfc::{
         opt::opt::OptQuery, qtype::QType, query::Query, response::Response,
         response_code::ResponseCode,
@@ -21,16 +20,53 @@ use dns::{
 
 use args::args::CliOptions;
 
-fn main() -> DNSResult<()> {
-    let now = Instant::now();
+// use this trick to be able to display error
+fn main() -> ExitCode {
+    let res = run();
 
-    let env = Env::new().filter("DQY_LOG");
-    env_logger::init_from_env(env);
+    if let Err(e) = res {
+        match e {
+            Error::Io(err) => {
+                eprintln!("I/O error (details: {err})");
+                return ExitCode::from(1);
+            }
+            Error::Utf8(err) => {
+                eprintln!("UTF8 conversion error (details: {err})");
+                return ExitCode::from(2);
+            }
+            Error::AddrParseError(err) => {
+                eprintln!("IP address parsing error (details: {err})");
+                return ExitCode::from(3);
+            }
+            Error::InternalError(err) => {
+                eprintln!("DNS protocol error (details: {err})");
+                return ExitCode::from(4);
+            }
+            Error::Reqwest(err) => {
+                eprintln!("DoH error (details: {err})");
+                return ExitCode::from(5);
+            }
+            Error::Tls(err) => {
+                eprintln!("DoT error (details: {err})");
+                return ExitCode::from(6);
+            }
+            Error::Resolv(err) => {
+                eprintln!("Fetching resolvers error (details: {:?})", err);
+                return ExitCode::from(7);
+            }
+        }
+    }
+
+    ExitCode::SUCCESS
+}
+
+fn run() -> DNSResult<()> {
+    let now = Instant::now();
 
     // get arguments
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = CliOptions::options(&args)?;
-    debug!("{:?}", options);
+    debug!("{:#?}", options);
 
     // depending on mode, different processing
     match options.transport_mode {
@@ -84,7 +120,7 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
 
         // check for the truncation (TC) header flag. If set and UDP, resend using TCP
         if response.header.flags.truncated && trp.mode() == TransportMode::Udp {
-            info!("query for {} caused truncation", qt);
+            info!("query for {} caused truncation, resending using TCP", qt);
             let mut buffer = [0u8; 4096];
 
             let mut tcp_transport =
@@ -126,7 +162,11 @@ fn send_query<'a, T: Transporter>(
 
     // send using the chosen transport
     let bytes = query.send(trp)?;
-    trace!("sent query of {} bytes", bytes);
+    info!(
+        "sent query of {} bytes to remote address {}",
+        bytes,
+        trp.peer()?
+    );
 
     Ok(query)
 }
