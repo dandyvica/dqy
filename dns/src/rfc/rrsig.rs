@@ -5,7 +5,7 @@ use base64::{engine::general_purpose, Engine as _};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, date_time::DateTime, new_rd_length};
+use crate::{buffer::Buffer, date_time::DateTime, new_rd_length, butter_mut::BufferMut};
 
 use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 
@@ -50,8 +50,8 @@ pub struct RRSIG<'a> {
     // will be deserialized locally
     // #[deser(ignore)]
     pub name: DomainName<'a>,
-    #[deser(with_code( self.signature = Buffer::new(self.rd_length - 18 - self.name.len() as u16); ))]
-    pub signature: Buffer,
+    #[deser(with_code( self.signature = BufferMut::new(self.rd_length - 18 - self.name.len() as u16); ))]
+    pub signature: BufferMut<'a>,
 }
 
 // auto-implement new

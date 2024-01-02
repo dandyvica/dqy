@@ -10,7 +10,7 @@ echo "process ID=$tcpdump_pid"
 sleep 1 
 
 # start dig to send/receive DNS packets
-dig $1 $1.dns.netmeister.org. +short
+dig $2 $1 $1.dns.netmeister.org. +short
 sleep 2
 
 # gracedully kill tcpdump

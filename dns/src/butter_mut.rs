@@ -2,8 +2,11 @@
 use std::convert::AsRef;
 use std::fmt;
 use std::io::Cursor;
+use std::ops::Index;
 
 use type2network::FromNetworkOrder;
+
+use crate::buffer::Buffer;
 
 #[derive(Debug, Default)]
 pub struct BufferMut<'a> {
@@ -48,6 +51,15 @@ impl<'a> FromNetworkOrder<'a> for BufferMut<'a> {
 impl<'a> AsRef<[u8]> for BufferMut<'a> {
     fn as_ref(&self) -> &[u8] {
         self.data
+    }
+}
+
+// used for APL RR
+impl<'a> Index<usize> for BufferMut<'a> {
+    type Output = u8;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        &self[i]
     }
 }
 

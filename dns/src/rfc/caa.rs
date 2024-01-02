@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length, butter_mut::BufferMut};
 
 // https://datatracker.ietf.org/doc/html/rfc8659
 //-------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // +----------------+----------------+.....+----------------+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct CAA {
+pub(super) struct CAA<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     rd_length: u16,
@@ -28,17 +28,17 @@ pub(super) struct CAA {
     flags: u8,
     tag_length: u8,
 
-    #[deser(with_code( self.tag_key = Buffer::new(self.tag_length); ))]
-    tag_key: Buffer,
+    #[deser(with_code( self.tag_key = BufferMut::new(self.tag_length); ))]
+    tag_key: BufferMut<'a>,
 
-    #[deser(with_code( self.tag_value = Buffer::new(self.rd_length - self.tag_length as u16 - 2 ); ))]
-    tag_value: Buffer,
+    #[deser(with_code( self.tag_value = BufferMut::new(self.rd_length - self.tag_length as u16 - 2 ); ))]
+    tag_value: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(CAA);
+new_rd_length!(CAA<'a>);
 
-impl fmt::Display for CAA {
+impl<'a> fmt::Display for CAA<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

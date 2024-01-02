@@ -4,7 +4,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length, butter_mut::BufferMut};
 
 use super::{nsec3param::NSEC3PARAM, type_bitmaps::TypeBitMaps};
 
@@ -24,23 +24,25 @@ use super::{nsec3param::NSEC3PARAM, type_bitmaps::TypeBitMaps};
 // /                         Type Bit Maps                         /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct NSEC3 {
+pub struct NSEC3<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
     params: NSEC3PARAM,
     hash_length: u8,
-    owner_name: Buffer,
+
+    #[deser(with_code( self.owner_name = BufferMut::new(self.hash_length); ))]
+    owner_name: BufferMut<'a>,
 
     #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - (self.params.len() + 1 + self.hash_length as usize) as u16); ))]
     types: TypeBitMaps,
 }
 
 // auto-implement new
-new_rd_length!(NSEC3);
+new_rd_length!(NSEC3<'a>);
 
-impl fmt::Display for NSEC3 {
+impl<'a> fmt::Display for NSEC3<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} ", self.params, self.owner_name)?;
 
@@ -78,11 +80,21 @@ mod tests {
 
             let answer = resp.authority.unwrap();
 
-            for (_, a) in answer.iter().enumerate() {
-                if let RData::SOA(x) = &a.r_data {
-                    assert_eq!(&x.to_string(), "panix.netmeister.org. jschauma.netmeister.org. 2021073555 3600 300 3600000 3600");
-                } else {
-                    panic!("RData not found in file ./tests/nsec3.pcap")
+            for (i, a) in answer.iter().enumerate() {
+                match i {
+                    0 => if let RData::SOA(x) = &a.r_data {
+                        assert_eq!(&x.to_string(), "panix.netmeister.org. jschauma.netmeister.org. 2021073555 3600 300 3600000 3600");
+                    }
+                    1 => if  let RData::RRSIG(x) = &a.r_data {
+                        assert_eq!(&x.to_string(), "SOA ECDSAP256SHA256 nsec3.dns.netmeister.org. 20240114141115 20231231131115 24381 5JizDTGokTMjAuzVYm27HH6STw70v8Hz8lS+QVHTpsxnQJhgCK2HjvSKtf/hnUgZKJ8ywNH9XTfBHK1oCrHxSQ==");
+                    }
+                    2 => if  let RData::NSEC3(x) = &a.r_data {
+                        assert_eq!(&x.to_string(), "1 0 15 508B7248F76E19FD AD409ACAD23C99B998D437318235167D65A06BDE NS SOA TXT RRSIG DNSKEY NSEC3PARAM CDS CDNSKEY ");
+                    }
+                    3 => if  let RData::RRSIG(x) = &a.r_data {
+                        assert_eq!(&x.to_string(), "NSEC3 ECDSAP256SHA256 nsec3.dns.netmeister.org. 20240109015350 20231226011049 24381 fTlRgL8n2BFwxMguZv1ASryNtCn9O9LhdsVqkZiPc8fTP8777QkHZsofNujVN93/+EcjqYPtfXibAyETUnC3jA==");
+                    } 
+                    _ => panic!("unexpected pcap answer")
                 }
             }
 

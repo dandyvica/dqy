@@ -6,23 +6,23 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length, butter_mut::BufferMut};
 
 // https://datatracker.ietf.org/doc/html/rfc4701#section-3.1
 #[derive(Debug, Default, FromNetwork)]
-pub struct DHCID {
+pub struct DHCID<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
-    #[deser(with_code( self.data = Buffer::new(self.rd_length); ))]
-    data: Buffer,
+    #[deser(with_code( self.data = BufferMut::new(self.rd_length); ))]
+    data: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(DHCID);
+new_rd_length!(DHCID<'a>);
 
-impl fmt::Display for DHCID {
+impl<'a> fmt::Display for DHCID<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let b64 = general_purpose::STANDARD.encode(&self.data);
         write!(f, "{}", b64)?;
