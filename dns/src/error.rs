@@ -1,5 +1,5 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
-use std::net::AddrParseError;
+use std::net::{AddrParseError, SocketAddr};
 use std::str;
 use std::{fmt, io};
 
@@ -36,6 +36,9 @@ pub enum Error {
 
     // Error when fetching resolvers
     Resolv(resolver::error::Error),
+
+    // No connexion to any TCP address succeeds
+    NoValidTCPConnection(Vec<SocketAddr>)
 }
 
 #[derive(Debug)]
@@ -122,6 +125,7 @@ impl fmt::Debug for Error {
             Error::Reqwest(e) => write!(f, "DoH error {:?}", e),
             Error::Tls(e) => write!(f, "TLS error {:?}", e),
             Error::Resolv(e) => write!(f, "error {:?} fetching resolvers", e),
+            Error::NoValidTCPConnection(e) => write!(f, "error {:?} for TCP connections", e),
         }
     }
 }

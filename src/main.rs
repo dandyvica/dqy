@@ -54,6 +54,14 @@ fn main() -> ExitCode {
                 eprintln!("Fetching resolvers error (details: {:?})", err);
                 return ExitCode::from(7);
             }
+            Error::NoValidTCPConnection(a) => {
+                if a.len() == 1 {
+                    eprintln!("Timeout occured: couldn't TCP connect to: {:?}", a);
+                } else {
+                    eprintln!("Timeout occured: couldn't TCP connect to any of: {:?}", a);
+                }
+                return ExitCode::from(8);
+            }
         }
     }
 
@@ -85,7 +93,7 @@ fn run() -> DNSResult<()> {
         }
         TransportMode::DoT => {
             // we need to initialize the TLS connexion using TCP stream and TLS features
-            let mut tls = TlsTransport::init_tls(&options.server, 853)?;
+            let mut tls = TlsTransport::init_tls(&options.server, 853, options.timeout)?;
             let mut tls_transport = TlsTransport::new(&mut tls, options.timeout)?;
             // we need to initialize the TLS connexion using TCP stream and TLS features
             send_receive_query(&options, &mut tls_transport)?;

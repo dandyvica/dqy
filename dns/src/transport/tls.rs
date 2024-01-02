@@ -4,6 +4,7 @@ use std::{
     net::{SocketAddr, TcpStream},
     sync::Arc,
     time::Duration,
+    str::FromStr
 };
 
 use log::debug;
@@ -26,7 +27,7 @@ impl<'a> TlsTransport<'a> {
         Ok(Self { tls_stream })
     }
 
-    pub fn init_tls(server: &str, port: u16) -> DNSResult<(TcpStream, ClientConnection)> {
+    pub fn init_tls(server: &str, port: u16, timeout: Duration) -> DNSResult<(TcpStream, ClientConnection)> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
         let mut root_store = rustls::RootCertStore::empty();
@@ -46,7 +47,12 @@ impl<'a> TlsTransport<'a> {
 
         // create the stream to the endpoint
         let destination = format!("{}:{}", server, port);
-        let stream = TcpStream::connect(&destination)?;
+        let socket_addr = SocketAddr::from_str(&destination)?;
+        let stream = if let Ok(s) = TcpStream::connect_timeout(&socket_addr, timeout) {
+            s
+        } else {
+            return Err(Error::NoValidTCPConnection(vec![socket_addr]));
+        };
         debug!("created TLS-TCP socket to {destination}");
 
         // build ServerName type which is used by ClientConnection::new()

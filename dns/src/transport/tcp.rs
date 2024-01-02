@@ -6,7 +6,7 @@ use std::{
 
 use log::debug;
 
-use crate::error::DNSResult;
+use crate::{error::{DNSResult, Error}, transport::tcp};
 
 use super::{mode::TransportMode, Transporter};
 
@@ -15,14 +15,30 @@ pub struct TcpTransport {
 }
 
 impl TcpTransport {
-    pub fn new<A: ToSocketAddrs>(addr: A, timeout: Duration) -> DNSResult<Self> {
-        let stream = TcpStream::connect(addr)?;
+    pub fn new<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> DNSResult<Self> {
+        let mut stream: Option<TcpStream> = None;
 
-        stream.set_read_timeout(Some(timeout))?;
-        stream.set_write_timeout(Some(timeout))?;
+        // find the first address for which the connexion succeeds
+        for addr in addrs.to_socket_addrs()? {
+            if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
+                stream = Some(s);
+                break
+            }
+        }
 
-        debug!("created TCP socket to {}", stream.peer_addr()?);
-        Ok(Self { stream })
+        // if None, none of the connexions is OK
+        if stream.is_none() {
+            let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.into_iter().collect();
+            return Err(Error::NoValidTCPConnection(addresses));
+        }
+
+        // now it's safe to unwrap
+        let tcp_stream = stream.unwrap();
+        tcp_stream.set_read_timeout(Some(timeout))?;
+        tcp_stream.set_write_timeout(Some(timeout))?;
+
+        debug!("created TCP socket to {}", tcp_stream.peer_addr()?);
+        Ok(Self { stream: tcp_stream })
     }
 }
 
