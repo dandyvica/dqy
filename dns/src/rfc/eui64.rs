@@ -31,7 +31,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -41,6 +41,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/eui64.pcap",
+        false,
+        1,
         RData::EUI64,
         (|x: &EUI64, _| {
             assert_eq!(&x.to_string(), "be-a2-b9-ff-fe-82-32-a7");

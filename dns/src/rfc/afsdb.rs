@@ -5,6 +5,7 @@ use type2network_derive::FromNetwork;
 
 use super::domain::DomainName;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct AFSDB<'a> {
     subtype: u16,
@@ -23,7 +24,7 @@ mod tests {
         error::DNSResult,
         rfc::{afsdb::AFSDB, rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -31,6 +32,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/afsdb.pcap",
+        false,
+        1,
         RData::AFSDB,
         (|x: &AFSDB, _| {
             assert_eq!(x.subtype, 1u16);

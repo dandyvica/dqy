@@ -168,14 +168,14 @@ impl fmt::Display for Flags {
             write!(f, "opcode:{:?} rd:{}", self.op_code, self.recursion_desired)
         } else {
             write!(f, "code:{} ", self.response_code)?;
-            Ok({
-                flag_display!(f, self.authorative_answer, "aa");
-                flag_display!(f, self.truncated, "tc");
-                flag_display!(f, self.recursion_desired, "rd");
-                flag_display!(f, self.recursion_available, "ra");
-                flag_display!(f, self.authentic_data, "ad");
-                flag_display!(f, self.checking_disabled, "cd");
-            })
+
+            flag_display!(f, self.authorative_answer, "aa");
+            flag_display!(f, self.truncated, "tc");
+            flag_display!(f, self.recursion_desired, "rd");
+            flag_display!(f, self.recursion_available, "ra");
+            flag_display!(f, self.authentic_data, "ad");
+            flag_display!(f, self.checking_disabled, "cd");
+            Ok(())
         }
     }
 }

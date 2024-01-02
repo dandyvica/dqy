@@ -4,8 +4,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use super::type_bitmaps::TypeBitMaps;
-
 use crate::{buffer::Buffer, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc4255#section-3
@@ -50,7 +48,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -60,6 +58,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/sshfp.pcap",
+        false,
+        1,
         RData::SSHFP,
         (|x: &SSHFP, i: usize| {
             match i {

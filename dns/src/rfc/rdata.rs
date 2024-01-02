@@ -44,6 +44,7 @@ use super::{
 
 use crate::buffer::Buffer;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
 pub(super) enum RData<'a> {
     // RData definition

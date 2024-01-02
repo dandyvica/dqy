@@ -87,6 +87,10 @@ impl<'a> DomainName<'a> {
         self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     // iterator on labels
     fn iter(&self) -> Iter<'_, Label> {
         self.labels.iter()
@@ -233,7 +237,7 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
             domain
                 .split('.')
                 .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
-                .map(|x| Label(x))
+                .map(Label)
                 .collect()
         };
 

@@ -146,18 +146,18 @@ mod tests {
             a::A, opcode::OpCode, opt::opt::OptTTL, packet_type::PacketType, qclass::QClass,
             qtype::QType, rdata::RData, response_code::ResponseCode,
         },
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
 
     #[test]
     fn cap1() -> DNSResult<()> {
-        let pcap = read_pcap_sample("./tests/cap1.pcap")?;
-        let mut buffer = get_pcap_buffer(&pcap);
+        let pcap = get_packets("./tests/cap1.pcap", 0, 1);
+        let mut buffer = std::io::Cursor::new(&pcap.1[0x2A..]);
 
         let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer.buf_resp)?;
+        resp.deserialize_from(&mut buffer)?;
 
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);
@@ -198,12 +198,12 @@ mod tests {
 
     #[test]
     fn cap2() -> DNSResult<()> {
-        let pcap = read_pcap_sample("./tests/cap2.pcap")?;
-        let mut buffer = get_pcap_buffer(&pcap);
+        let pcap = get_packets("./tests/cap2.pcap", 0, 1);
+        let mut buffer = std::io::Cursor::new(&pcap.1[0x2A..]);
 
         // check response
         let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer.buf_resp)?;
+        resp.deserialize_from(&mut buffer)?;
 
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);

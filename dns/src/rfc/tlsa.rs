@@ -14,6 +14,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // /                 Certificate Association Data                  /
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct TLSA {
     #[deser(ignore)]
@@ -41,6 +42,7 @@ impl fmt::Display for TLSA {
 }
 
 // https://datatracker.ietf.org/doc/html/rfc8162
+#[allow(clippy::upper_case_acronyms)]
 pub(super) type SMIMEA = TLSA;
 
 #[cfg(test)]
@@ -49,7 +51,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -59,6 +61,8 @@ mod tests {
     test_rdata!(
         rdata_tlsa,
         "./tests/tlsa.pcap",
+        false,
+        1,
         RData::TLSA,
         (|x: &TLSA, _| {
             assert_eq!(
@@ -68,15 +72,17 @@ mod tests {
         })
     );
 
-    // test_rdata!(
-    //     rdata_smimea,
-    //     "./tests/smimea.pcap",
-    //     RData::SMIMEA,
-    //     (|x: &SMIMEA, _| {
-    //         assert_eq!(
-    //             &x.to_string(),
-    //             "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
-    //         );
-    //     })
-    // );
+    test_rdata!(
+        rdata_smimea,
+        "./tests/smimea.pcap",
+        false,
+        1,
+        RData::SMIMEA,
+        (|x: &SMIMEA, _| {
+            assert_eq!(
+                &x.to_string(),
+                "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
+            );
+        })
+    );
 }

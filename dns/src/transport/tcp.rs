@@ -22,7 +22,7 @@ impl TcpTransport {
         stream.set_write_timeout(Some(timeout))?;
 
         debug!("created TCP socket to {}", stream.peer_addr()?);
-        Ok(Self { stream: stream })
+        Ok(Self { stream })
     }
 }
 

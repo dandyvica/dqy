@@ -21,6 +21,7 @@ use super::{char_string::CharacterString, domain::DomainName};
 // /                  REPLACEMENT                  /
 // /                                               /
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct NAPTR<'a> {
     order: u16,
@@ -47,7 +48,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -57,6 +58,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/naptr.pcap",
+        false,
+        1,
         RData::NAPTR,
         (|x: &NAPTR, i: usize| {
             match i {

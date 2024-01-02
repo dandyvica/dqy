@@ -13,6 +13,7 @@ use crate::buffer::Buffer;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 // |  Salt Length  |                     Salt                      /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::len_without_is_empty)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct NSEC3PARAM {
     algorithm: u8,
@@ -47,7 +48,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -57,6 +58,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/nsec3param.pcap",
+        false,
+        1,
         RData::NSEC3PARAM,
         (|x: &NSEC3PARAM, _| {
             assert_eq!(&x.to_string(), "1 0 15 CB49105466D36AD");

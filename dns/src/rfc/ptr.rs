@@ -14,3 +14,28 @@ impl<'a> fmt::Display for PTR<'a> {
         write!(f, "{}", self.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        test_rdata,
+        tests::get_packets,
+    };
+
+    use type2network::FromNetworkOrder;
+
+    use super::PTR;
+
+    test_rdata!(
+        rdata,
+        "./tests/ptr.pcap",
+        false,
+        1,
+        RData::PTR,
+        (|x: &PTR, _| {
+            assert_eq!(&x.to_string(), "ptr.dns.netmeister.org.");
+        })
+    );
+}

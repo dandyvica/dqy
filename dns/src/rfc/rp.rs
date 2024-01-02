@@ -23,7 +23,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -33,6 +33,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/rp.pcap",
+        false,
+        1,
         RData::RP,
         (|x: &RP, _| {
             assert_eq!(

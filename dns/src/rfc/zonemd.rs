@@ -17,6 +17,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // /                                                               /
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct ZONEMD {
     #[deser(ignore)]
@@ -49,7 +50,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -59,6 +60,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/zonemd.pcap",
+        false,
+        1,
         RData::ZONEMD,
         (|x: &ZONEMD, _| {
             assert_eq!(&x.to_string(), "2021071219 1 1 4274F6BC562CF8CE512B21AAA4CCC1EB9F4FAAAECD01642D0A07BDEA890C8845849D615CC590F54BAC7E87B9E41ED");

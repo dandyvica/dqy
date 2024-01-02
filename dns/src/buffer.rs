@@ -67,7 +67,7 @@ impl<'a> IntoIterator for &'a Buffer {
     type IntoIter = std::slice::Iter<'a, u8>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.0).into_iter()
+        self.0.iter()
     }
 }
 

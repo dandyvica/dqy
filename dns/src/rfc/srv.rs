@@ -5,9 +5,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
-
-use crate::new_rd_length;
+use super::domain::DomainName;
 
 // https://datatracker.ietf.org/doc/html/rfc2782
 #[derive(Debug, Default, FromNetwork)]
@@ -36,7 +34,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -46,6 +44,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/srv.pcap",
+        false,
+        1,
         RData::SRV,
         (|x: &SRV, _| {
             assert_eq!(&x.to_string(), "0 1 80 panix.netmeister.org.");

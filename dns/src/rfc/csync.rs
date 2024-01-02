@@ -18,6 +18,7 @@ use crate::new_rd_length;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 // /                     Type Bit Map (continued)                  /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct CSYNC {
     // transmistted through RR deserialization
@@ -48,7 +49,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -58,6 +59,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/csync.pcap",
+        false,
+        1,
         RData::CSYNC,
         (|x: &CSYNC, _| {
             assert_eq!(&x.to_string(), "2021071001 3 NS");

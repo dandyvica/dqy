@@ -26,4 +26,4 @@ chrono = "0.4.31"
 base16 = "0.2.1"
 
 [dev-dependencies]
-pcap-parser = "0.14.1"
+pcap-file = "2.0.0"

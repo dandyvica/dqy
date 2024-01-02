@@ -37,7 +37,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -47,6 +47,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/dhcid.pcap",
+        false,
+        1,
         RData::DHCID,
         (|x: &DHCID, _| {
             assert_eq!(

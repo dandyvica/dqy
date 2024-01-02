@@ -15,6 +15,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // /                             Target                            /
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct URI {
     #[deser(ignore)]
@@ -48,7 +49,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -58,6 +59,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/uri.pcap",
+        false,
+        1,
         RData::URI,
         (|x: &URI, _| {
             assert_eq!(

@@ -19,6 +19,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // /                            AFDPART                            /
 // |                                                               |
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct InnerAPL {
     address_family: u16,
@@ -61,6 +62,7 @@ impl fmt::Display for InnerAPL {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default)]
 pub(super) struct APL {
     rd_length: u16,
@@ -106,7 +108,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -116,6 +118,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/apl.pcap",
+        false,
+        1,
         RData::APL,
         (|x: &APL, _| {
             assert_eq!(x.apl.len(), 4);

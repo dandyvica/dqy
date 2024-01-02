@@ -20,14 +20,8 @@ macro_rules! getter {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Cursor};
+    use std::fs::File;
     use type2network::{FromNetworkOrder, ToNetworkOrder};
-
-    use pcap_parser::traits::PcapReaderIterator;
-    use pcap_parser::*;
-
-    use crate::error::DNSResult;
-    use crate::rfc::response::Response;
 
     pub(crate) fn to_network_test<T: ToNetworkOrder>(val: &T, size: usize, v: &[u8]) {
         let mut buffer: Vec<u8> = Vec::new();
@@ -49,60 +43,35 @@ mod tests {
         assert_eq!(&v, val);
     }
 
-    // helper struct to manage tests
-    pub(crate) struct PCapData<'a> {
-        pub(crate) buf_query: Cursor<&'a [u8]>,
-        pub(crate) buf_resp: Cursor<&'a [u8]>,
-    }
+    // get packets from pcap file
+    pub(crate) fn get_packets(
+        pcap_file: &str,
+        query: usize,
+        response: usize,
+    ) -> (Vec<u8>, Vec<u8>) {
+        use pcap_file::pcap::PcapReader;
 
-    // to ease the data for tests, some captures are made using tcpdump and dig
-    // and data is saved as a pcap file.
-    // by convention, we just capture the query form dig and the response from the resolver.
-    pub(crate) fn read_pcap_sample(pcap_file: &str) -> DNSResult<(Vec<u8>, Vec<u8>)> {
-        let mut caps = (Vec::new(), Vec::new());
+        let pcap = File::open(pcap_file).expect("Error opening pcap file");
+        let mut pcap_reader = PcapReader::new(pcap).unwrap();
 
-        let file = File::open(pcap_file)?;
-        let mut num_blocks = 0u8;
-        let mut reader = LegacyPcapReader::new(65536, file).expect("LegacyPcapReader");
+        let mut index = 0usize;
 
-        loop {
-            match reader.next() {
-                Ok((offset, block)) => {
-                    match block {
-                        // don't need the PCAP header
-                        PcapBlockOwned::LegacyHeader(_hdr) => {}
+        let mut ret = (Vec::new(), Vec::new());
 
-                        // first block is the DNS query, second block is the DNS response
-                        PcapBlockOwned::Legacy(b) => {
-                            num_blocks += 1;
+        // iterate to find the query and response index
+        while let Some(pkt) = pcap_reader.next_packet() {
+            let pkt = pkt.unwrap();
 
-                            if num_blocks == 1 {
-                                caps.0 = b.data[42..].to_vec();
-                            } else if num_blocks == 2 {
-                                caps.1 = b.data[42..].to_vec();
-                            }
-                        }
-                        PcapBlockOwned::NG(_) => unreachable!(),
-                    }
-                    reader.consume(offset);
-                }
-                Err(PcapError::Eof) => break,
-                Err(PcapError::Incomplete) => {
-                    reader.refill().unwrap();
-                }
-                Err(e) => panic!("error while reading pcap file: {:?}", e),
+            if index == query {
+                ret.0 = pkt.data.to_vec();
+            } else if index == response {
+                ret.1 = pkt.data.to_vec();
             }
+
+            index += 1;
         }
 
-        Ok(caps)
-    }
-
-    // helper function to write test
-    pub(crate) fn get_pcap_buffer(v: &(Vec<u8>, Vec<u8>)) -> PCapData {
-        PCapData {
-            buf_query: Cursor::new(v.0.as_slice()),
-            buf_resp: Cursor::new(v.1.as_slice()),
-        }
+        ret
     }
 
     // helper macro to create a function to test all RRs
@@ -110,15 +79,32 @@ mod tests {
     #[macro_export]
     macro_rules! test_rdata {
         // pass function name, pcap file name, RData arm, closure containing unit tests
-        ($fname:ident, $file:literal, $arm:path, $closure:tt) => {
+        // $fname: function name
+        // $file: pcap file name
+        // $tcp: true if TCP was used
+        // $index: packet number in the pcap file
+        // $arm: RData enum arm
+        // $closure: code to test the function
+        ($fname:ident, $file:literal, $tcp:literal, $index:literal, $arm:path, $closure:tt) => {
             #[test]
             fn $fname() -> DNSResult<()> {
                 {
-                    let pcap = read_pcap_sample($file)?;
-                    let mut buffer = get_pcap_buffer(&pcap);
+                    // extract response packet
+                    let data = get_packets($file, 0, $index);
+
+                    // manage TCP length if any
+                    let mut resp_buffer = if $tcp {
+                        // DNS message starts at offset 0x44 when using TCP
+                        std::io::Cursor::new(&data.1[0x44..])
+                    } else {
+                        // DNS message starts at offset 0x2A when using UDP
+                        std::io::Cursor::new(&data.1[0x2A..])
+                    };
+
+                    println!("{:X?}", resp_buffer);
 
                     let mut resp = Response::default();
-                    resp.deserialize_from(&mut buffer.buf_resp)?;
+                    resp.deserialize_from(&mut resp_buffer)?;
 
                     let answer = resp.answer.unwrap();
 
@@ -134,9 +120,6 @@ mod tests {
                     Ok(())
                 }
             }
-        }; // same but with a single fn
-           // ($file:literal, $arm:path, $closure:tt) => {
-           //     test_rdata!(rdata,rdata, $file, $arm, $closure);
-           // };
+        };
     }
 }

@@ -21,7 +21,7 @@ impl<'a> BufferMut<'a> {
 
     // when printing out some RRs, it's easier to use this
     pub fn to_string(&self) -> String {
-        String::from_utf8_lossy(&self.data).to_string()
+        String::from_utf8_lossy(self.data).to_string()
     }
 }
 
@@ -38,7 +38,7 @@ impl<'a> fmt::Display for BufferMut<'a> {
 impl<'a> FromNetworkOrder<'a> for BufferMut<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         let pos = buffer.position();
-        self.data = &buffer.get_ref()[pos as usize..pos as usize + self.length as usize];
+        self.data = &buffer.get_ref()[pos as usize..pos as usize + self.length];
         buffer.set_position(pos + self.length as u64);
         Ok(())
     }
@@ -57,7 +57,7 @@ impl<'a> IntoIterator for &'a BufferMut<'a> {
     type IntoIter = std::slice::Iter<'a, u8>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.data).into_iter()
+        self.data.iter()
     }
 }
 

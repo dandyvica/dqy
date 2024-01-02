@@ -29,6 +29,7 @@ use super::{client_subnet::ClientSubnet, cookie::COOKIE, padding::PADDING};
 pub type OptQuery<'a> = ResourceRecord<'a, Vec<OptOption>>;
 
 impl<'a> OptQuery<'a> {
+    #[allow(clippy::field_reassign_with_default)]
     pub fn new(bufsize: u16) -> Self {
         let mut opt = OptQuery::default();
         opt.r#type = QType::OPT;
@@ -38,6 +39,7 @@ impl<'a> OptQuery<'a> {
     }
 
     // set DNSSEC bit to 1
+    #[allow(clippy::field_reassign_with_default)]
     pub fn set_dnssec(&mut self) {
         let mut opt_ttl = OptTTL::default();
         opt_ttl.flags = 0x8000;
@@ -52,6 +54,7 @@ impl<'a> OptQuery<'a> {
         self.r_data.push(option);
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     pub fn set_edns_nsid(&mut self) {
         let mut nsid = OptOption::default();
         nsid.code = OptOptionCode::NSID;
@@ -104,17 +107,12 @@ pub struct OptOption {
 
 impl fmt::Display for OptOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "({}-{}-<{}>)",
-            self.code.to_string(),
-            self.length,
-            self.data
-        )
+        write!(f, "({}-{}-<{}>)", self.code, self.length, self.data)
     }
 }
 
 impl<'a> FromNetworkOrder<'a> for OptOption {
+    #[allow(clippy::field_reassign_with_default)]
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.code.deserialize_from(buffer)?;
         self.length.deserialize_from(buffer)?;

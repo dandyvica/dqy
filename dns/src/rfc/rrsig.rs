@@ -62,8 +62,8 @@ impl<'a> fmt::Display for RRSIG<'a> {
         write!(
             f,
             "{} {} {} {} {} {} ",
-            self.type_covered.to_string(),
-            self.algorithm.to_string(),
+            self.type_covered,
+            self.algorithm,
             self.name,
             self.sign_expiration,
             self.sign_inception,
@@ -83,7 +83,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -93,6 +93,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/rrsig.pcap",
+        false,
+        1,
         RData::RRSIG,
         (|x: &RRSIG, i: usize| {
             match i {

@@ -51,6 +51,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // |           |                 | ("Invalid      |         |          |
 // |           |                 | key")          |         |          |
 // +-----------+-----------------+----------------+---------+----------+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(
     Debug,
     Default,
@@ -65,9 +66,10 @@ use crate::{buffer::Buffer, new_rd_length};
 )]
 #[repr(u16)]
 #[allow(non_camel_case_types)]
+#[allow(clippy::unnecessary_cast)]
 pub(super) enum SvcParamKeys {
     #[default]
-    mandatory = 0,
+    mandatory = 0_u16,
     alpn = 1,
     no_default_alpn = 2,
     port = 3,
@@ -114,7 +116,7 @@ impl<'a> fmt::Display for SVCB<'a> {
 //         error::DNSResult,
 //         rfc::{rdata::RData, response::Response},
 //         test_rdata,
-//         tests::{get_pcap_buffer, read_pcap_sample},
+//         tests::get_packets,
 //     };
 
 //     use type2network::FromNetworkOrder;

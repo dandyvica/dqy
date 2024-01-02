@@ -1,6 +1,6 @@
-use std::{fmt, io::Cursor};
+use std::fmt;
 
-use log::trace;
+// use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
@@ -40,39 +40,6 @@ pub struct NSEC3 {
 // auto-implement new
 new_rd_length!(NSEC3);
 
-// impl<'a> FromNetworkOrder<'a> for NSEC3 {
-//     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
-//         // don't deserialize the length
-//         trace!("rd_length={}", self.rd_length);
-
-//         // self.algorithm.deserialize_from(buffer)?;
-//         // self.flags.deserialize_from(buffer)?;
-//         // self.iterations.deserialize_from(buffer)?;
-//         // self.salt_length.deserialize_from(buffer)?;
-
-//         // self.salt = Buffer::new(self.salt_length as u16);
-//         // self.salt.deserialize_from(buffer)?;
-//         self.params.deserialize_from(buffer)?;
-
-//         self.hash_length.deserialize_from(buffer)?;
-//         self.owner_name = Buffer::new(self.hash_length);
-//         self.owner_name.deserialize_from(buffer)?;
-
-//         // finally, as the rd_length is passed through the length field, we can
-//         // calculate the renaming length for types
-//         // let types_length = self.rd_length - self.salt_length as u16 - self.hash_length as u16 - 6;
-//         let types_length =
-//             self.rd_length - (self.params.len() + 1 + self.hash_length as usize) as u16;
-//         self.types.types_length = types_length;
-//         //self.types = Buffer::new(length);
-//         self.types.deserialize_from(buffer)?;
-
-//         trace!("{:?}", self);
-
-//         Ok(())
-//     }
-// }
-
 impl fmt::Display for NSEC3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} ", self.params, self.owner_name)?;
@@ -82,5 +49,44 @@ impl fmt::Display for NSEC3 {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        error::DNSResult,
+        rfc::{rdata::RData, response::Response},
+        tests::get_packets,
+    };
+
+    use type2network::FromNetworkOrder;
+
+    #[test]
+    fn rdata() -> DNSResult<()> {
+        {
+            // extract response packet
+            let data = get_packets("./tests/nsec3.pcap", 0, 1);
+
+            // manage TCP length if any
+            let mut resp_buffer = std::io::Cursor::new(&data.1[0x2A..]);
+
+            println!("{:X?}", resp_buffer);
+
+            let mut resp = Response::default();
+            resp.deserialize_from(&mut resp_buffer)?;
+
+            let answer = resp.authority.unwrap();
+
+            for (_, a) in answer.iter().enumerate() {
+                if let RData::SOA(x) = &a.r_data {
+                    assert_eq!(&x.to_string(), "panix.netmeister.org. jschauma.netmeister.org. 2021073555 3600 300 3600000 3600");
+                } else {
+                    panic!("RData not found in file ./tests/nsec3.pcap")
+                }
+            }
+
+            Ok(())
+        }
     }
 }

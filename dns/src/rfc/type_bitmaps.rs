@@ -1,7 +1,7 @@
 use std::{
     fmt,
     io::{Cursor, Read},
-    slice::Iter,
+    //slice::Iter,
 };
 
 use log::trace;
@@ -42,11 +42,11 @@ impl TypeBitMaps {
     }
 }
 
-impl TypeBitMaps {
-    pub fn iter(&self) -> Iter<'_, QType> {
-        self.types.iter()
-    }
-}
+// impl TypeBitMaps {
+//     pub fn iter(&self) -> Iter<'_, QType> {
+//         self.types.iter()
+//     }
+// }
 
 impl<'a> FromNetworkOrder<'a> for TypeBitMaps {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
@@ -97,6 +97,7 @@ struct WindowList<'a>(Vec<Window<'a>>);
 impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
     type Error = crate::error::Error;
 
+    #[allow(clippy::field_reassign_with_default)]
     fn try_from(buf: &'a [u8]) -> Result<Self, Self::Error> {
         let mut v = Vec::new();
         let mut i = 0usize;

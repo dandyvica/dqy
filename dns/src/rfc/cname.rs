@@ -21,7 +21,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -31,6 +31,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/cname.pcap",
+        false,
+        1,
         RData::CNAME,
         (|x: &CNAME, _| {
             assert_eq!(x.to_string(), "cname-txt.dns.netmeister.org.");

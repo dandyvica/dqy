@@ -24,7 +24,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -34,6 +34,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/hinfo.pcap",
+        false,
+        1,
         RData::HINFO,
         (|x: &HINFO, _| {
             assert_eq!(&x.to_string(), "PDP-11 UNIX");

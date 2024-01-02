@@ -19,6 +19,7 @@ use super::algorithm::DNSSECAlgorithmTypes;
 // /                            Public Key                         /
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct DNSKEY {
     #[deser(ignore)]
@@ -81,6 +82,7 @@ impl fmt::Display for DNSKEY {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub(super) type CDNSKEY = DNSKEY;
 
 #[cfg(test)]
@@ -89,7 +91,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -99,6 +101,8 @@ mod tests {
     test_rdata!(
         rdata_dnskey,
         "./tests/dnskey.pcap",
+        false,
+        1,
         RData::DNSKEY,
         (|x: &DNSKEY, _| {
             assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 XEn4q8CbG2a4Hw47Ih244BDkwY1tOuprXWKEzMyLPtjO9iIRVt4HLLbx9YaeaYzRcH91mvCstP8I5liQ0Mn1bA==");
@@ -108,6 +112,8 @@ mod tests {
     test_rdata!(
         rdata_cdnskey,
         "./tests/cdnskey.pcap",
+        false,
+        1,
         RData::CDNSKEY,
         (|x: &DNSKEY, _| {
             assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 JErBf5lZ1osSWg7r51+4VfEiWIdONph0L70X0ToT7DkbikKQIp+qvuOOZri7j3qVComv7tgTIBhKxeDQercdKQ==");

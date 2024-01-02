@@ -126,21 +126,18 @@ fn debug_rr<T: Any>(value: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        rfc::response_code::ResponseCode,
-        tests::{get_pcap_buffer, read_pcap_sample},
-    };
+    use crate::{rfc::response_code::ResponseCode, tests::get_packets};
 
     use type2network::FromNetworkOrder;
 
     #[test]
     fn cap1() -> DNSResult<()> {
-        let pcap = read_pcap_sample("./tests/cap1.pcap")?;
-        let mut buffer = get_pcap_buffer(&pcap);
+        let pcap = get_packets("./tests/cap1.pcap", 0, 1);
+        let mut buffer = std::io::Cursor::new(&pcap.0[0x2A..]);
 
         // check query
         let mut query = Query::default();
-        query.header.deserialize_from(&mut buffer.buf_query)?;
+        query.header.deserialize_from(&mut buffer)?;
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
@@ -157,7 +154,7 @@ mod tests {
         assert_eq!(query.header.ns_count, 0);
         assert_eq!(query.header.ar_count, 0);
 
-        query.question.deserialize_from(&mut buffer.buf_query)?;
+        query.question.deserialize_from(&mut buffer)?;
         assert_eq!(format!("{}", query.question.qname), "www.google.com.");
         assert_eq!(query.question.qtype, QType::A);
         assert_eq!(query.question.qclass, QClass::IN);
@@ -167,12 +164,12 @@ mod tests {
 
     #[test]
     fn cap2() -> DNSResult<()> {
-        let pcap = read_pcap_sample("./tests/cap2.pcap")?;
-        let mut buffer = get_pcap_buffer(&pcap);
+        let pcap = get_packets("./tests/cap2.pcap", 0, 1);
+        let mut buffer = std::io::Cursor::new(&pcap.0[0x2A..]);
 
         // check query
         let mut query = Query::default();
-        query.header.deserialize_from(&mut buffer.buf_query)?;
+        query.header.deserialize_from(&mut buffer)?;
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
@@ -189,7 +186,7 @@ mod tests {
         assert_eq!(query.header.ns_count, 0);
         assert_eq!(query.header.ar_count, 1);
 
-        query.question.deserialize_from(&mut buffer.buf_query)?;
+        query.question.deserialize_from(&mut buffer)?;
         assert_eq!(format!("{}", query.question.qname), "hk.");
         assert_eq!(query.question.qtype, QType::NS);
         assert_eq!(query.question.qclass, QClass::IN);

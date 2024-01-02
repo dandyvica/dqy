@@ -18,6 +18,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // +----------------+----------------+.....+----------------+
 // | Value byte 0   | Value byte 1   |.....| Value byte m-1 |
 // +----------------+----------------+.....+----------------+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct CAA {
     // transmistted through RR deserialization
@@ -55,7 +56,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -65,6 +66,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/caa.pcap",
+        false,
+        1,
         RData::CAA,
         (|x: &CAA, i: usize| {
             match i {

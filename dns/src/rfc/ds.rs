@@ -19,6 +19,7 @@ use super::algorithm::Algorithm;
 // /                            Digest                             /
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct DS {
     #[deser(ignore)]
@@ -45,7 +46,10 @@ impl fmt::Display for DS {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub(super) type DLV = DS;
+
+#[allow(clippy::upper_case_acronyms)]
 pub(super) type CDS = DS;
 
 #[cfg(test)]
@@ -54,7 +58,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -64,6 +68,8 @@ mod tests {
     test_rdata!(
         rdata_ds,
         "./tests/ds.pcap",
+        false,
+        1,
         RData::DS,
         (|x: &DS, _| {
             assert_eq!(&x.to_string(), "56393 ECDSAP256SHA256 2 BD36DD608262A02683721FA19E2F7B474F531BB3179CC0A0C38FF0CA11657");
@@ -73,6 +79,8 @@ mod tests {
     test_rdata!(
         rdata_dlv,
         "./tests/dlv.pcap",
+        false,
+        1,
         RData::DLV,
         (|x: &DS, _| {
             assert_eq!(&x.to_string(), "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F");
@@ -82,6 +90,8 @@ mod tests {
     test_rdata!(
         rdata_cds,
         "./tests/cds.pcap",
+        false,
+        1,
         RData::CDS,
         (|x: &DS, _| {
             assert_eq!(&x.to_string(), "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F");

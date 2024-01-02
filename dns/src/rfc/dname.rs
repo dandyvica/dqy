@@ -9,6 +9,7 @@ use super::domain::DomainName;
 
 // https://www.rfc-editor.org/rfc/rfc7477.html#section-2.1
 // <owner> <ttl> <class> DNAME <target>
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct DNAME<'a>(DomainName<'a>);
 
@@ -26,7 +27,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -36,6 +37,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/dname.pcap",
+        false,
+        1,
         RData::DNAME,
         (|x: &DNAME, _| {
             assert_eq!(&x.to_string(), "dns.netmeister.org.");

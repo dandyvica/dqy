@@ -3,7 +3,7 @@
 //! TODO: specialize RUST_LOG
 use std::{process::ExitCode, time::Instant};
 
-use log::{debug, error, info, trace};
+use log::{debug, error, info};
 
 // my DNS library
 use dns::{
@@ -72,7 +72,7 @@ fn run() -> DNSResult<()> {
     match options.transport_mode {
         TransportMode::Udp => {
             let mut udp_transport = UdpTransport::new(
-                &options.resolvers.as_slice(),
+                options.resolvers.as_slice(),
                 &options.ip_version,
                 options.timeout,
             )?;
@@ -80,7 +80,7 @@ fn run() -> DNSResult<()> {
         }
         TransportMode::Tcp => {
             let mut tcp_transport =
-                TcpTransport::new(&options.resolvers.as_slice(), options.timeout)?;
+                TcpTransport::new(options.resolvers.as_slice(), options.timeout)?;
             send_receive_query(&options, &mut tcp_transport)?;
         }
         TransportMode::DoT => {

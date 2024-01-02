@@ -1,6 +1,5 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
 use std::net::AddrParseError;
-use std::process::Termination;
 use std::str;
 use std::{fmt, io};
 
@@ -167,19 +166,19 @@ impl From<AddrParseError> for Error {
     }
 }
 
-impl<'a> From<reqwest::Error> for Error {
+impl From<reqwest::Error> for Error {
     fn from(err: reqwest::Error) -> Self {
         Error::Reqwest(err)
     }
 }
 
-impl<'a> From<rustls::Error> for Error {
+impl From<rustls::Error> for Error {
     fn from(err: rustls::Error) -> Self {
         Error::Tls(err)
     }
 }
 
-impl<'a> From<resolver::error::Error> for Error {
+impl From<resolver::error::Error> for Error {
     fn from(err: resolver::error::Error) -> Self {
         Error::Resolv(err)
     }

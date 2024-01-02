@@ -4,7 +4,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base16::encode_upper;
 use base64::{engine::general_purpose, Engine as _};
 
 use crate::{buffer::Buffer, new_rd_length};
@@ -72,7 +71,7 @@ mod tests {
         error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -82,6 +81,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/hip.pcap",
+        false,
+        1,
         RData::HIP,
         (|x: &HIP, _| {
             assert_eq!(&x.to_string(), "2 200100107B1A74DF365639CC39F1D578 AwEAAbdxyhNuSutc5EMzxTs9LBPCIkOFH8cIvM4p9+LrV4e19WzK00+CI6zBCQTdtWsuxKbWIy87UOoJTwkUs7lBu+Upr1gsNrut79ryra+bSRGQb1slImA8YVJyuIDsj7kwzG7jnERNqnWxZ48AWkskmdHaVDP4BcelrTI3rMXdXF5D");

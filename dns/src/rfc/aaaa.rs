@@ -4,6 +4,7 @@ use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 // AAAA resource record
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct AAAA([u8; 16]);
 
@@ -21,7 +22,7 @@ mod tests {
         error::DNSResult,
         rfc::{aaaa::AAAA, rdata::RData, response::Response},
         test_rdata,
-        tests::{get_pcap_buffer, read_pcap_sample},
+        tests::get_packets,
     };
 
     use type2network::FromNetworkOrder;
@@ -29,6 +30,8 @@ mod tests {
     test_rdata!(
         rdata,
         "./tests/aaaa.pcap",
+        false,
+        1,
         RData::AAAA,
         (|x: &AAAA, _| {
             let addr = Ipv6Addr::from(x.0).to_string();

@@ -37,7 +37,7 @@ pub struct Header {
                        // resource records in the additional records section.
 }
 
-impl<'a> fmt::Display for Header {
+impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "id:0x{:X}({}) ", self.id, self.id)?;
         write!(f, "flags:<{}>  ", self.flags)?;

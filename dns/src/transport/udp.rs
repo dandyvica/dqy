@@ -35,7 +35,7 @@ impl UdpTransport {
 
         sock.connect(addr)?;
         debug!("created UDP socket to {}", sock.peer_addr()?);
-        Ok(Self { sock: sock })
+        Ok(Self { sock })
     }
 }
 
