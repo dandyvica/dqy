@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 use super::algorithm::Algorithm;
 
@@ -21,7 +21,7 @@ use super::algorithm::Algorithm;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub struct DS {
+pub struct DS<'a> {
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
@@ -29,28 +29,28 @@ pub struct DS {
     algorithm: Algorithm,
     digest_type: u8,
 
-    #[deser(with_code( self.digest = Buffer::new(self.rd_length - 4); ))]
-    pub(super) digest: Buffer,
+    #[deser(with_code( self.digest = BufferMut::with_capacity(self.rd_length - 4); ))]
+    pub(super) digest: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(DS);
+new_rd_length!(DS<'a>);
 
-impl fmt::Display for DS {
+impl<'a> fmt::Display for DS<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{} {} {} {:?}",
             self.key_tag, self.algorithm, self.digest_type, self.digest
         )
     }
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type DLV = DS;
+pub(super) type DLV<'a> = DS<'a>;
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type CDS = DS;
+pub(super) type CDS<'a> = DS<'a>;
 
 #[cfg(test)]
 mod tests {

@@ -4,7 +4,7 @@ use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 //use type2network_derive::FromNetwork;
 
-use crate::buffer::Buffer;
+use crate::databuf::BufferMut;
 
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -15,27 +15,27 @@ use crate::buffer::Buffer;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::len_without_is_empty)]
 #[derive(Debug, Default, FromNetwork)]
-pub struct NSEC3PARAM {
+pub struct NSEC3PARAM<'a> {
     algorithm: u8,
     flags: u8,
     iterations: u16,
     salt_length: u8,
 
-    #[deser(with_code( self.salt = Buffer::new(self.salt_length); ))]
-    salt: Buffer,
+    #[deser(with_code( self.salt = BufferMut::with_capacity(self.salt_length); ))]
+    salt: BufferMut<'a>,
 }
 
-impl NSEC3PARAM {
+impl<'a> NSEC3PARAM<'a> {
     pub fn len(&self) -> usize {
         5usize + self.salt_length as usize
     }
 }
 
-impl fmt::Display for NSEC3PARAM {
+impl<'a> fmt::Display for NSEC3PARAM<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{} {} {} {:?}",
             self.algorithm, self.flags, self.iterations, self.salt
         )?;
         Ok(())

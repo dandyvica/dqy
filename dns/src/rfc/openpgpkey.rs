@@ -5,26 +5,26 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 //-------------------------------------------------------------------------------------
 // OPENPGPKEY
 //-------------------------------------------------------------------------------------
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct OPENPGPKEY {
+pub(super) struct OPENPGPKEY<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     rd_length: u16,
 
-    #[deser(with_code( self.key = Buffer::new(self.rd_length ); ))]
-    key: Buffer,
+    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length ); ))]
+    key: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(OPENPGPKEY);
+new_rd_length!(OPENPGPKEY<'a>);
 
-impl fmt::Display for OPENPGPKEY {
+impl<'a> fmt::Display for OPENPGPKEY<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", general_purpose::STANDARD.encode(&self.key))
     }

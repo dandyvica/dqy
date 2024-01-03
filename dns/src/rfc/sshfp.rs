@@ -4,7 +4,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc4255#section-3
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -17,7 +17,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct SSHFP {
+pub struct SSHFP<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -25,18 +25,18 @@ pub struct SSHFP {
     algorithm: u8,
     fp_type: u8,
 
-    #[deser(with_code( self.fingerprint = Buffer::new(self.rd_length - 2); ))]
-    fingerprint: Buffer,
+    #[deser(with_code( self.fingerprint = BufferMut::with_capacity(self.rd_length - 2); ))]
+    fingerprint: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(SSHFP);
+new_rd_length!(SSHFP<'a>);
 
-impl fmt::Display for SSHFP {
+impl<'a> fmt::Display for SSHFP<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {}",
+            "{} {} {:?}",
             self.algorithm, self.fp_type, self.fingerprint
         )
     }

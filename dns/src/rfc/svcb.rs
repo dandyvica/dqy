@@ -8,7 +8,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::DomainName;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2
 // +===========+=================+================+=========+==========+
@@ -91,8 +91,8 @@ pub struct SVCB<'a> {
     svc_priority: u16,
     target_name: DomainName<'a>,
 
-    #[deser(with_code( self.svc_params = Buffer::new(self.rd_length - 2 - self.target_name.len() as u16); ))]
-    svc_params: Buffer,
+    #[deser(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
+    svc_params: BufferMut<'a>,
 }
 
 // auto-implement new

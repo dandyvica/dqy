@@ -3,7 +3,7 @@
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 use super::domain::DomainName;
 
@@ -29,12 +29,12 @@ pub struct TKEY<'a> {
     error: u16,
 
     key_size: u16,
-    #[deser(with_code( self.key_data = Buffer::new(self.key_size); ))]
-    key_data: Buffer,
+    #[deser(with_code( self.key_data = BufferMut::with_capacity(self.key_size); ))]
+    key_data: BufferMut<'a>,
 
     other_size: u16,
-    #[deser(with_code( self.key_data = Buffer::new(self.other_size); ))]
-    other_data: Buffer,
+    #[deser(with_code( self.key_data = BufferMut::with_capacity(self.other_size); ))]
+    other_data: BufferMut<'a>,
 }
 
 // auto-implement new

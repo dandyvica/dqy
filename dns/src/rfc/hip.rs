@@ -6,7 +6,7 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc5205.html#section-5
 // 0                   1                   2                   3
@@ -33,7 +33,7 @@ use crate::{buffer::Buffer, new_rd_length};
 // |             |
 // +-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct HIP {
+pub struct HIP<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -42,20 +42,20 @@ pub struct HIP {
     pk_algorithm: u8,
     pk_length: u16,
 
-    #[deser(with_code( self.hit = Buffer::new(self.hit_length); ))]
-    hit: Buffer,
+    #[deser(with_code( self.hit = BufferMut::with_capacity(self.hit_length); ))]
+    hit: BufferMut<'a>,
 
-    #[deser(with_code( self.public_key = Buffer::new(self.pk_length); ))]
-    public_key: Buffer,
+    #[deser(with_code( self.public_key = BufferMut::with_capacity(self.pk_length); ))]
+    public_key: BufferMut<'a>,
 
-    #[deser(with_code( self.rendezvous_servers = Buffer::new(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
-    rendezvous_servers: Buffer,
+    #[deser(with_code( self.rendezvous_servers = BufferMut::with_capacity(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
+    rendezvous_servers: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(HIP);
+new_rd_length!(HIP<'a>);
 
-impl fmt::Display for HIP {
+impl<'a> fmt::Display for HIP<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hit_b64 = base16::encode_upper(&self.hit);
         let pk_b64 = general_purpose::STANDARD.encode(&self.public_key);

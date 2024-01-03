@@ -8,7 +8,7 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::Buffer, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc4398.html#section-2.2
 #[derive(
@@ -49,7 +49,7 @@ pub struct CERT {
     key_tag: u16,
     algorithm: u8,
 
-    #[deser(with_code( self.certificate = Buffer::new(self.rd_length - 5); ))]
+    #[deser(with_code( self.certificate = Buffer::with_capacity(self.rd_length - 5); ))]
     certificate: Buffer,
 }
 

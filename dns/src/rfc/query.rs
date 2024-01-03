@@ -8,7 +8,6 @@ use type2network_derive::ToNetwork;
 
 use crate::{
     error::DNSResult,
-    //rfc::{opt::opt::OptOption, resource_record::ResourceRecord},
     transport::Transporter,
 };
 
@@ -16,6 +15,16 @@ use super::{
     domain::DomainName, header::Header, opcode::OpCode, opt::opt::OptQuery,
     packet_type::PacketType, qclass::QClass, qtype::QType, question::Question,
 };
+
+// a helper macro to define settings of flags
+macro_rules! set_flag {
+    // to deserialize "simple" structs (like A)
+    ($func:ident, $field:ident) => {
+        pub fn $func(&mut self) {
+            self.header.flags.$field = true;
+        }
+    };
+}
 
 #[derive(Default, ToNetwork)]
 pub struct Query<'a> {
@@ -86,6 +95,14 @@ impl<'a> Query<'a> {
         Ok(sent)
     }
 
+    // define all set flags functions
+    set_flag!(set_aa, authorative_answer);
+    set_flag!(set_ad, authentic_data);
+    set_flag!(set_cd, checking_disabled);
+    set_flag!(set_ra, recursion_available);
+    set_flag!(set_rd, recursion_desired);
+    set_flag!(set_tc, truncation);
+
     pub fn display(&self) {
         // header first
         println!("HEADER: {}\n", self.header);
@@ -142,7 +159,7 @@ mod tests {
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
         assert!(!query.header.flags.authorative_answer);
-        assert!(!query.header.flags.truncated);
+        assert!(!query.header.flags.truncation);
         assert!(query.header.flags.recursion_desired);
         assert!(!query.header.flags.recursion_available);
         assert!(!query.header.flags.z);
@@ -174,7 +191,7 @@ mod tests {
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
         assert!(!query.header.flags.authorative_answer);
-        assert!(!query.header.flags.truncated);
+        assert!(!query.header.flags.truncation);
         assert!(query.header.flags.recursion_desired);
         assert!(!query.header.flags.recursion_available);
         assert!(!query.header.flags.z);

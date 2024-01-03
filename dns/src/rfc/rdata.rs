@@ -2,6 +2,8 @@ use std::fmt::{self};
 
 use type2network::ToNetworkOrder;
 
+use crate::databuf::Buffer;
+
 use super::{
     a::A,
     aaaa::AAAA,
@@ -42,8 +44,6 @@ use super::{
     zonemd::ZONEMD,
 };
 
-use crate::buffer::Buffer;
-
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
 pub(super) enum RData<'a> {
@@ -51,22 +51,22 @@ pub(super) enum RData<'a> {
     A(A),
     AAAA(AAAA),
     AFSDB(AFSDB<'a>),
-    APL(APL),
+    APL(APL<'a>),
     CAA(CAA<'a>),
-    CDNSKEY(CDNSKEY),
-    CDS(CDS),
+    CDNSKEY(CDNSKEY<'a>),
+    CDS(CDS<'a>),
     CERT(CERT),
     CNAME(CNAME<'a>),
     CSYNC(CSYNC),
     DHCID(DHCID<'a>),
-    DLV(DLV),
+    DLV(DLV<'a>),
     DNAME(DNAME<'a>),
-    DNSKEY(DNSKEY),
-    DS(DS),
+    DNSKEY(DNSKEY<'a>),
+    DS(DS<'a>),
     EUI48(EUI48),
     EUI64(EUI64),
     HINFO(HINFO<'a>),
-    HIP(HIP),
+    HIP(HIP<'a>),
     KX(KX<'a>),
     LOC(LOC),
     MX(MX<'a>),
@@ -74,22 +74,22 @@ pub(super) enum RData<'a> {
     NS(NS<'a>),
     NSEC(NSEC<'a>),
     NSEC3(NSEC3<'a>),
-    NSEC3PARAM(NSEC3PARAM),
-    OPENPGPKEY(OPENPGPKEY),
+    NSEC3PARAM(NSEC3PARAM<'a>),
+    OPENPGPKEY(OPENPGPKEY<'a>),
     OPT(Vec<OptOption>),
     PTR(PTR<'a>),
     RP(RP<'a>),
     RRSIG(RRSIG<'a>),
-    SMIMEA(SMIMEA),
+    SMIMEA(SMIMEA<'a>),
     SOA(SOA<'a>),
     SRV(SRV<'a>),
-    SSHFP(SSHFP),
+    SSHFP(SSHFP<'a>),
     SVCB(SVCB<'a>),
-    TLSA(TLSA),
+    TLSA(TLSA<'a>),
     TXT(TXT<'a>),
     UNKNOWN(Buffer),
-    URI(URI),
-    ZONEMD(ZONEMD),
+    URI(URI<'a>),
+    ZONEMD(ZONEMD<'a>),
 }
 
 impl<'a> Default for RData<'a> {

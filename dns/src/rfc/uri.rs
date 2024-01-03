@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc7553
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -17,21 +17,21 @@ use crate::{buffer::Buffer, new_rd_length};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct URI {
+pub(super) struct URI<'a> {
     #[deser(ignore)]
     rd_length: u16,
 
     priority: u16,
     weight: u16,
 
-    #[deser(with_code( self.target = Buffer::new(self.rd_length - 4); ))]
-    target: Buffer,
+    #[deser(with_code( self.target = BufferMut::with_capacity(self.rd_length - 4); ))]
+    target: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(URI);
+new_rd_length!(URI<'a>);
 
-impl fmt::Display for URI {
+impl<'a> fmt::Display for URI<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

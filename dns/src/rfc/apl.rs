@@ -8,7 +8,7 @@ use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc3123.html
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
@@ -21,16 +21,16 @@ use crate::{buffer::Buffer, new_rd_length};
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct InnerAPL {
+pub(super) struct InnerAPL<'a> {
     address_family: u16,
     prefix: u8,
     afdlength: u8,
 
-    #[deser(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = Buffer::new(length); ))]
-    afdpart: Buffer,
+    #[deser(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = BufferMut::with_capacity(length); ))]
+    afdpart: BufferMut<'a>,
 }
 
-impl fmt::Display for InnerAPL {
+impl<'a> fmt::Display for InnerAPL<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // get rid of 'N'
         let length = (self.afdlength << 1) >> 1;
@@ -64,15 +64,15 @@ impl fmt::Display for InnerAPL {
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default)]
-pub(super) struct APL {
+pub(super) struct APL<'a> {
     rd_length: u16,
-    apl: Vec<InnerAPL>,
+    apl: Vec<InnerAPL<'a>>,
 }
 
 // auto-implement new
-new_rd_length!(APL);
+new_rd_length!(APL<'a>);
 
-impl<'a> FromNetworkOrder<'a> for APL {
+impl<'a> FromNetworkOrder<'a> for APL<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         let mut inner_length = 0;
 
@@ -92,7 +92,7 @@ impl<'a> FromNetworkOrder<'a> for APL {
     }
 }
 
-impl fmt::Display for APL {
+impl<'a> fmt::Display for APL<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for a in &self.apl {
             write!(f, "{} ", a)?;

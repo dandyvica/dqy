@@ -162,7 +162,7 @@ mod tests {
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);
         assert!(!resp.header.flags.authorative_answer);
-        assert!(!resp.header.flags.truncated);
+        assert!(!resp.header.flags.truncation);
         assert!(resp.header.flags.recursion_desired);
         assert!(resp.header.flags.recursion_available);
         assert!(!resp.header.flags.z);
@@ -208,7 +208,7 @@ mod tests {
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);
         assert!(!resp.header.flags.authorative_answer);
-        assert!(!resp.header.flags.truncated);
+        assert!(!resp.header.flags.truncation);
         assert!(resp.header.flags.recursion_desired);
         assert!(resp.header.flags.recursion_available);
         assert!(!resp.header.flags.z);

@@ -7,7 +7,7 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use crate::{
-    buffer::Buffer,
+    databuf::Buffer,
     either_or::EitherOr,
     rfc::{opt::nsid::NSID, qtype::QType, resource_record::ResourceRecord},
 };
@@ -119,18 +119,18 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
 
         match self.code {
             OptOptionCode::NSID => {
-                let mut buf: Buffer = Buffer::new(self.length);
+                let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
                 self.data = OptOptionData::NSID(NSID::from(buf));
             }
             OptOptionCode::Padding => {
-                let mut buf: Buffer = Buffer::new(self.length);
+                let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
                 self.data = OptOptionData::PADDING(PADDING::from(buf));
             }
             OptOptionCode::EdnsClientSubnet => {
                 let mut subnet = ClientSubnet::default();
-                subnet.address = Buffer::new(self.length - 4);
+                subnet.address = Buffer::with_capacity(self.length - 4);
                 subnet.deserialize_from(buffer)?;
                 self.data = OptOptionData::ClientSubnet(subnet);
             }

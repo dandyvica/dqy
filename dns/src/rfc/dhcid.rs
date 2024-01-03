@@ -6,7 +6,7 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length, butter_mut::BufferMut};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc4701#section-3.1
 #[derive(Debug, Default, FromNetwork)]
@@ -15,7 +15,7 @@ pub struct DHCID<'a> {
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
-    #[deser(with_code( self.data = BufferMut::new(self.rd_length); ))]
+    #[deser(with_code( self.data = BufferMut::with_capacity(self.rd_length); ))]
     data: BufferMut<'a>,
 }
 

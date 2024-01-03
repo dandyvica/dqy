@@ -6,7 +6,7 @@ use std::{
 
 use log::debug;
 
-use crate::{error::{DNSResult, Error}, transport::tcp};
+use crate::error::{DNSResult, Error};
 
 use super::{mode::TransportMode, Transporter};
 
@@ -22,7 +22,7 @@ impl TcpTransport {
         for addr in addrs.to_socket_addrs()? {
             if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
                 stream = Some(s);
-                break
+                break;
             }
         }
 

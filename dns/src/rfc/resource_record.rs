@@ -10,7 +10,7 @@ use super::{
 };
 
 use crate::{
-    buffer::Buffer,
+    databuf::Buffer,
     either_or::EitherOr,
     rfc::{
         afsdb::AFSDB,
@@ -257,7 +257,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 }
                 _ => {
                     // allocate the buffer to hold the data
-                    let mut buf = Buffer::new(self.rd_length);
+                    let mut buf = Buffer::with_capacity(self.rd_length);
                     buf.deserialize_from(buffer)?;
                     self.r_data = RData::UNKNOWN(buf);
                 }

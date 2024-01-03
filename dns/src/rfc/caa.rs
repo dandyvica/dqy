@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, new_rd_length, butter_mut::BufferMut};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc8659
 //-------------------------------------------------------------------------------------
@@ -28,10 +28,10 @@ pub(super) struct CAA<'a> {
     flags: u8,
     tag_length: u8,
 
-    #[deser(with_code( self.tag_key = BufferMut::new(self.tag_length); ))]
+    #[deser(with_code( self.tag_key = BufferMut::with_capacity(self.tag_length); ))]
     tag_key: BufferMut<'a>,
 
-    #[deser(with_code( self.tag_value = BufferMut::new(self.rd_length - self.tag_length as u16 - 2 ); ))]
+    #[deser(with_code( self.tag_value = BufferMut::with_capacity(self.rd_length - self.tag_length as u16 - 2 ); ))]
     tag_value: BufferMut<'a>,
 }
 

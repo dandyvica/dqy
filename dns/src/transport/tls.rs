@@ -2,9 +2,9 @@
 use std::{
     io::Write,
     net::{SocketAddr, TcpStream},
+    str::FromStr,
     sync::Arc,
     time::Duration,
-    str::FromStr
 };
 
 use log::debug;
@@ -27,7 +27,11 @@ impl<'a> TlsTransport<'a> {
         Ok(Self { tls_stream })
     }
 
-    pub fn init_tls(server: &str, port: u16, timeout: Duration) -> DNSResult<(TcpStream, ClientConnection)> {
+    pub fn init_tls(
+        server: &str,
+        port: u16,
+        timeout: Duration,
+    ) -> DNSResult<(TcpStream, ClientConnection)> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
         let mut root_store = rustls::RootCertStore::empty();

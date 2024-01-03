@@ -1,7 +1,7 @@
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use crate::buffer::Buffer;
+use crate::databuf::Buffer;
 
 // https://www.rfc-editor.org/rfc/rfc7871
 #[derive(Debug, Default, ToNetwork, FromNetwork)]

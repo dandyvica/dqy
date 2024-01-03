@@ -87,7 +87,7 @@ fn cap1() -> DNSResult<()> {
     assert_eq!(query.header.flags.qr, PacketType::Query);
     assert_eq!(query.header.flags.op_code, OpCode::Query);
     assert!(!query.header.flags.authorative_answer);
-    assert!(!query.header.flags.truncated);
+    assert!(!query.header.flags.truncation);
     assert!(query.header.flags.recursion_desired);
     assert!(!query.header.flags.recursion_available);
     assert!(!query.header.flags.z);
@@ -111,7 +111,7 @@ fn cap1() -> DNSResult<()> {
     assert_eq!(resp.header.flags.qr, PacketType::Response);
     assert_eq!(resp.header.flags.op_code, OpCode::Query);
     assert!(!resp.header.flags.authorative_answer);
-    assert!(!resp.header.flags.truncated);
+    assert!(!resp.header.flags.truncation);
     assert!(resp.header.flags.recursion_desired);
     assert!(resp.header.flags.recursion_available);
     assert!(!resp.header.flags.z);
@@ -157,7 +157,7 @@ fn cap2() -> DNSResult<()> {
     assert_eq!(query.header.flags.qr, PacketType::Query);
     assert_eq!(query.header.flags.op_code, OpCode::Query);
     assert!(!query.header.flags.authorative_answer);
-    assert!(!query.header.flags.truncated);
+    assert!(!query.header.flags.truncation);
     assert!(query.header.flags.recursion_desired);
     assert!(!query.header.flags.recursion_available);
     assert!(!query.header.flags.z);
@@ -201,7 +201,7 @@ fn cap2() -> DNSResult<()> {
     assert_eq!(resp.header.flags.qr, PacketType::Response);
     assert_eq!(resp.header.flags.op_code, OpCode::Query);
     assert!(!resp.header.flags.authorative_answer);
-    assert!(!resp.header.flags.truncated);
+    assert!(!resp.header.flags.truncation);
     assert!(resp.header.flags.recursion_desired);
     assert!(resp.header.flags.recursion_available);
     assert!(!resp.header.flags.z);
@@ -266,7 +266,7 @@ fn cap2() -> DNSResult<()> {
 //     assert_eq!(query.header.flags.qr, PacketType::Query);
 //     assert_eq!(query.header.flags.op_code, OpCode::Query);
 //     assert!(!query.header.flags.authorative_answer);
-//     assert!(!query.header.flags.truncated);
+//     assert!(!query.header.flags.truncation);
 //     assert!(query.header.flags.recursion_desired);
 //     assert!(!query.header.flags.recursion_available);
 //     assert!(!query.header.flags.z);
@@ -289,7 +289,7 @@ fn cap2() -> DNSResult<()> {
 //     assert_eq!(resp.header.flags.qr, PacketType::Response);
 //     assert_eq!(resp.header.flags.op_code, OpCode::Query);
 //     assert!(!resp.header.flags.authorative_answer);
-//     assert!(!resp.header.flags.truncated);
+//     assert!(!resp.header.flags.truncation);
 //     assert!(resp.header.flags.recursion_desired);
 //     assert!(resp.header.flags.recursion_available);
 //     assert!(!resp.header.flags.z);

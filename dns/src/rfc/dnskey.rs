@@ -5,7 +5,7 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{buffer::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 use super::algorithm::DNSSECAlgorithmTypes;
 
@@ -21,7 +21,7 @@ use super::algorithm::DNSSECAlgorithmTypes;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct DNSKEY {
+pub(super) struct DNSKEY<'a> {
     #[deser(ignore)]
     rd_length: u16,
 
@@ -64,14 +64,14 @@ pub(super) struct DNSKEY {
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
-    #[deser(with_code( self.key = Buffer::new(self.rd_length - 4); ))]
-    key: Buffer,
+    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length - 4); ))]
+    key: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(DNSKEY);
+new_rd_length!(DNSKEY<'a>);
 
-impl fmt::Display for DNSKEY {
+impl<'a> fmt::Display for DNSKEY<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {} ", self.flags, self.protocol, self.algorithm)?;
 
@@ -83,7 +83,7 @@ impl fmt::Display for DNSKEY {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type CDNSKEY = DNSKEY;
+pub(super) type CDNSKEY<'a> = DNSKEY<'a>;
 
 #[cfg(test)]
 mod tests {

@@ -38,7 +38,7 @@ pub enum Error {
     Resolv(resolver::error::Error),
 
     // No connexion to any TCP address succeeds
-    NoValidTCPConnection(Vec<SocketAddr>)
+    NoValidTCPConnection(Vec<SocketAddr>),
 }
 
 #[derive(Debug)]

@@ -35,7 +35,7 @@ pub struct Flags {
     //multiple owner names because of aliases.  The AA bit
     //corresponds to the name which matches the query name, or
     //the first owner name in the answer section.
-    pub truncated: bool, //    TrunCation - specifies that this message was truncated
+    pub truncation: bool, //    TrunCation - specifies that this message was truncation
     //    due to length greater than that permitted on the
     //    transmission channel.
     pub(super) recursion_desired: bool, // Recursion Desired - this bit may be set in a query and
@@ -98,7 +98,7 @@ impl TryFrom<u16> for Flags {
             .map_err(|_| Error::InternalError(ProtocolError::UnknowOpCode))?;
 
         flags.authorative_answer = (value >> 10) & 1 == 1;
-        flags.truncated = (value >> 9) & 1 == 1;
+        flags.truncation = (value >> 9) & 1 == 1;
         flags.recursion_desired = (value >> 8) & 1 == 1;
         flags.recursion_available = (value >> 7) & 1 == 1;
         flags.z = (value >> 6 & 1) == 1;
@@ -124,7 +124,7 @@ impl ToNetworkOrder for Flags {
         let mut flags = (self.qr as u16) << 15;
         flags |= (self.op_code as u16) << 11;
         flags |= (self.authorative_answer as u16) << 10;
-        flags |= (self.truncated as u16) << 9;
+        flags |= (self.truncation as u16) << 9;
         flags |= (self.recursion_desired as u16) << 8;
         flags |= (self.recursion_available as u16) << 7;
         flags |= (self.z as u16) << 6;
@@ -170,7 +170,7 @@ impl fmt::Display for Flags {
             write!(f, "code:{} ", self.response_code)?;
 
             flag_display!(f, self.authorative_answer, "aa");
-            flag_display!(f, self.truncated, "tc");
+            flag_display!(f, self.truncation, "tc");
             flag_display!(f, self.recursion_desired, "rd");
             flag_display!(f, self.recursion_available, "ra");
             flag_display!(f, self.authentic_data, "ad");
@@ -195,7 +195,7 @@ mod tests {
         assert_eq!(v.qr, PacketType::Response);
         assert_eq!(v.op_code, OpCode::IQuery);
         assert!(v.authorative_answer);
-        assert!(v.truncated);
+        assert!(v.truncation);
         assert!(v.recursion_desired);
         assert!(v.recursion_available);
         assert!(v.z);
@@ -212,7 +212,7 @@ mod tests {
             qr: PacketType::Response,
             op_code: OpCode::IQuery,
             authorative_answer: true,
-            truncated: true,
+            truncation: true,
             recursion_desired: true,
             recursion_available: true,
             z: true,
@@ -238,7 +238,7 @@ mod tests {
         assert_eq!(v.qr, PacketType::Response);
         assert_eq!(v.op_code, OpCode::IQuery);
         assert!(v.authorative_answer);
-        assert!(v.truncated);
+        assert!(v.truncation);
         assert!(v.recursion_desired);
         assert!(v.recursion_available);
         assert!(v.z);
