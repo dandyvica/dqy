@@ -3,13 +3,13 @@
 //! TODO: specialize RUST_LOG
 use std::{process::ExitCode, time::Instant};
 
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 
 // my DNS library
 use dns::{
     error::{DNSResult, Error},
     rfc::{
-        opt::opt::OptQuery, qtype::QType, query::Query, response::Response,
+        opt::{opt::OptQuery, nsid::NSID, padding::Padding, dau_dhu_n3u::{DAU, DHU, N3U, EdnsKeyTag}}, qtype::QType, query::Query, response::Response,
         response_code::ResponseCode,
     },
     transport::{
@@ -127,7 +127,7 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
         let response = receive_response(trp, &mut buffer)?;
 
         // check for the truncation (TC) header flag. If set and UDP, resend using TCP
-        if response.header.flags.truncated && trp.mode() == TransportMode::Udp {
+        if response.header.flags.truncation && trp.mode() == TransportMode::Udp {
             info!("query for {} caused truncation, resending using TCP", qt);
             let mut buffer = [0u8; 4096];
 
@@ -148,7 +148,9 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
     Ok(())
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
 // send the query to the resolver
+//───────────────────────────────────────────────────────────────────────────────────
 fn send_query<'a, T: Transporter>(
     options: &'a CliOptions,
     qt: &QType,
@@ -157,18 +159,57 @@ fn send_query<'a, T: Transporter>(
     let mut query = Query::new(trp);
     query.init(&options.domain, qt, options.qclass)?;
 
+    //───────────────────────────────────────────────────────────────────────────────────    
+    // set flags if any
+    //───────────────────────────────────────────────────────────────────────────────────    
+    query.set_aa(options.flags.aaflag);
+    query.set_ad(options.flags.adflag);
+    query.set_cd(options.flags.cdflag);
+    query.set_ra(options.flags.raflag);
+    query.set_rd(options.flags.rdflag);
+    query.set_tc(options.flags.tcflag);
+
+    //───────────────────────────────────────────────────────────────────────────────────
     // manage edns options
+    //───────────────────────────────────────────────────────────────────────────────────
     let mut opt = OptQuery::new(options.bufsize);
-    opt.set_edns_nsid();
+
+    // NSID
+    if options.nsid {
+        opt.add_option(NSID::default());
+    }
+
+    // padding
+    if let Some(len) = options.padding {
+        opt.add_option(Padding::new(len));
+    }
+
+    // DAU, DHU & N3U
+    if let Some(list) = &options.dau {
+        opt.add_option(DAU::from(list.as_slice()));
+    }
+    if let Some(list) = &options.dhu {
+        opt.add_option(DHU::from(list.as_slice()));
+    }
+    if let Some(list) = &options.n3u {
+        opt.add_option(N3U::from(list.as_slice()));
+    }
+
+    // edns-key-tag
+    if let Some(list) = &options.keytag {
+        opt.add_option(EdnsKeyTag::from(list.as_slice()));
+    }
 
     // dnssec flag ?
     if options.dnssec {
         opt.set_dnssec();
     }
 
+    // Add OPT record to the query
+    trace!("OPT record: {:#?}", &opt);
     query.push_additional(opt);
 
-    // send using the chosen transport
+    // send query using the chosen transport
     let bytes = query.send(trp)?;
     info!(
         "sent query of {} bytes to remote address {}",
@@ -179,7 +220,9 @@ fn send_query<'a, T: Transporter>(
     Ok(query)
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
 // receive response from resolver
+//───────────────────────────────────────────────────────────────────────────────────
 fn receive_response<'a, T: Transporter>(
     trp: &mut T,
     buffer: &'a mut [u8],

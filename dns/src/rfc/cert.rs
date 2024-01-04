@@ -8,7 +8,7 @@ use type2network_derive::FromNetwork;
 
 use base64::{engine::general_purpose, Engine as _};
 
-use crate::{databuf::Buffer, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc4398.html#section-2.2
 #[derive(
@@ -40,7 +40,7 @@ pub enum CertificateTypeValues {
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-|
 #[derive(Debug, Default, FromNetwork)]
-pub struct CERT {
+pub struct CERT<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -49,14 +49,14 @@ pub struct CERT {
     key_tag: u16,
     algorithm: u8,
 
-    #[deser(with_code( self.certificate = Buffer::with_capacity(self.rd_length - 5); ))]
-    certificate: Buffer,
+    #[deser(with_code( self.certificate = BufferMut::with_capacity(self.rd_length - 5); ))]
+    certificate: BufferMut<'a>,
 }
 
 // auto-implement new
-new_rd_length!(CERT);
+new_rd_length!(CERT<'a>);
 
-impl fmt::Display for CERT {
+impl<'a> fmt::Display for CERT<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

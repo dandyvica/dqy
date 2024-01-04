@@ -1,0 +1,99 @@
+= dqy(1)
+Alain Viguier
+v0.1.0
+:doctype: manpage
+:manmanual: DQY
+:mansource: DQY
+:man-linkstyle: pass:[blue R < >]
+
+== Name
+
+dqy - a DNS query tool
+
+== Synopsis
+
+*eve* [_OPTION_]... _FILE_...
+
+== Options
+
+// *-o, --out-file*=_OUT_FILE_::
+//   Write result to file _OUT_FILE_.
+
+// *-c, --capture*::
+//   Capture specimen if it's a picture of a life form.
+
+_Transport options:_
+
+*+udp*::
+    Uses UDP for sending DNS messages. This is used by default. Default port is 53.
+
+*+tcp*::
+    Uses TCP for sending DNS messages. This is used by default for AXFR query and if truncation bit if set in response. Default port is 53.
+
+*+tls, +dot*::
+    Uses _DNS over TLS_ protocol for transmitting DNS messages. Default port is 853.
+
+*+https, +doh*::
+    Uses _DNS over HTTPS_ protocol for transmitting DNS messages. Default port is 443.
+
+*-p=<PORT#>, --port=<PORT#>*::
+    Uses PORT# instead of the standard ports of the transport.
+
+*-4*::
+    Uses only IPV4 addresses.
+
+*-6*::
+    Uses only IPV6 addresses.
+
+
+EDNS options:
+
+*+dau*::
+    Set the DNSSEC Algorithm Understood (DAU) option.
+
+*+dhu*::
+    Set DS Hash Understood (DHU) option.
+
+Verbose options:
+
+*+v*::
+    Prints out information messages on stderr.
+
+*+vv, +v2*::
+    Prints out information and warning messages on stderr.
+
+*+vvv, +v3*::
+    Prints out information, warning and error messages on stderr.
+
+*+vvvv, +v4*::
+    Prints out information, warning and error messages on stderr.
+
+*+vvvvv, +v5*::
+    Prints out all trace messages on stderr.
+
+== Exit status
+
+*0*::
+  Success.
+  Image is a picture of a life form.
+
+*1*::
+  Failure.
+  Image is not a picture of a life form.
+
+== Examples
+
+* query root servers: dqy
+* query A record using configured resolvers: dqy A www.google.com
+* query A record using a specific resolver: dqy A www.google.com @1.1.1.1
+
+
+
+== Resources
+
+*Project web site:* https://eve.example.org
+
+== Copying
+
+Copyright (C) 2008 {author}. +
+Free use of this software is granted under the terms of the MIT License.

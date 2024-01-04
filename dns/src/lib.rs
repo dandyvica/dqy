@@ -1,4 +1,4 @@
-// pub mod buffer;
+pub mod buffer;
 // pub mod butter_mut;
 pub mod databuf;
 pub mod date_time;

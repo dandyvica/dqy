@@ -6,10 +6,7 @@ use rand::Rng;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::{
-    error::DNSResult,
-    transport::Transporter,
-};
+use crate::{error::DNSResult, transport::Transporter};
 
 use super::{
     domain::DomainName, header::Header, opcode::OpCode, opt::opt::OptQuery,
@@ -20,8 +17,8 @@ use super::{
 macro_rules! set_flag {
     // to deserialize "simple" structs (like A)
     ($func:ident, $field:ident) => {
-        pub fn $func(&mut self) {
-            self.header.flags.$field = true;
+        pub fn $func(&mut self, v: bool) {
+            self.header.flags.$field = v;
         }
     };
 }
@@ -85,7 +82,7 @@ impl<'a> Query<'a> {
             buffer[0] = bytes[0];
             buffer[1] = bytes[1];
         };
-        trace!("buffer to send: {:?}", buffer);
+        trace!("buffer to send: {:0X?}", buffer);
 
         // send packet through the wire
         trace!("query ==> {:#?}", self);

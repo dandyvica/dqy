@@ -1,0 +1,159 @@
+'\" t
+.\"     Title: dqy
+.\"    Author: Alain Viguier
+.\" Generator: Asciidoctor 2.0.16
+.\"      Date: 2024-01-04
+.\"    Manual: DQY
+.\"    Source: DQY
+.\"  Language: English
+.\"
+.TH "DQY" "1" "2024-01-04" "DQY" "DQY"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+dqy \- a DNS query tool
+.SH "SYNOPSIS"
+.sp
+\fBeve\fP [\fIOPTION\fP]... \fIFILE\fP...
+.SH "OPTIONS"
+.sp
+\fITransport options:\fP
+.sp
+\fB+udp\fP
+.RS 4
+Uses UDP for sending DNS messages. This is used by default. Default port is 53.
+.RE
+.sp
+\fB+tcp\fP
+.RS 4
+Uses TCP for sending DNS messages. This is used by default for AXFR query and if truncation bit if set in response. Default port is 53.
+.RE
+.sp
+\fB+tls, +dot\fP
+.RS 4
+Uses \fIDNS over TLS\fP protocol for transmitting DNS messages. Default port is 853.
+.RE
+.sp
+\fB+https, +doh\fP
+.RS 4
+Uses \fIDNS over HTTPS\fP protocol for transmitting DNS messages. Default port is 443.
+.RE
+.sp
+\fB\-p=<PORT#>, \-\-port=<PORT#>\fP
+.RS 4
+Uses PORT# instead of the standard ports of the transport.
+.RE
+.sp
+\fB\-4\fP
+.RS 4
+Uses only IPV4 addresses.
+.RE
+.sp
+\fB\-6\fP
+.RS 4
+Uses only IPV6 addresses.
+.RE
+.sp
+EDNS options:
+.sp
+\fB+dau\fP
+.RS 4
+Set the DNSSEC Algorithm Understood (DAU) option.
+.RE
+.sp
+\fB+dhu\fP
+.RS 4
+Set DS Hash Understood (DHU) option.
+.RE
+.sp
+Verbose options:
+.sp
+\fB+v\fP
+.RS 4
+Prints out information messages on stderr.
+.RE
+.sp
+\fB+vv, +v2\fP
+.RS 4
+Prints out information and warning messages on stderr.
+.RE
+.sp
+\fB+vvv, +v3\fP
+.RS 4
+Prints out information, warning and error messages on stderr.
+.RE
+.sp
+\fB+vvvv, +v4\fP
+.RS 4
+Prints out information, warning and error messages on stderr.
+.RE
+.sp
+\fB+vvvvv, +v5\fP
+.RS 4
+Prints out all trace messages on stderr.
+.RE
+.SH "EXIT STATUS"
+.sp
+\fB0\fP
+.RS 4
+Success.
+Image is a picture of a life form.
+.RE
+.sp
+\fB1\fP
+.RS 4
+Failure.
+Image is not a picture of a life form.
+.RE
+.SH "EXAMPLES"
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+query root servers: dqy
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+query A record using configured resolvers: dqy A www.google.com
+.RE
+.SH "RESOURCES"
+.sp
+\fBProject web site:\fP \c
+.URL "https://eve.example.org" "" ""
+.SH "COPYING"
+.sp
+Copyright \(co 2008 Alain Viguier.
+.br
+Free use of this software is granted under the terms of the MIT License.
+.SH "AUTHOR"
+.sp
+Alain Viguier

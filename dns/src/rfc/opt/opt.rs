@@ -3,16 +3,27 @@ use std::{fmt, io::Cursor};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use enum_from::{EnumDisplay, EnumTryFrom};
+use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use crate::{
     databuf::Buffer,
     either_or::EitherOr,
-    rfc::{opt::nsid::NSID, qtype::QType, resource_record::ResourceRecord},
+    rfc::{
+        opt::{self, nsid::NSID},
+        qtype::QType,
+        resource_record::ResourceRecord,
+    },
 };
 
-use super::{client_subnet::ClientSubnet, cookie::COOKIE, padding::PADDING};
+use super::{
+    client_subnet::ClientSubnet,
+    cookie::COOKIE,
+    dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
+    padding::Padding,
+    OptionData,
+};
 
 // This OPT is the one which is sent in the query (additional record)
 // +------------+--------------+------------------------------+
@@ -25,14 +36,17 @@ use super::{client_subnet::ClientSubnet, cookie::COOKIE, padding::PADDING};
 // | RDLEN      | u_int16_t    | length of all RDATA          |
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
-//#[derive(Debug, Default)]
 pub type OptQuery<'a> = ResourceRecord<'a, Vec<OptOption>>;
 
 impl<'a> OptQuery<'a> {
     #[allow(clippy::field_reassign_with_default)]
     pub fn new(bufsize: u16) -> Self {
         let mut opt = OptQuery::default();
+
+        // QType = 41
         opt.r#type = QType::OPT;
+
+        // class is UDP payload size
         opt.class = EitherOr::new_right(bufsize);
 
         opt
@@ -54,13 +68,27 @@ impl<'a> OptQuery<'a> {
         self.r_data.push(option);
     }
 
-    #[allow(clippy::field_reassign_with_default)]
-    pub fn set_edns_nsid(&mut self) {
-        let mut nsid = OptOption::default();
-        nsid.code = OptOptionCode::NSID;
+    pub fn add_option<T: OptionData>(&mut self, data: T) {
+        // build the option structure
+        let mut option = OptOption::default();
+        option.code = data.code();
+        option.length = data.len();
+        option.data = data.data();
 
-        self.push_option(nsid);
+        trace!("OPTION:{:?}", option);
+
+        // add in the list of options
+        self.rd_length += 4 + option.length;
+        self.r_data.push(option);
     }
+
+    // #[allow(clippy::field_reassign_with_default)]
+    // pub fn set_edns_nsid(&mut self) {
+    //     let mut nsid = OptOption::default();
+    //     nsid.code = OptOptionCode::NSID;
+
+    //     self.push_option(nsid);
+    // }
 }
 
 // https://www.rfc-editor.org/rfc/rfc6891#section-6.1.3
@@ -126,7 +154,7 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
             OptOptionCode::Padding => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
-                self.data = OptOptionData::PADDING(PADDING::from(buf));
+                self.data = OptOptionData::Padding(Padding::from(buf));
             }
             OptOptionCode::EdnsClientSubnet => {
                 let mut subnet = ClientSubnet::default();
@@ -171,8 +199,12 @@ pub enum OptOptionCode {
 pub enum OptOptionData {
     NSID(NSID),
     COOKIE(COOKIE),
-    PADDING(PADDING),
+    Padding(Padding),
     ClientSubnet(ClientSubnet),
+    DAU(DAU),
+    DHU(DHU),
+    N3U(N3U),
+    EdnsKeyTag(EdnsKeyTag),
 }
 
 impl Default for OptOptionData {
@@ -185,14 +217,10 @@ impl fmt::Display for OptOptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptOptionData::NSID(n) => write!(f, "{}", n)?,
-            OptOptionData::PADDING(p) => write!(f, "{}", p)?,
+            OptOptionData::Padding(p) => write!(f, "{}", p)?,
             OptOptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
-            _ => unimplemented!(),
+            _ => unimplemented!("EDNS option not yet implemented"),
         }
         Ok(())
     }
 }
-
-//---------------------------------------------------------------------------
-// all option data are specified here
-//---------------------------------------------------------------------------

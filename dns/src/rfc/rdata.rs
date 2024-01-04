@@ -55,7 +55,7 @@ pub(super) enum RData<'a> {
     CAA(CAA<'a>),
     CDNSKEY(CDNSKEY<'a>),
     CDS(CDS<'a>),
-    CERT(CERT),
+    CERT(CERT<'a>),
     CNAME(CNAME<'a>),
     CSYNC(CSYNC),
     DHCID(DHCID<'a>),

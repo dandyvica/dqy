@@ -15,6 +15,7 @@ pub struct DataBuf<T> {
 }
 
 impl<T> DataBuf<T> {
+    // set length of the buffer
     pub fn with_capacity<L: Into<usize>>(capa: L) -> Self
     where
         T: Default,
@@ -25,6 +26,7 @@ impl<T> DataBuf<T> {
         }
     }
 
+    // allow to iterate on data
     pub fn iter<'a>(&'a self) -> Iter<'a, u8>
     where
         T: AsRef<[u8]>,
@@ -32,10 +34,12 @@ impl<T> DataBuf<T> {
         self.data.as_ref().iter()
     }
 
+    // current length of the buffer
     pub fn len(&self) -> usize {
         self.length
     }
 
+    // true if no data yet in the buffer
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -84,6 +88,13 @@ where
 // These are the 2 aliases used
 pub type Buffer = DataBuf<Vec<u8>>;
 pub type BufferMut<'a> = DataBuf<&'a [u8]>;
+
+impl Buffer {
+    // fill whole buffer with value
+    pub fn fill(&mut self, value: u8) {
+        self.data = vec![value; self.length];
+    }
+}
 
 // a more efficient serialize_to() for Vec<u8>
 impl ToNetworkOrder for Buffer {
