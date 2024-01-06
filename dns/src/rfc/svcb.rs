@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, io::Cursor};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -8,7 +8,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::DomainName;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, databuf::BufferMut, error::Error, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2
 // +===========+=================+================+=========+==========+
@@ -81,34 +81,104 @@ pub(super) enum SvcParamKeys {
     RESERVED(u16),
 }
 
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, Default)]
+#[allow(non_camel_case_types)]
+#[allow(clippy::unnecessary_cast)]
+pub(super) struct SvcParam<'a> {
+    // param key:  2-octet field containing the SvcParamKey as an integer in network byte order
+    key: u16,
+    length: u16,
+    value: BufferMut<'a>,
+}
+
+impl<'a> SvcParam<'a> {
+    pub fn len(&self) -> usize {
+        4 + self.value.len()
+    }
+}
+
+impl<'a> fmt::Display for SvcParam<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.key {
+            1 => write!(f, "alpn=\"{}\"", self.value)?,
+            4 => {
+                if self.length % 4 == 0 {
+                    let ip_array: [u8; 4] = self.value[0..4].try_into().unwrap();
+                    write!(f, "ipv4hint={}", std::net::Ipv4Addr::from(ip_array))?;
+                }
+            }
+            6 => {
+                if self.length == 16 {
+                    let ip_array: [u8; 16] = self.value[0..16].try_into().unwrap();
+                    write!(f, "ipv6hint={}", std::net::Ipv6Addr::from(ip_array))?;
+                }
+            }
+            _ => unimplemented!("SvcParamKeys {} is not yet implemented", self.key),
+        }
+
+        Ok(())
+    }
+}
+
 // https://www.rfc-editor.org/rfc/rfc9460.txt
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default)]
 pub struct SVCB<'a> {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    //#[deser(ignore)]
     pub(super) rd_length: u16,
 
     svc_priority: u16,
     target_name: DomainName<'a>,
 
-    #[deser(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
-    svc_params: BufferMut<'a>,
+    //#[deser(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
+    svc_params: Vec<SvcParam<'a>>,
 }
 
 // auto-implement new
 new_rd_length!(SVCB<'a>);
 
-impl<'a> fmt::Display for SVCB<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {}",
-            self.svc_priority, self.target_name, self.svc_params
-        )?;
+// implement FromNetwork because of the special SVCB format
+impl<'a> FromNetworkOrder<'a> for SVCB<'a> {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+        self.svc_priority.deserialize_from(buffer)?;
+        self.target_name.deserialize_from(buffer)?;
+
+        // remaining length for Vec<SvcParam>
+        let data_length = self.rd_length - 2u16 - self.target_name.len() as u16;
+        let mut current_length = 0u16;
+
+        // now deserialize each SvcParam
+        while current_length < data_length {
+            let mut param = SvcParam::default();
+            param.key.deserialize_from(buffer)?;
+            param.length.deserialize_from(buffer)?;
+
+            param.value = BufferMut::with_capacity(param.length);
+            param.value.deserialize_from(buffer)?;
+
+            current_length += param.len() as u16;
+
+            self.svc_params.push(param);
+        }
 
         Ok(())
     }
 }
+
+impl<'a> fmt::Display for SVCB<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} ", self.svc_priority, self.target_name)?;
+        for param in &self.svc_params {
+            write!(f, "{} ", param)?;
+        }
+
+        Ok(())
+    }
+}
+
+// HTTPS is like SVCB
+pub(super) type HTTPS<'a> = SVCB<'a>;
 
 // #[cfg(test)]
 // mod tests {

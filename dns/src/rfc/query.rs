@@ -59,7 +59,7 @@ impl<'a> Query<'a> {
 
         self.header.flags.qr = PacketType::Query;
         self.header.flags.op_code = OpCode::Query;
-        self.header.flags.recursion_desired = true;
+        //self.header.flags.recursion_desired = true;
         self.header.qd_count = 1;
 
         // fill question

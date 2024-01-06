@@ -15,11 +15,11 @@ use crate::error::{DNSResult, Error, ProtocolError};
 
 // a label is part of a domain name
 #[derive(Debug, Default)]
-struct Label<'a>(&'a str);
+struct Label<'a>(&'a [u8]);
 
 // Deref to ease methods calls on inner value
 impl<'a> Deref for Label<'a> {
-    type Target = &'a str;
+    type Target = &'a [u8];
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -28,17 +28,7 @@ impl<'a> Deref for Label<'a> {
 
 impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-// to convert a label into a str
-impl<'a> TryFrom<&'a [u8]> for Label<'a> {
-    type Error = std::str::Utf8Error;
-
-    fn try_from(slice: &'a [u8]) -> std::result::Result<Self, Self::Error> {
-        let s = std::str::from_utf8(slice)?;
-        Ok(Label(s))
+        write!(f, "{}", String::from_utf8_lossy(self.0))
     }
 }
 
@@ -52,8 +42,8 @@ impl<'a> PartialEq for Label<'a> {
             return false;
         }
 
-        self.chars()
-            .zip(other.chars())
+        self.iter()
+            .zip(other.iter())
             .all(|x| x.0.to_ascii_lowercase() == x.1.to_ascii_lowercase())
     }
 }
@@ -168,7 +158,7 @@ impl<'a> DomainName<'a> {
                 .get(index + 1..index + size + 1)
                 .ok_or(err_internal!(CantCreateDomainName))?;
 
-            let label = Label::try_from(limb)?;
+            let label = Label(limb);
 
             //dbg!(label);
             //let label_as_utf8 = std::str::from_utf8(label)?;
@@ -222,6 +212,15 @@ impl<'a> fmt::Display for DomainName<'a> {
     }
 }
 
+// Convert an array of u8 to a domain name
+// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'a> {
+//     fn from(v: [u8; N]) -> Self {
+//         let s = std::str::from_utf8(slice)?;
+//         Ok(Label(s))
+//     }
+// }
+
+// Convert a str to a domain name
 impl<'a> TryFrom<&'a str> for DomainName<'a> {
     type Error = Error;
 
@@ -237,7 +236,7 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
             domain
                 .split('.')
                 .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
-                .map(Label)
+                .map(|x| Label(x.as_bytes()))
                 .collect()
         };
 
@@ -314,7 +313,14 @@ mod tests {
         ];
         let mut dn = DomainName::default();
         dn.from_position(0usize, &&v[..]).unwrap();
-        assert_eq!(dn.labels, &[Label("www"), Label("google"), Label("ie")]);
+        assert_eq!(
+            dn.labels,
+            &[
+                Label("www".as_bytes()),
+                Label("google".as_bytes()),
+                Label("ie".as_bytes())
+            ]
+        );
     }
 
     #[test]
@@ -345,10 +351,17 @@ mod tests {
     fn try_from() {
         let dn = DomainName::try_from("www.example.com").unwrap();
         assert_eq!(dn.labels.len(), 3);
-        assert_eq!(dn.labels, &[Label("www"), Label("example"), Label("com")]);
+        assert_eq!(
+            dn.labels,
+            &[
+                Label("www".as_bytes()),
+                Label("example".as_bytes()),
+                Label("com".as_bytes())
+            ]
+        );
         let dn = DomainName::try_from("com.").unwrap();
         assert_eq!(dn.labels.len(), 1);
-        assert_eq!(dn.labels, &[Label("com")]);
+        assert_eq!(dn.labels, &[Label("com".as_bytes())]);
         let dn = DomainName::try_from(".").unwrap();
         assert_eq!(dn.labels.len(), 0);
         assert!(dn.labels.is_empty());
@@ -360,6 +373,10 @@ mod tests {
 
         let domain = (0..255).map(|_| "X").collect::<String>();
         assert!(DomainName::try_from(domain.as_str()).is_err());
+
+        let domain =
+            DomainName::try_from("0.0.9.3.2.7.e.f.f.f.3.6.6.7.2.e.4.8.0.3.0.7.4.1.0.0.2.ip6.arpa")
+                .unwrap();
     }
 
     #[test]
@@ -392,6 +409,13 @@ mod tests {
         let mut dn = DomainName::default();
         assert!(dn.deserialize_from(&mut buffer).is_ok());
         assert_eq!(dn.labels.len(), 3);
-        assert_eq!(dn.labels, &[Label("www"), Label("google"), Label("ie")]);
+        assert_eq!(
+            dn.labels,
+            &[
+                Label("www".as_bytes()),
+                Label("google".as_bytes()),
+                Label("ie".as_bytes())
+            ]
+        );
     }
 }

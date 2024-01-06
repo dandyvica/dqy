@@ -2,8 +2,8 @@
 use std::convert::AsRef;
 use std::fmt;
 use std::io::{Cursor, Read};
-use std::ops::Deref;
-use std::slice::Iter;
+use std::ops::{Deref, Index};
+use std::slice::{Iter, SliceIndex};
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
@@ -53,6 +53,16 @@ impl<T> Deref for DataBuf<T> {
     }
 }
 
+// AsRef to benefit from already defined methods on Vec
+impl<T> AsRef<[u8]> for DataBuf<T>
+where
+    T: AsRef<[u8]>,
+{
+    fn as_ref(&self) -> &[u8] {
+        &self.data.as_ref()
+    }
+}
+
 impl<T> fmt::Debug for DataBuf<T>
 where
     T: AsRef<[u8]>,
@@ -75,16 +85,6 @@ where
     }
 }
 
-// AsRef to benefit from already defined methods on Vec
-impl<T> AsRef<[u8]> for DataBuf<T>
-where
-    T: AsRef<[u8]>,
-{
-    fn as_ref(&self) -> &[u8] {
-        &self.data.as_ref()
-    }
-}
-
 // These are the 2 aliases used
 pub type Buffer = DataBuf<Vec<u8>>;
 pub type BufferMut<'a> = DataBuf<&'a [u8]>;
@@ -93,6 +93,12 @@ impl Buffer {
     // fill whole buffer with value
     pub fn fill(&mut self, value: u8) {
         self.data = vec![value; self.length];
+    }
+}
+
+impl<'a> BufferMut<'a> {
+    pub fn copy(&mut self, value: &'a [u8]) {
+        self.data = value;
     }
 }
 

@@ -77,39 +77,39 @@ fn run() -> DNSResult<()> {
     debug!("{:#?}", options);
 
     // depending on mode, different processing
-    match options.transport_mode {
+    match options.transport.transport_mode {
         TransportMode::Udp => {
             let mut udp_transport = UdpTransport::new(
-                options.resolvers.as_slice(),
-                &options.ip_version,
-                options.timeout,
+                options.protocol.resolvers.as_slice(),
+                &options.transport.ip_version,
+                options.transport.timeout,
             )?;
             send_receive_query(&options, &mut udp_transport)?;
         }
         TransportMode::Tcp => {
             let mut tcp_transport =
-                TcpTransport::new(options.resolvers.as_slice(), options.timeout)?;
+                TcpTransport::new(options.protocol.resolvers.as_slice(), options.transport.timeout)?;
             send_receive_query(&options, &mut tcp_transport)?;
         }
         TransportMode::DoT => {
             // we need to initialize the TLS connexion using TCP stream and TLS features
-            let mut tls = TlsTransport::init_tls(&options.server, 853, options.timeout)?;
-            let mut tls_transport = TlsTransport::new(&mut tls, options.timeout)?;
+            let mut tls = TlsTransport::init_tls(&options.protocol.server, 853, options.transport.timeout)?;
+            let mut tls_transport = TlsTransport::new(&mut tls, options.transport.timeout)?;
             // we need to initialize the TLS connexion using TCP stream and TLS features
             send_receive_query(&options, &mut tls_transport)?;
         }
         TransportMode::DoH => {
-            let mut https_transport = HttpsTransport::new(&options.server, options.timeout)?;
+            let mut https_transport = HttpsTransport::new(&options.protocol.server, options.transport.timeout)?;
             send_receive_query(&options, &mut https_transport)?;
         }
     }
 
     let elapsed = now.elapsed();
-    if options.stats {
+    if options.display.stats {
         eprintln!(
             "stats ==> server:{}, transport:{:?}, elapsed:{} ms",
-            options.resolvers[0],
-            options.transport_mode,
+            options.protocol.resolvers[0],
+            options.transport.transport_mode,
             elapsed.as_millis()
         );
     }
@@ -121,7 +121,7 @@ fn run() -> DNSResult<()> {
 fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSResult<()> {
     let mut buffer = [0u8; 4096];
 
-    for qt in &options.qtype {
+    for qt in &options.protocol.qtype {
         // send query, response is depending on TC falg if UDP
         let query = send_query(options, qt, trp)?;
         let response = receive_response(trp, &mut buffer)?;
@@ -132,7 +132,7 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> DNSR
             let mut buffer = [0u8; 4096];
 
             let mut tcp_transport =
-                TcpTransport::new(&options.resolvers.as_slice(), options.timeout)?;
+                TcpTransport::new(&options.protocol.resolvers.as_slice(), options.transport.timeout)?;
             let query = send_query(options, qt, &mut tcp_transport)?;
             let response = receive_response(&mut tcp_transport, &mut buffer)?;
 
@@ -157,7 +157,7 @@ fn send_query<'a, T: Transporter>(
     trp: &mut T,
 ) -> DNSResult<Query<'a>> {
     let mut query = Query::new(trp);
-    query.init(&options.domain, qt, options.qclass)?;
+    query.init(&options.protocol.domain, qt, options.protocol.qclass)?;
 
     //───────────────────────────────────────────────────────────────────────────────────    
     // set flags if any
@@ -172,36 +172,36 @@ fn send_query<'a, T: Transporter>(
     //───────────────────────────────────────────────────────────────────────────────────
     // manage edns options
     //───────────────────────────────────────────────────────────────────────────────────
-    let mut opt = OptQuery::new(options.bufsize);
+    let mut opt = OptQuery::new(options.transport.bufsize);
 
     // NSID
-    if options.nsid {
+    if options.edns.nsid {
         opt.add_option(NSID::default());
     }
 
     // padding
-    if let Some(len) = options.padding {
+    if let Some(len) = options.edns.padding {
         opt.add_option(Padding::new(len));
     }
 
     // DAU, DHU & N3U
-    if let Some(list) = &options.dau {
+    if let Some(list) = &options.edns.dau {
         opt.add_option(DAU::from(list.as_slice()));
     }
-    if let Some(list) = &options.dhu {
+    if let Some(list) = &options.edns.dhu {
         opt.add_option(DHU::from(list.as_slice()));
     }
-    if let Some(list) = &options.n3u {
+    if let Some(list) = &options.edns.n3u {
         opt.add_option(N3U::from(list.as_slice()));
     }
 
     // edns-key-tag
-    if let Some(list) = &options.keytag {
+    if let Some(list) = &options.edns.keytag {
         opt.add_option(EdnsKeyTag::from(list.as_slice()));
     }
 
     // dnssec flag ?
-    if options.dnssec {
+    if options.edns.dnssec {
         opt.set_dnssec();
     }
 
