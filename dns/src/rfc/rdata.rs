@@ -37,7 +37,7 @@ use super::{
     soa::SOA,
     srv::SRV,
     sshfp::SSHFP,
-    svcb::{SVCB, HTTPS},
+    svcb::{HTTPS, SVCB},
     tlsa::{SMIMEA, TLSA},
     txt::TXT,
     uri::URI,

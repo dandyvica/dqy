@@ -646,8 +646,10 @@ impl CliOptions {
 // value QTypes on the command line when using the -type option
 fn validate_qtypes(s: &str) -> Result<QType, String> {
     let qt_upper = s.to_uppercase();
+    let q = QType::from_str(&qt_upper);
+    
     QType::from_str(&qt_upper)
-        .map_err(|_| format!("can't convert value '{s}' to a valid query type"))
+        .map_err(|e| format!("can't convert value '{e}' to a valid query type"))
 }
 
 // // Initialize logger: either create it or use it

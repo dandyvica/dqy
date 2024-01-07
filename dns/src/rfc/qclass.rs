@@ -32,8 +32,43 @@ pub enum QClass {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use crate::tests::{from_network_test, to_network_test};
+
+    #[test]
+    fn conversion() {
+        use std::str::FromStr;
+
+        // from_str
+        let qc = QClass::from_str("IN").unwrap();
+        assert_eq!(qc, QClass::IN);
+        let qc = QClass::from_str("foo").unwrap_err();
+        assert_eq!(qc, format!("no variant corresponding to value 'foo'"));
+        let qc = QClass::from_str("CLASS1234").unwrap();
+        assert_eq!(qc, QClass::CLASS(1234));
+        let qc = QClass::from_str("CLASSA234").unwrap_err();
+        assert_eq!(
+            qc,
+            format!("no variant corresponding to value 'CLASSA234'")
+        );
+
+        // try_from
+        let qc = QClass::try_from(4u16).unwrap();
+        assert_eq!(qc, QClass::HS);
+        let qc = QClass::try_from(1000u16).unwrap();
+        assert_eq!(qc, QClass::CLASS(1000));
+
+        // display
+        let qc = QClass::from_str("IN").unwrap();
+        assert_eq!(&qc.to_string(), "IN");
+        let qc = QClass::try_from(2u16).unwrap();
+        assert_eq!(&qc.to_string(), "CS");
+        let qc = QClass::try_from(1000u16).unwrap();
+        assert_eq!(&qc.to_string(), "CLASS1000");
+        let qc = QClass::from_str("CLASS1234").unwrap();
+        assert_eq!(&qc.to_string(), "CLASS1234");
+    }
 
     #[test]
     fn network() {

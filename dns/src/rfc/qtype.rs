@@ -137,6 +137,40 @@ mod tests {
     use crate::tests::{from_network_test, to_network_test};
 
     #[test]
+    fn conversion() {
+        use std::str::FromStr;
+
+        // from_str
+        let qt = QType::from_str("A").unwrap();
+        assert_eq!(qt, QType::A);
+        let qt = QType::from_str("foo").unwrap_err();
+        assert_eq!(qt, format!("no variant corresponding to value 'foo'"));
+        let qt = QType::from_str("TYPE1234").unwrap();
+        assert_eq!(qt, QType::TYPE(1234));
+        let qt = QType::from_str("TYPEA234").unwrap_err();
+        assert_eq!(
+            qt,
+            format!("no variant corresponding to value 'TYPEA234'")
+        );
+        
+        // try_from
+        let qt = QType::try_from(4u16).unwrap();
+        assert_eq!(qt, QType::MF);
+        let qt = QType::try_from(1000u16).unwrap();
+        assert_eq!(qt, QType::TYPE(1000));
+
+        // display
+        let qt = QType::from_str("TSIG").unwrap();
+        assert_eq!(&qt.to_string(), "TSIG");
+        let qt = QType::try_from(2u16).unwrap();
+        assert_eq!(&qt.to_string(), "NS");
+        let qc = QType::try_from(1000u16).unwrap();
+        assert_eq!(&qc.to_string(), "TYPE1000");        
+        let qt = QType::from_str("TYPE1234").unwrap();
+        assert_eq!(&qt.to_string(), "TYPE1234");
+    }    
+
+    #[test]
     fn network() {
         let q = QType::AAAA;
         to_network_test(&q, 2, &[0x00, 28]);
