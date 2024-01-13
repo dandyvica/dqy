@@ -3,6 +3,8 @@ use std::fmt;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
+use serde::Serialize;
+
 use crate::{databuf::Buffer, opt_code, opt_data};
 
 use super::{
@@ -11,7 +13,7 @@ use super::{
 };
 
 // https://www.rfc-editor.org/rfc/rfc7830.html
-#[derive(Debug, Default, ToNetwork)]
+#[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct Padding(Option<Buffer>);
 
 impl Padding {

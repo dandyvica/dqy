@@ -1,7 +1,9 @@
 use std::{fmt, io::Cursor};
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
-use type2network_derive::ToNetwork;
+use type2network_derive::{FromNetwork, ToNetwork};
+
+use serde::Serialize;
 
 use super::{
     a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC,
@@ -17,14 +19,16 @@ use crate::{
         apl::APL,
         caa::CAA,
         cert::CERT,
+        cname::DNAME,
         csync::CSYNC,
         dhcid::DHCID,
-        dname::DNAME,
+        // dname::DNAME,
         dnskey::CDNSKEY,
         ds::{CDS, DLV, DS},
         eui48::EUI48,
         eui64::EUI64,
         hip::HIP,
+        ipseckey::IPSECKEY,
         kx::KX,
         naptr::NAPTR,
         nsec::NSEC,
@@ -84,15 +88,88 @@ use log::{debug, trace};
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
 
-#[derive(Debug, Default, ToNetwork)]
+// When a RR is a standard RR (not a pseudo or meta-RR)
+#[derive(Debug, Default, ToNetwork, FromNetwork)]
+pub(super) struct RegularClassTtl {
+    class: QClass,
+    ttl: u32,
+}
+
+// Case of OPT RR
+#[derive(Debug, Default, ToNetwork, FromNetwork)]
+pub(super) struct OptClassTtl {
+    pub(super) payload: u16,
+    pub(super) extended_rcode: u8,
+    pub(super) version: u8,
+    pub(super) flags: u16,
+}
+
+#[derive(Debug, ToNetwork)]
+
+// CLASS & TTL vary if RR is OPT or not
+pub(super) enum OptOrElse {
+    Regular(RegularClassTtl),
+    Opt(OptClassTtl),
+}
+
+impl Default for OptOrElse {
+    fn default() -> Self {
+        Self::Regular(RegularClassTtl::default())
+    }
+}
+
+impl fmt::Display for OptOrElse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            OptOrElse::Regular(x) => write!(f, "{:<10} {:<10}", x.class, x.ttl),
+            OptOrElse::Opt(x) => write!(
+                f,
+                "{} {} {} {}",
+                x.payload, x.extended_rcode, x.version, x.flags
+            ),
+        }
+    }
+}
+
+// Custom serialization
+use serde::{ser::SerializeMap, Serializer};
+impl Serialize for OptOrElse {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            OptOrElse::Regular(x) => {
+                let mut seq = serializer.serialize_map(Some(2))?;
+                seq.serialize_entry("class", &x.class)?;
+                seq.serialize_entry("ttl", &x.ttl)?;
+                seq.end()
+            }
+            OptOrElse::Opt(x) => {
+                let mut seq = serializer.serialize_map(Some(4))?;
+                seq.serialize_entry("payload", &x.payload)?;
+                seq.serialize_entry("extended_rcode", &x.extended_rcode)?;
+                seq.serialize_entry("version", &x.version)?;
+                seq.serialize_entry("flags", &x.flags)?;
+                seq.end()
+            }
+        }
+    }
+}
+
+#[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct ResourceRecord<'a, T>
 where
     T: ToNetworkOrder,
 {
     pub name: DomainName<'a>, // an owner name, i.e., the name of the node to which this resource record pertains.
     pub r#type: QType,        // two octets containing one of the RR TYPE codes.
-    pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
-    pub ttl: EitherOr<u32, OptTTL>, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
+
+    // pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
+    // pub ttl: EitherOr<u32, OptTTL>, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
+    #[serde(flatten)]
+    pub opt_or_else: OptOrElse,
+
     // that the resource record may be cached before the source
     // of the information should again be consulted. Zero
     // values are interpreted to mean that the RR can only be
@@ -101,25 +178,34 @@ where
     // with a zero TTL to prohibit caching.  Zero values can
     // also be used for extremely volatile data.
     pub rd_length: u16, // an unsigned 16 bit integer that specifies the length in octets of the RDATA field.
+
+    #[serde(flatten)]
     pub r_data: T,
     //  a variable length string of octets that describes the
     //  resource.  The format of this information varies
     //  according to the TYPE and CLASS of the resource record.
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
 // define RRs used in query and response
-pub type MetaRR<'a> = ResourceRecord<'a, Vec<u8>>;
+//───────────────────────────────────────────────────────────────────────────────────
+
+// a Meta RR is like OPT or TSIG sent in query in the additional section
+//pub type MetaRR<'a> = ResourceRecord<'a, Vec<u8>>;
+
+// other RRs found only is responses
 pub(super) type RR<'a> = ResourceRecord<'a, RData<'a>>;
 
 impl<'a> fmt::Display for RR<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<28} {:<10} {:<10} {:<10} {:<10}",
+            "{:<28} {:<10} {:<10} {:<10}",
             self.name.to_string(),
             self.r#type.to_string(),
-            self.class.to_string(),
-            self.ttl.to_string(),
+            // self.class.to_string(),
+            // self.ttl.to_string(),
+            self.opt_or_else,
             self.rd_length
         )?;
 
@@ -153,37 +239,44 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
         self.name.deserialize_from(buffer)?;
         self.r#type.deserialize_from(buffer)?;
 
-        // class is either a Qclass or in case of OPT the payload value
-        self.class = {
-            let mut cl = 0u16;
-            cl.deserialize_from(buffer)?;
-
-            match self.r#type {
-                QType::OPT => EitherOr::new_right(cl),
-                _ => {
-                    let qc = QClass::try_from(cl).unwrap();
-                    EitherOr::new_left(qc)
-                }
-            }
-        };
-
-        // TTL is the same
-        self.ttl = if self.r#type == QType::OPT {
-            let mut ext = OptTTL::default();
-            ext.deserialize_from(buffer)?;
-            EitherOr::new_right(ext)
+        // OPT or a regular RR ?
+        self.opt_or_else = if self.r#type == QType::OPT {
+            get_rr!(buffer, OptClassTtl, OptOrElse::Opt)
         } else {
-            let mut ttl = 0u32;
-            ttl.deserialize_from(buffer)?;
-            EitherOr::new_left(ttl)
+            get_rr!(buffer, RegularClassTtl, OptOrElse::Regular)
         };
+
+        // // class is either a Qclass or in case of OPT the payload value
+        // self.class = {
+        //     let mut cl = 0u16;
+        //     cl.deserialize_from(buffer)?;
+
+        //     match self.r#type {
+        //         QType::OPT => EitherOr::new_right(cl),
+        //         _ => {
+        //             let qc = QClass::try_from(cl).unwrap();
+        //             EitherOr::new_left(qc)
+        //         }
+        //     }
+        // };
+
+        // // TTL is the same
+        // self.ttl = if self.r#type == QType::OPT {
+        //     let mut ext = OptTTL::default();
+        //     ext.deserialize_from(buffer)?;
+        //     EitherOr::new_right(ext)
+        // } else {
+        //     let mut ttl = 0u32;
+        //     ttl.deserialize_from(buffer)?;
+        //     EitherOr::new_left(ttl)
+        // };
 
         // self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
         debug!(
-            "found RR: type:{:?} name:<{}> ttl:{} RD_length:{}",
-            self.r#type, self.name, self.ttl, self.rd_length
+            "found RR: type:{:?} name:<{}> class-ttl/opt:{} RD_length:{}",
+            self.r#type, self.name, self.opt_or_else, self.rd_length
         );
 
         if self.rd_length != 0 {
@@ -213,6 +306,9 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
                 QType::HIP => self.r_data = get_rr!(buffer, HIP, RData::HIP, self.rd_length),
                 QType::HTTPS => self.r_data = get_rr!(buffer, HTTPS, RData::HTTPS, self.rd_length),
+                QType::IPSECKEY => {
+                    self.r_data = get_rr!(buffer, IPSECKEY, RData::IPSECKEY, self.rd_length)
+                }
                 QType::KX => self.r_data = get_rr!(buffer, KX, RData::KX),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),

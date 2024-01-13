@@ -6,15 +6,16 @@ use std::slice::Iter;
 use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
-use crate::err_internal;
-use crate::error::{DNSResult, Error, ProtocolError};
+use error::{err_internal, Error, ProtocolError};
+
+use serde::{Serialize, Serializer};
 
 //---------------------------------------------------------------------------------------------
 // Define a Label first
 //---------------------------------------------------------------------------------------------
 
 // a label is part of a domain name
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 struct Label<'a>(&'a [u8]);
 
 // Deref to ease methods calls on inner value
@@ -28,7 +29,15 @@ impl<'a> Deref for Label<'a> {
 
 impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", String::from_utf8_lossy(self.0))
+        for c in self.0 {
+            if *c > 32 && *c < 128 {
+                write!(f, "{}", *c as char)?;
+            } else {
+                write!(f, "\\{:03}", *c)?;
+            }
+        }
+        Ok(())
+        // write!(f, "{}", String::from_utf8_lossy(self.0))
     }
 }
 
@@ -59,6 +68,20 @@ pub struct DomainName<'a> {
     labels: Vec<Label<'a>>,
 }
 
+// a special serializer because the standard serialization isn't what is expected
+// for a domain name
+impl<'a> Serialize for DomainName<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // let mut seq = serializer.serialize_map(Some(2))?;
+        // seq.serialize_entry("domain", &self.to_string())?;
+        // seq.end()
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 impl<'a> DomainName<'a> {
     // this identifies a compressed label
     // From RFC1035:
@@ -86,7 +109,7 @@ impl<'a> DomainName<'a> {
         self.labels.iter()
     }
 
-    pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> DNSResult<usize> {
+    pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> error::Result<usize> {
         let mut index = pos;
         let at_index = *buffer
             .get(index)
@@ -211,6 +234,12 @@ impl<'a> fmt::Display for DomainName<'a> {
         Ok(())
     }
 }
+
+// impl<'a> show::Show for DomainName<'a> {
+//     fn show(&self, stype: ShowType) {
+
+//     }
+// }
 
 // Convert an array of u8 to a domain name
 // impl<'a, const N: usize> From<[u8; N]> for  DomainName<'a> {
@@ -374,7 +403,7 @@ mod tests {
         let domain = (0..255).map(|_| "X").collect::<String>();
         assert!(DomainName::try_from(domain.as_str()).is_err());
 
-        let domain =
+        let _domain =
             DomainName::try_from("0.0.9.3.2.7.e.f.f.f.3.6.6.7.2.e.4.8.0.3.0.7.4.1.0.0.2.ip6.arpa")
                 .unwrap();
     }

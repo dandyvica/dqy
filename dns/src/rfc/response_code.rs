@@ -1,11 +1,14 @@
 use byteorder::ReadBytesExt;
+use serde::Serialize;
 
 use enum_from::{EnumDisplay, EnumTryFrom};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 // response codes: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6
-#[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork, Serialize,
+)]
 #[repr(u8)]
 pub enum ResponseCode {
     #[default]

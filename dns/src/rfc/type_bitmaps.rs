@@ -7,10 +7,7 @@ use std::{
 use log::trace;
 use type2network::FromNetworkOrder;
 
-use crate::{
-    err_internal,
-    error::{Error, ProtocolError},
-};
+use error::{err_internal, Error, ProtocolError};
 
 use super::qtype::QType;
 
@@ -72,6 +69,17 @@ impl fmt::Display for TypeBitMaps {
     }
 }
 
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl Serialize for TypeBitMaps {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 // a window in NSEC3/NSEC RR is a list of types
 // https://datatracker.ietf.org/doc/html/rfc5155#section-3.2
 // block0 encodes QTypes from A (bit 1 of bitmap) to URI (bit 256)
@@ -95,7 +103,7 @@ struct Window<'a> {
 struct WindowList<'a>(Vec<Window<'a>>);
 
 impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
-    type Error = crate::error::Error;
+    type Error = error::Error;
 
     #[allow(clippy::field_reassign_with_default)]
     fn try_from(buf: &'a [u8]) -> Result<Self, Self::Error> {
@@ -130,7 +138,7 @@ impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
 }
 
 impl<'a> TryFrom<WindowList<'a>> for Vec<QType> {
-    type Error = crate::error::Error;
+    type Error = error::Error;
 
     fn try_from(list: WindowList) -> Result<Self, Self::Error> {
         let mut v = Vec::new();

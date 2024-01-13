@@ -20,10 +20,20 @@ impl fmt::Display for EUI48 {
     }
 }
 
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl Serialize for EUI48 {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

@@ -41,6 +41,22 @@ impl<'a> fmt::Display for TLSA<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for TLSA<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(4))?;
+        seq.serialize_entry("cert_usage", &self.cert_usage)?;
+        seq.serialize_entry("selector", &self.selector)?;
+        seq.serialize_entry("matching_type", &self.matching_type)?;
+        seq.serialize_entry("data", &self.data.to_string())?;
+        seq.end()
+    }
+}
+
 // https://datatracker.ietf.org/doc/html/rfc8162
 #[allow(clippy::upper_case_acronyms)]
 pub(super) type SMIMEA<'a> = TLSA<'a>;
@@ -48,7 +64,6 @@ pub(super) type SMIMEA<'a> = TLSA<'a>;
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

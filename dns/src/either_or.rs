@@ -60,20 +60,23 @@ where
     }
 }
 
-// impl<L, R> ToNetworkOrder for EitherOr<L, R>
-// where
-//     L: ToNetworkOrder,
-//     R: ToNetworkOrder,
-// {
-//     fn serialize_to(&self, buffer: &mut Vec<u8>) -> std::io::Result<usize> {
-//         let length = match &self.0 {
-//             Either::Left(l) => l.serialize_to(buffer)?,
-//             Either::Right(r) => r.serialize_to(buffer)?,
-//         };
-
-//         Ok(length)
-//     }
-// }
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl<L, R> Serialize for EitherOr<L, R>
+where
+    L: ToNetworkOrder + Serialize,
+    R: ToNetworkOrder + Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self.0 {
+            Either::Left(l) => l.serialize(serializer),
+            Either::Right(r) => r.serialize(serializer),
+        }
+    }
+}
 
 // In this case, we can't determine by ourselves which variant it's gonna be.
 // We restrict that implementation to those for which an unit-like variant value could

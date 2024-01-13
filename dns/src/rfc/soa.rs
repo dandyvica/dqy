@@ -3,10 +3,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::domain::DomainName;
 
 // SOA RR
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct SOA<'a> {
     pub mname: DomainName<'a>, // The <domain-name> of the name server that was the
     // original or primary source of data for this zone.
@@ -46,7 +48,6 @@ impl<'a> fmt::Display for SOA<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

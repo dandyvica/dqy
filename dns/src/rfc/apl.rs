@@ -5,11 +5,15 @@ use std::{
 };
 
 use log::trace;
+
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 use crate::{databuf::BufferMut, new_rd_length};
 
+//───────────────────────────────────────────────────────────────────────────────────
+// InnerAPL
+//───────────────────────────────────────────────────────────────────────────────────
 // https://www.rfc-editor.org/rfc/rfc3123.html
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 // |                          ADDRESSFAMILY                        |
@@ -62,9 +66,24 @@ impl<'a> fmt::Display for InnerAPL<'a> {
     }
 }
 
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl<'a> Serialize for InnerAPL<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+//───────────────────────────────────────────────────────────────────────────────────
+// APL
+//───────────────────────────────────────────────────────────────────────────────────
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub(super) struct APL<'a> {
+    #[serde(skip_serializing)]
     rd_length: u16,
     apl: Vec<InnerAPL<'a>>,
 }
@@ -105,7 +124,6 @@ impl<'a> fmt::Display for APL<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

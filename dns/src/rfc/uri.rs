@@ -43,10 +43,24 @@ impl<'a> fmt::Display for URI<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for URI<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("priority", &self.priority)?;
+        seq.serialize_entry("weight", &self.weight)?;
+        seq.serialize_entry("target", &String::from_utf8_lossy(&self.target))?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

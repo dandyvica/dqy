@@ -1,16 +1,23 @@
-use std::fmt;
+use std::{fmt, net::Ipv6Addr};
 
+use serde::Serialize;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 // AAAA resource record
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default, FromNetwork)]
-pub struct AAAA([u8; 16]);
+#[derive(Debug, FromNetwork, Serialize)]
+pub struct AAAA(Ipv6Addr);
+
+impl Default for AAAA {
+    fn default() -> Self {
+        Self(Ipv6Addr::UNSPECIFIED)
+    }
+}
 
 impl fmt::Display for AAAA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", std::net::Ipv6Addr::from(self.0))
+        write!(f, "{}", self.0)
     }
 }
 
@@ -19,7 +26,6 @@ mod tests {
     use std::net::Ipv6Addr;
 
     use crate::{
-        error::DNSResult,
         rfc::{aaaa::AAAA, rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

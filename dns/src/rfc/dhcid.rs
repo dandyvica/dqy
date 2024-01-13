@@ -4,7 +4,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
+use serde::{Serialize, Serializer};
 
 use crate::{databuf::BufferMut, new_rd_length};
 
@@ -24,17 +24,22 @@ new_rd_length!(DHCID<'a>);
 
 impl<'a> fmt::Display for DHCID<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let b64 = general_purpose::STANDARD.encode(&self.data);
-        write!(f, "{}", b64)?;
+        write!(f, "{}", self.data.as_b64())
+    }
+}
 
-        Ok(())
+impl<'a> Serialize for DHCID<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.data.as_b64())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

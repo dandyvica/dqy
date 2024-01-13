@@ -1,12 +1,13 @@
 use std::fmt;
 
+use serde::Serialize;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 use super::domain::DomainName;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct AFSDB<'a> {
     subtype: u16,
     hostname: DomainName<'a>,
@@ -21,7 +22,6 @@ impl<'a> fmt::Display for AFSDB<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{afsdb::AFSDB, rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

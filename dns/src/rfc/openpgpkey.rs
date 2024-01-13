@@ -3,8 +3,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
-
 use crate::{databuf::BufferMut, new_rd_length};
 
 //-------------------------------------------------------------------------------------
@@ -17,7 +15,7 @@ pub(super) struct OPENPGPKEY<'a> {
     #[deser(ignore)]
     rd_length: u16,
 
-    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length ); ))]
+    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length); ))]
     key: BufferMut<'a>,
 }
 
@@ -26,14 +24,24 @@ new_rd_length!(OPENPGPKEY<'a>);
 
 impl<'a> fmt::Display for OPENPGPKEY<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", general_purpose::STANDARD.encode(&self.key))
+        write!(f, "{}", self.key.as_b64())
+    }
+}
+
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl<'a> Serialize for OPENPGPKEY<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.key.as_b64())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

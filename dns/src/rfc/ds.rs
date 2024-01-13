@@ -46,6 +46,22 @@ impl<'a> fmt::Display for DS<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for DS<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(4))?;
+        seq.serialize_entry("key_tag", &self.key_tag)?;
+        seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
+        seq.serialize_entry("digest_type", &self.digest_type)?;
+        seq.serialize_entry("digest", &self.digest.as_b64())?;
+        seq.end()
+    }
+}
+
 #[allow(clippy::upper_case_acronyms)]
 pub(super) type DLV<'a> = DS<'a>;
 
@@ -55,7 +71,6 @@ pub(super) type CDS<'a> = DS<'a>;
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

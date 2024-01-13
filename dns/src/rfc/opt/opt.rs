@@ -2,18 +2,20 @@ use std::{fmt, io::Cursor};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
+use bytes::buf;
 use enum_from::{EnumDisplay, EnumTryFrom};
 use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
+use serde::Serialize;
+
 use crate::{
     databuf::Buffer,
-    either_or::EitherOr,
     rfc::{
-        opt::{self, nsid::NSID},
+        opt::nsid::NSID,
         qtype::QType,
-        resource_record::ResourceRecord,
+        resource_record::{OptClassTtl, OptOrElse, ResourceRecord, RR},
     },
 };
 
@@ -36,36 +38,36 @@ use super::{
 // | RDLEN      | u_int16_t    | length of all RDATA          |
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
-pub type OptQuery<'a> = ResourceRecord<'a, Vec<OptOption>>;
+//pub type OPT = ResourceRecord<'static, Vec<OptOption>>;
+pub(super) type OPT_OPTIONS = Vec<OptOption>;
 
-impl<'a> OptQuery<'a> {
+// OPT is a special (weird) case of RR
+#[derive(Debug, Default, ToNetwork, Serialize)]
+pub struct OPT {
+    pub name: u8,
+    pub r#type: QType,
+    pub payload: u16,
+    pub extended_rcode: u8,
+    pub version: u8,
+    pub flags: u16,
+    pub rd_length: u16,
+    pub options: Vec<OptOption>,
+}
+
+impl OPT {
     #[allow(clippy::field_reassign_with_default)]
     pub fn new(bufsize: u16) -> Self {
-        let mut opt = OptQuery::default();
-
-        // QType = 41
-        opt.r#type = QType::OPT;
-
-        // class is UDP payload size
-        opt.class = EitherOr::new_right(bufsize);
-
-        opt
+        Self {
+            r#type: QType::OPT,
+            payload: bufsize,
+            ..Default::default()
+        }
     }
 
     // set DNSSEC bit to 1
     #[allow(clippy::field_reassign_with_default)]
     pub fn set_dnssec(&mut self) {
-        let mut opt_ttl = OptTTL::default();
-        opt_ttl.flags = 0x8000;
-
-        self.ttl = EitherOr::new_right(opt_ttl);
-    }
-
-    // add another OPT data in the OPT record
-    pub fn push_option(&mut self, option: OptOption) {
-        // 4 corresponds to option code and length
-        self.rd_length += 4 + option.length;
-        self.r_data.push(option);
+        self.flags = 0x8000;
     }
 
     pub fn add_option<T: OptionData>(&mut self, data: T) {
@@ -79,7 +81,19 @@ impl<'a> OptQuery<'a> {
 
         // add in the list of options
         self.rd_length += 4 + option.length;
-        self.r_data.push(option);
+        self.options.push(option);
+    }
+
+    //───────────────────────────────────────────────────────────────────────────────────
+    // builder pattern for adding lots of options to OPT RR
+    //───────────────────────────────────────────────────────────────────────────────────
+    pub fn build(bufsize: u16) -> Self {
+        Self::new(bufsize)
+    }
+
+    pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
+        self.add_option(data);
+        self
     }
 
     // #[allow(clippy::field_reassign_with_default)]
@@ -98,7 +112,7 @@ impl<'a> OptQuery<'a> {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 // 2: | DO|                           Z                               |
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork, Serialize)]
 pub struct OptTTL {
     pub(super) extended_rcode: u8,
     pub(super) version: u8,
@@ -126,7 +140,7 @@ impl fmt::Display for OptTTL {
 //    /                          OPTION-DATA                          /
 //    /                                                               /
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-#[derive(Debug, Default, ToNetwork)]
+#[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct OptOption {
     pub(super) code: OptOptionCode,
     pub(crate) length: u16,
@@ -169,7 +183,16 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
 }
 
 #[derive(
-    Debug, Default, Copy, Clone, PartialEq, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumTryFrom,
+    EnumDisplay,
+    ToNetwork,
+    FromNetwork,
+    Serialize,
 )]
 #[repr(u16)]
 pub enum OptOptionCode {
@@ -195,7 +218,7 @@ pub enum OptOptionCode {
     DeviceID = 26946, // Optional	[https://developer.cisco.com/docs/cloud-security/#!network-devices-getting-started/response-codes][Cisco_CIE_DNS_team]
 }
 
-#[derive(Debug, ToNetwork)]
+#[derive(Debug, ToNetwork, Serialize)]
 pub enum OptOptionData {
     NSID(NSID),
     COOKIE(COOKIE),

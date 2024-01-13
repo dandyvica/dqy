@@ -1,6 +1,7 @@
 use std::fmt;
 
 use byteorder::ReadBytesExt;
+use serde::Serialize;
 
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
@@ -9,7 +10,7 @@ use enum_from::EnumTryFrom;
 
 /// The header flags' first bit is 0 or 1 meaning a question or a response. Better is to use an enum which is
 /// both clearer and type oriented.
-#[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, FromNetwork)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, FromNetwork, Serialize)]
 #[repr(u8)]
 pub enum PacketType {
     #[default]

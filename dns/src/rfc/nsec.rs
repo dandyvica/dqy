@@ -4,6 +4,8 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use crate::new_rd_length;
 
 use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
@@ -16,7 +18,7 @@ use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
 // |  Salt Length  |                     Salt                      /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct NSEC<'a> {
     // transmistted through RR deserialization
     #[deser(ignore)]
@@ -37,10 +39,25 @@ impl<'a> fmt::Display for NSEC<'a> {
     }
 }
 
+// Custom serialization
+// use serde::{ser::SerializeMap, Serialize, Serializer};
+// impl<'a> Serialize for NSEC<'a> {
+//     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut seq = serializer.serialize_map(Some(2))?;
+//         seq.serialize_entry("domain", &self.domain)?;
+//         seq.serialize_entry("protocol", &self.protocol)?;
+//         seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
+//         seq.serialize_entry("key", &self.key.as_b64())?;
+//         seq.end()
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

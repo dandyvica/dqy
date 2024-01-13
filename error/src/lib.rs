@@ -3,6 +3,9 @@ use std::net::{AddrParseError, SocketAddr};
 use std::str;
 use std::{fmt, io};
 
+/// A specific custom `Result` for all functions
+pub type Result<T> = std::result::Result<T, self::Error>;
+
 // helper macro to ease returning the internal DNS errors
 #[macro_export]
 macro_rules! err_internal {
@@ -129,9 +132,6 @@ impl fmt::Debug for Error {
         }
     }
 }
-
-/// A specific custom `Result` for all functions
-pub type DNSResult<T> = Result<T, Error>;
 
 // All convertion for internal errors for Error
 impl From<io::Error> for Error {

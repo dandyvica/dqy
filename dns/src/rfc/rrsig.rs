@@ -1,7 +1,5 @@
 use std::fmt;
 
-use base64::{engine::general_purpose, Engine as _};
-
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
@@ -50,6 +48,7 @@ pub struct RRSIG<'a> {
     // will be deserialized locally
     // #[deser(ignore)]
     pub name: DomainName<'a>,
+
     #[deser(with_code( self.signature = BufferMut::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
     pub signature: BufferMut<'a>,
 }
@@ -61,26 +60,43 @@ impl<'a> fmt::Display for RRSIG<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} ",
+            "{} {} {} {} {} {} {}",
             self.type_covered,
             self.algorithm,
             self.name,
             self.sign_expiration,
             self.sign_inception,
-            self.key_tag
-        )?;
+            self.key_tag,
+            self.signature.as_b64()
+        )
+    }
+}
 
-        let b64 = general_purpose::STANDARD.encode(&self.signature);
-        write!(f, "{}", b64)?;
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for RRSIG<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(7))?;
+        seq.serialize_entry("type_covered", &self.type_covered)?;
+        seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
+        seq.serialize_entry("labels", &self.labels)?;
+        seq.serialize_entry("ttl", &self.ttl)?;
 
-        Ok(())
+        seq.serialize_entry("sign_expiration", &self.sign_expiration.to_string())?;
+        seq.serialize_entry("sign_inception", &self.sign_inception.to_string())?;
+        seq.serialize_entry("name", &self.name)?;
+
+        seq.serialize_entry("signature", &self.signature.as_b64())?;
+        seq.end()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

@@ -3,7 +3,10 @@ use std::fmt;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
+use serde::Serialize;
+
 use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
+use show::*;
 
 // Question structure: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 // 1  1  1  1  1  1
@@ -17,7 +20,7 @@ use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                     QCLASS                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork, Serialize)]
 pub struct Question<'a> {
     pub qname: DomainName<'a>,
     pub qtype: QType,

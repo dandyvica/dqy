@@ -20,3 +20,14 @@ impl fmt::Display for DateTime {
         Ok(())
     }
 }
+
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl Serialize for DateTime {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}

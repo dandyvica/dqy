@@ -3,10 +3,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::char_string::CharacterString;
 
 // MX RR
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct TXT<'a>(pub CharacterString<'a>);
 
 impl<'a> fmt::Display for TXT<'a> {
@@ -18,7 +20,6 @@ impl<'a> fmt::Display for TXT<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

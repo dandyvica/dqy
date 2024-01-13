@@ -1,9 +1,11 @@
 // A specific management for the Vec<u8> type for the FromNetworkOrder trait
 use std::convert::AsRef;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::io::{Cursor, Read};
-use std::ops::{Deref, Index};
-use std::slice::{Iter, SliceIndex};
+use std::ops::Deref;
+use std::slice::Iter;
+
+use base64::{engine::general_purpose, Engine as _};
 
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
@@ -43,6 +45,22 @@ impl<T> DataBuf<T> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    // some RRs need to convert the raw data into b16 or b64 hexa strings
+    pub fn as_b64(&self) -> String
+    where
+        T: AsRef<[u8]>,
+    {
+        general_purpose::STANDARD.encode(&self.data.as_ref())
+    }
+
+    // some RRs need to convert the raw data into b16 or b64 hexa strings
+    pub fn as_b16(&self) -> String
+    where
+        T: AsRef<[u8]>,
+    {
+        base16::encode_upper(&self.data.as_ref())
+    }
 }
 
 impl<T> Deref for DataBuf<T> {
@@ -75,13 +93,27 @@ where
     }
 }
 
-impl<T> fmt::Display for DataBuf<T>
+impl<T> Display for DataBuf<T>
 where
     T: AsRef<[u8]>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = String::from_utf8_lossy(&self.data.as_ref()).to_string();
         write!(f, "{}", s)
+    }
+}
+
+// Custom serialization
+use serde::{Serialize, Serializer};
+impl<T> Serialize for DataBuf<T>
+where
+    T: Serialize + AsRef<[u8]>,
+{
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 

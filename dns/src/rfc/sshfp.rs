@@ -42,10 +42,24 @@ impl<'a> fmt::Display for SSHFP<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for SSHFP<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("algorithm", &self.algorithm)?;
+        seq.serialize_entry("fp_type", &self.fp_type)?;
+        seq.serialize_entry("fingerprint", &self.fingerprint.to_string())?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

@@ -10,11 +10,11 @@ use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
 };
 
-use crate::error::DNSResult;
+use error::Result;
 
-use super::{mode::TransportMode, Transporter};
+use super::{protocol::Protocol, Transporter};
 
-pub struct HttpsTransport<'a> {
+pub struct HttpsProtocol<'a> {
     // URL endpoint
     server: &'a str,
 
@@ -28,8 +28,8 @@ pub struct HttpsTransport<'a> {
     peer: Option<SocketAddr>,
 }
 
-impl<'a> HttpsTransport<'a> {
-    pub fn new(server: &'a str, timeout: Duration) -> DNSResult<Self> {
+impl<'a> HttpsProtocol<'a> {
+    pub fn new(server: &'a str, timeout: Duration) -> Result<Self> {
         let client = Client::builder()
             // same headers for all requests
             .default_headers(Self::construct_headers())
@@ -58,8 +58,8 @@ impl<'a> HttpsTransport<'a> {
     }
 }
 
-impl<'a> Transporter for HttpsTransport<'a> {
-    fn send(&mut self, buffer: &[u8]) -> DNSResult<usize> {
+impl<'a> Transporter for HttpsProtocol<'a> {
+    fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         // need to copy bytes because body() prototype is: pub fn body<T: Into<Body>>(self, body: T) -> RequestBuilder
         // and From<Body> is not implemented for &[u8]. See here: https://docs.rs/reqwest/latest/reqwest/blocking/struct.Body.html
         // it can then be consumed by the body() method
@@ -82,7 +82,7 @@ impl<'a> Transporter for HttpsTransport<'a> {
         Ok(buffer.len())
     }
 
-    fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
+    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
         let len = self.bytes_recv.len();
         // copy Bytes to buffer
         buffer[..len].copy_from_slice(&self.bytes_recv);
@@ -95,8 +95,8 @@ impl<'a> Transporter for HttpsTransport<'a> {
         false
     }
 
-    fn mode(&self) -> TransportMode {
-        TransportMode::DoH
+    fn mode(&self) -> Protocol {
+        Protocol::DoH
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

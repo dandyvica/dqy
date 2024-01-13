@@ -3,6 +3,8 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::{char_string::CharacterString, domain::DomainName};
 
 // 1  1  1  1  1  1
@@ -22,7 +24,7 @@ use super::{char_string::CharacterString, domain::DomainName};
 // /                                               /
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct NAPTR<'a> {
     order: u16,
     preference: u16,
@@ -45,7 +47,6 @@ impl<'a> fmt::Display for NAPTR<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

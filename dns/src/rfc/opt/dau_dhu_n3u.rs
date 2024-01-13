@@ -1,9 +1,9 @@
-use std::fmt;
-
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::{databuf::Buffer, opt_code, opt_data};
+use serde::Serialize;
+
+use crate::{opt_code, opt_data};
 
 use super::{
     opt::{OptOptionCode, OptOptionData},
@@ -13,7 +13,7 @@ use super::{
 // useful macro to auto define DAU, DHU & N3U which are the same
 macro_rules! opt {
     ($opt:ident, $t:ty) => {
-        #[derive(Debug, Default, ToNetwork)]
+        #[derive(Debug, Default, ToNetwork, Serialize)]
         pub struct $opt(Vec<$t>);
 
         impl From<&[$t]> for $opt {

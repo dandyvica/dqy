@@ -1,8 +1,9 @@
 use std::fmt::{self};
 
+use serde::Serialize;
 use type2network::ToNetworkOrder;
 
-use crate::databuf::Buffer;
+use crate::databuf::{Buffer, DataBuf};
 
 use super::{
     a::A,
@@ -11,16 +12,17 @@ use super::{
     apl::APL,
     caa::CAA,
     cert::CERT,
-    cname::CNAME,
+    cname::{CNAME, DNAME},
     csync::CSYNC,
     dhcid::DHCID,
-    dname::DNAME,
+    // dname::DNAME,
     dnskey::{CDNSKEY, DNSKEY},
     ds::{CDS, DLV, DS},
     eui48::EUI48,
     eui64::EUI64,
     hinfo::HINFO,
     hip::HIP,
+    ipseckey::IPSECKEY,
     kx::KX,
     loc::LOC,
     mx::MX,
@@ -45,9 +47,9 @@ use super::{
 };
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub(super) enum RData<'a> {
-    // RData definition
+    // RData definitions
     A(A),
     AAAA(AAAA),
     AFSDB(AFSDB<'a>),
@@ -68,6 +70,7 @@ pub(super) enum RData<'a> {
     HINFO(HINFO<'a>),
     HIP(HIP<'a>),
     HTTPS(HTTPS<'a>),
+    IPSECKEY(IPSECKEY<'a>),
     KX(KX<'a>),
     LOC(LOC),
     MX(MX<'a>),
@@ -95,7 +98,7 @@ pub(super) enum RData<'a> {
 
 impl<'a> Default for RData<'a> {
     fn default() -> Self {
-        Self::A(A(0))
+        Self::UNKNOWN(DataBuf::default())
     }
 }
 
@@ -130,6 +133,7 @@ impl<'a> fmt::Display for RData<'a> {
             RData::HINFO(a) => write!(f, "{}", a),
             RData::HTTPS(a) => write!(f, "{}", a),
             RData::HIP(a) => write!(f, "{}", a),
+            RData::IPSECKEY(a) => write!(f, "{}", a),
             RData::KX(a) => write!(f, "{}", a),
             RData::LOC(a) => write!(f, "{}", a),
             RData::MX(a) => write!(f, "{}", a),

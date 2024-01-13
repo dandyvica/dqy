@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use serde::Serialize;
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
@@ -17,6 +18,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
     EnumDisplay,
     ToNetwork,
     FromNetwork,
+    Serialize,
 )]
 #[repr(u16)]
 pub enum QType {
@@ -148,11 +150,8 @@ mod tests {
         let qt = QType::from_str("TYPE1234").unwrap();
         assert_eq!(qt, QType::TYPE(1234));
         let qt = QType::from_str("TYPEA234").unwrap_err();
-        assert_eq!(
-            qt,
-            format!("no variant corresponding to value 'TYPEA234'")
-        );
-        
+        assert_eq!(qt, format!("no variant corresponding to value 'TYPEA234'"));
+
         // try_from
         let qt = QType::try_from(4u16).unwrap();
         assert_eq!(qt, QType::MF);
@@ -165,10 +164,10 @@ mod tests {
         let qt = QType::try_from(2u16).unwrap();
         assert_eq!(&qt.to_string(), "NS");
         let qc = QType::try_from(1000u16).unwrap();
-        assert_eq!(&qc.to_string(), "TYPE1000");        
+        assert_eq!(&qc.to_string(), "TYPE1000");
         let qt = QType::from_str("TYPE1234").unwrap();
         assert_eq!(&qt.to_string(), "TYPE1234");
-    }    
+    }
 
     #[test]
     fn network() {

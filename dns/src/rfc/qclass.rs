@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use serde::Serialize;
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
@@ -16,6 +17,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
     EnumDisplay,
     ToNetwork,
     FromNetwork,
+    Serialize,
 )]
 #[repr(u16)]
 pub enum QClass {
@@ -48,10 +50,7 @@ mod tests {
         let qc = QClass::from_str("CLASS1234").unwrap();
         assert_eq!(qc, QClass::CLASS(1234));
         let qc = QClass::from_str("CLASSA234").unwrap_err();
-        assert_eq!(
-            qc,
-            format!("no variant corresponding to value 'CLASSA234'")
-        );
+        assert_eq!(qc, format!("no variant corresponding to value 'CLASSA234'"));
 
         // try_from
         let qc = QClass::try_from(4u16).unwrap();

@@ -3,9 +3,11 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::domain::DomainName;
 
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct RP<'a> {
     mbox: DomainName<'a>,
     hostname: DomainName<'a>,
@@ -20,7 +22,6 @@ impl<'a> fmt::Display for RP<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

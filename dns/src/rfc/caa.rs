@@ -19,9 +19,10 @@ use crate::{databuf::BufferMut, new_rd_length};
 // | Value byte 0   | Value byte 1   |.....| Value byte m-1 |
 // +----------------+----------------+.....+----------------+
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct CAA<'a> {
     // transmistted through RR deserialization
+    #[serde(skip_serializing)]
     #[deser(ignore)]
     rd_length: u16,
 
@@ -50,10 +51,23 @@ impl<'a> fmt::Display for CAA<'a> {
     }
 }
 
+use serde::{ser::SerializeMap, Serialize, Serializer};
+// impl<'a> Serialize for CAA<'a> {
+//     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut seq = serializer.serialize_map(Some(3))?;
+//         seq.serialize_entry("flags", &self.flags)?;
+//         seq.serialize_entry("tag_key", &self.tag_key.to_string())?;
+//         seq.serialize_entry("tag_value", &self.tag_value.to_string())?;
+//         seq.end()
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

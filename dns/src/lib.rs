@@ -1,11 +1,11 @@
-pub mod buffer;
+//pub mod buffer;
 // pub mod butter_mut;
 pub mod databuf;
 pub mod date_time;
 pub mod either_or;
-pub mod error;
+//pub mod error;
 pub mod rfc;
-pub mod transport;
+//pub mod transport;
 
 // Macro used to define getters
 #[macro_export]
@@ -88,7 +88,7 @@ mod tests {
         // $closure: code to test the function
         ($fname:ident, $file:literal, $tcp:literal, $index:literal, $arm:path, $closure:tt) => {
             #[test]
-            fn $fname() -> DNSResult<()> {
+            fn $fname() -> error::Result<()> {
                 {
                     // extract response packet
                     let data = get_packets($file, 0, $index);

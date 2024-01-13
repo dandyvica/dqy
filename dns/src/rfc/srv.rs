@@ -5,10 +5,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::domain::DomainName;
 
 // https://datatracker.ietf.org/doc/html/rfc2782
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct SRV<'a> {
     priority: u16,
     weight: u16,
@@ -31,7 +33,6 @@ impl<'a> fmt::Display for SRV<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

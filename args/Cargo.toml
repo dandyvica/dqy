@@ -7,8 +7,12 @@ edition = "2021"
 
 [dependencies]
 clap = "4.4.8"
+dns = { path = "../dns" }
+env_logger = "0.10.1"
+error = { path = "../error" }
+idna = "0.4.0"
 log = "0.4.20"
 resolver = { git = "https://github.com/dandyvica/resolver.git" }
-dns = { path = "../dns" }
-idna = "0.4.0"
-env_logger = "0.10.1"
+show = { path = "../show" }
+transport = { path = "../transport" }
+

@@ -1,13 +1,11 @@
 use std::fmt;
 use std::io::{Cursor, Result};
 
-use crate::{
-    error::{Error, ProtocolError},
-    //getter,
-    rfc::{opcode::OpCode, response_code::ResponseCode},
-};
+use crate::rfc::{opcode::OpCode, response_code::ResponseCode};
+use error::{Error, ProtocolError};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use serde::Serialize;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
 use super::packet_type::PacketType;
@@ -18,36 +16,12 @@ use super::packet_type::PacketType;
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |QR|   Opcode  |AA|TC|RD|RA|Z |AD|CD|   RCODE   |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Serialize)]
 pub struct Flags {
     pub(super) qr: PacketType, // A one bit field that specifies whether this message is a query (0), or a response (1).
     pub(super) op_code: OpCode, // A four bit field that specifies kind of query in this
-    //  message.  This value is set by the originator of a query
-    //  and copied into the response.  The values are:
-    // 0               a standard query (QUERY)
-    // 1               an inverse query (IQUERY)
-    // 2               a server status request (STATUS)
-    // 3-15            reserved for future use
-    pub(super) authorative_answer: bool, // Authoritative Answer - this bit is valid in responses,
-    //and specifies that the responding name server is an
-    //authority for the domain name in question section.
-    //Note that the contents of the answer section may have
-    //multiple owner names because of aliases.  The AA bit
-    //corresponds to the name which matches the query name, or
-    //the first owner name in the answer section.
-    pub truncation: bool, //    TrunCation - specifies that this message was truncation
-    //    due to length greater than that permitted on the
-    //    transmission channel.
-    pub(super) recursion_desired: bool, // Recursion Desired - this bit may be set in a query and
-    // is copied into the response.  If RD is set, it directs
-    // the name server to pursue the query recursively.
-    // Recursive query support is optional.
-    pub(super) recursion_available: bool, // Recursion Available - this be is set or cleared in a
-    //  response, and denotes whether recursive query support is
-    //  available in the name server.
-    pub(super) z: bool, // Reserved for future use.  Must be zero in all queries and responses.
-    pub(super) authentic_data: bool,
-    pub(super) checking_disabled: bool,
+    #[serde(flatten)]
+    pub(super) bitflags: BitFlags,
     pub(super) response_code: ResponseCode, // Response code - this 4 bit field is set as part of
                                             //responses.  The values have the following
                                             //interpretation:
@@ -75,6 +49,45 @@ pub struct Flags {
                                             //6-15            Reserved for future use.
 }
 
+#[derive(Debug, PartialEq, Copy, Clone, Serialize)]
+pub struct BitFlags {
+    pub authorative_answer: bool, // Authoritative Answer - this bit is valid in responses,
+    //and specifies that the responding name server is an
+    //authority for the domain name in question section.
+    //Note that the contents of the answer section may have
+    //multiple owner names because of aliases.  The AA bit
+    //corresponds to the name which matches the query name, or
+    //the first owner name in the answer section.
+    pub truncation: bool, //    TrunCation - specifies that this message was truncation
+    //    due to length greater than that permitted on the
+    //    transmission channel.
+    pub recursion_desired: bool, // Recursion Desired - this bit may be set in a query and
+    // is copied into the response.  If RD is set, it directs
+    // the name server to pursue the query recursively.
+    // Recursive query support is optional.
+    pub recursion_available: bool, // Recursion Available - this be is set or cleared in a
+    //  response, and denotes whether recursive query support is
+    //  available in the name server.
+    pub z: bool, // Reserved for future use.  Must be zero in all queries and responses.
+    pub authentic_data: bool,
+    pub checking_disabled: bool,
+}
+
+// by default, we want the recursion (when not tracing)
+impl Default for BitFlags {
+    fn default() -> Self {
+        Self {
+            authorative_answer: false,
+            truncation: false,
+            recursion_desired: true,
+            recursion_available: false,
+            z: false,
+            authentic_data: false,
+            checking_disabled: false,
+        }
+    }
+}
+
 //getter!(Flags, qr, PacketType);
 
 impl TryFrom<u16> for Flags {
@@ -93,17 +106,17 @@ impl TryFrom<u16> for Flags {
 
         flags.qr = PacketType::try_from(qr)
             .map_err(|_| Error::InternalError(ProtocolError::UnknowPacketType))?;
-
         flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u8)
             .map_err(|_| Error::InternalError(ProtocolError::UnknowOpCode))?;
 
-        flags.authorative_answer = (value >> 10) & 1 == 1;
-        flags.truncation = (value >> 9) & 1 == 1;
-        flags.recursion_desired = (value >> 8) & 1 == 1;
-        flags.recursion_available = (value >> 7) & 1 == 1;
-        flags.z = (value >> 6 & 1) == 1;
-        flags.authentic_data = (value >> 5 & 1) == 1;
-        flags.checking_disabled = (value >> 4 & 1) == 1;
+        flags.bitflags.authorative_answer = (value >> 10) & 1 == 1;
+        flags.bitflags.truncation = (value >> 9) & 1 == 1;
+        flags.bitflags.recursion_desired = (value >> 8) & 1 == 1;
+        flags.bitflags.recursion_available = (value >> 7) & 1 == 1;
+        flags.bitflags.z = (value >> 6 & 1) == 1;
+        flags.bitflags.authentic_data = (value >> 5 & 1) == 1;
+        flags.bitflags.checking_disabled = (value >> 4 & 1) == 1;
+
         flags.response_code = ResponseCode::try_from((value & 0b1111) as u8)
             .map_err(|_| Error::InternalError(ProtocolError::UnknowOpCode))?;
 
@@ -123,13 +136,13 @@ impl ToNetworkOrder for Flags {
         // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
         let mut flags = (self.qr as u16) << 15;
         flags |= (self.op_code as u16) << 11;
-        flags |= (self.authorative_answer as u16) << 10;
-        flags |= (self.truncation as u16) << 9;
-        flags |= (self.recursion_desired as u16) << 8;
-        flags |= (self.recursion_available as u16) << 7;
-        flags |= (self.z as u16) << 6;
-        flags |= (self.authentic_data as u16) << 5;
-        flags |= (self.checking_disabled as u16) << 4;
+        flags |= (self.bitflags.authorative_answer as u16) << 10;
+        flags |= (self.bitflags.truncation as u16) << 9;
+        flags |= (self.bitflags.recursion_desired as u16) << 8;
+        flags |= (self.bitflags.recursion_available as u16) << 7;
+        flags |= (self.bitflags.z as u16) << 6;
+        flags |= (self.bitflags.authentic_data as u16) << 5;
+        flags |= (self.bitflags.checking_disabled as u16) << 4;
         flags |= self.response_code as u16;
 
         buffer.write_u16::<BigEndian>(flags)?;
@@ -162,28 +175,38 @@ impl fmt::Display for Flags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // output depends on whether it's a query or a response
         // because some fields are unnecessary when Query or Response
-        write!(f, "qr:{:?} ", self.qr)?;
+        // write!(f, "qr:{:?} ", self.qr)?;
 
-        if self.qr == PacketType::Query {
-            write!(f, "opcode:{:?} rd:{}", self.op_code, self.recursion_desired)
-        } else {
-            write!(f, "code:{} ", self.response_code)?;
+        // if self.qr == PacketType::Query {
+        //     write!(
+        //         f,
+        //         "opcode:{:?} rd:{}",
+        //         self.op_code, self.bitflags.recursion_desired
+        //     )
+        // } else {
+        // write!(f, "qr:{:?} ", self.qr)?;
+        // write!(f, "opcode:{:?} ", self.op_code)?;
+        flag_display!(f, self.bitflags.authentic_data, "ad");
+        flag_display!(f, self.bitflags.authorative_answer, "aa");
+        flag_display!(f, self.bitflags.checking_disabled, "cd");
+        flag_display!(f, self.bitflags.recursion_available, "ra");
+        flag_display!(f, self.bitflags.recursion_desired, "rd");
+        flag_display!(f, self.bitflags.truncation, "tc");
 
-            flag_display!(f, self.authorative_answer, "aa");
-            flag_display!(f, self.truncation, "tc");
-            flag_display!(f, self.recursion_desired, "rd");
-            flag_display!(f, self.recursion_available, "ra");
-            flag_display!(f, self.authentic_data, "ad");
-            flag_display!(f, self.checking_disabled, "cd");
-            Ok(())
+        if self.qr == PacketType::Response {
+            write!(f, "{} ", self.response_code)?;
         }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::rfc::{
-        flags::Flags, opcode::OpCode, packet_type::PacketType, response_code::ResponseCode,
+        flags::{BitFlags, Flags},
+        opcode::OpCode,
+        packet_type::PacketType,
+        response_code::ResponseCode,
     };
 
     #[test]
@@ -194,13 +217,13 @@ mod tests {
         let v = Flags::try_from(x).unwrap();
         assert_eq!(v.qr, PacketType::Response);
         assert_eq!(v.op_code, OpCode::IQuery);
-        assert!(v.authorative_answer);
-        assert!(v.truncation);
-        assert!(v.recursion_desired);
-        assert!(v.recursion_available);
-        assert!(v.z);
-        assert!(v.authentic_data);
-        assert!(v.checking_disabled);
+        assert!(v.bitflags.authorative_answer);
+        assert!(v.bitflags.truncation);
+        assert!(v.bitflags.recursion_desired);
+        assert!(v.bitflags.recursion_available);
+        assert!(v.bitflags.z);
+        assert!(v.bitflags.authentic_data);
+        assert!(v.bitflags.checking_disabled);
         assert_eq!(v.response_code, ResponseCode::FormErr);
     }
 
@@ -208,9 +231,7 @@ mod tests {
     fn serialize_to() {
         use type2network::ToNetworkOrder;
 
-        let flags = Flags {
-            qr: PacketType::Response,
-            op_code: OpCode::IQuery,
+        let bitflags = BitFlags {
             authorative_answer: true,
             truncation: true,
             recursion_desired: true,
@@ -218,6 +239,12 @@ mod tests {
             z: true,
             authentic_data: true,
             checking_disabled: true,
+        };
+
+        let flags = Flags {
+            qr: PacketType::Response,
+            op_code: OpCode::IQuery,
+            bitflags,
             response_code: ResponseCode::NoError,
         };
 
@@ -237,13 +264,13 @@ mod tests {
         assert!(v.deserialize_from(&mut buffer).is_ok());
         assert_eq!(v.qr, PacketType::Response);
         assert_eq!(v.op_code, OpCode::IQuery);
-        assert!(v.authorative_answer);
-        assert!(v.truncation);
-        assert!(v.recursion_desired);
-        assert!(v.recursion_available);
-        assert!(v.z);
-        assert!(v.authentic_data);
-        assert!(v.checking_disabled);
+        assert!(v.bitflags.authorative_answer);
+        assert!(v.bitflags.truncation);
+        assert!(v.bitflags.recursion_desired);
+        assert!(v.bitflags.recursion_available);
+        assert!(v.bitflags.z);
+        assert!(v.bitflags.authentic_data);
+        assert!(v.bitflags.checking_disabled);
         assert_eq!(v.response_code, ResponseCode::FormErr);
     }
 }

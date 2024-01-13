@@ -3,6 +3,8 @@ use std::io::{Cursor, Seek, SeekFrom};
 
 use type2network::FromNetworkOrder;
 
+use serde::{Serialize, Serializer};
+
 // Character string as described in: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default, PartialEq)]
 pub struct CharacterString<'a> {
@@ -22,6 +24,15 @@ impl<'a> From<&'a str> for CharacterString<'a> {
 impl<'a> fmt::Display for CharacterString<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(self.data))
+    }
+}
+
+impl<'a> Serialize for CharacterString<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 

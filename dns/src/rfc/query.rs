@@ -1,77 +1,92 @@
-use std::{any::Any, fmt};
+use std::fmt;
 
 use log::{debug, trace};
-use rand::Rng;
+use serde::Serialize;
 
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::{error::DNSResult, transport::Transporter};
+use error::Result;
+use transport::Transporter;
 
 use super::{
-    domain::DomainName, header::Header, opcode::OpCode, opt::opt::OptQuery,
-    packet_type::PacketType, qclass::QClass, qtype::QType, question::Question,
+    domain::DomainName, flags::BitFlags, header::Header, opt::opt::OPT, qclass::QClass,
+    qtype::QType, question::Question,
 };
 
-// a helper macro to define settings of flags
-macro_rules! set_flag {
-    // to deserialize "simple" structs (like A)
-    ($func:ident, $field:ident) => {
-        pub fn $func(&mut self, v: bool) {
-            self.header.flags.$field = v;
-        }
-    };
+#[derive(Debug, ToNetwork, Serialize)]
+pub enum MetaRR {
+    OPT(OPT),
 }
 
-#[derive(Default, ToNetwork)]
+impl Default for MetaRR {
+    fn default() -> Self {
+        Self::OPT(OPT::default())
+    }
+}
+
+#[derive(Default, ToNetwork, Serialize)]
 pub struct Query<'a> {
-    pub length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
+    #[serde(skip_serializing)]
+    pub length: Option<u16>, // length in case of TCP/TLS transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question<'a>,
-    pub additional: Option<Vec<Box<dyn ToNetworkOrder>>>,
+    pub additional: Option<Vec<MetaRR>>,
 }
 
 impl<'a> Query<'a> {
-    pub fn new<T: Transporter>(trp: &T) -> Self {
-        let mut msg = Self::default();
+    //───────────────────────────────────────────────────────────────────────────────────
+    // builder pattern for adding lots of options to a query
+    //───────────────────────────────────────────────────────────────────────────────────
+    pub fn build() -> Self {
+        let mut q = Self::default();
 
-        if trp.uses_leading_length() {
-            msg.length = Some(0u16);
-        }
+        // default header
+        q.header = Header::default();
 
-        msg
+        q
     }
 
-    pub fn push_additional<T: ToNetworkOrder + 'static>(&mut self, additional_rr: T) {
+    pub fn with_type(mut self, qt: &QType) -> Self {
+        self.question.qtype = *qt;
+        self
+    }
+
+    pub fn with_class(mut self, qc: &QClass) -> Self {
+        self.question.qclass = *qc;
+        self
+    }
+
+    pub fn with_domain(mut self, domain: DomainName<'a>) -> Self {
+        self.question.qname = domain;
+        self
+    }
+
+    pub fn with_flags(mut self, flags: &BitFlags) -> Self {
+        self.header.flags.bitflags = flags.clone();
+
+        self
+    }
+
+    pub fn with_additional(mut self, additional_rr: MetaRR) -> Self {
         if let Some(ref mut v) = self.additional {
-            v.push(Box::new(additional_rr));
+            v.push(additional_rr);
         } else {
-            self.additional = Some(vec![Box::new(additional_rr)]);
+            self.additional = Some(vec![additional_rr]);
         }
         self.header.ar_count += 1;
+
+        self
     }
 
-    pub fn init(&mut self, domain: &'a str, qtype: &QType, qclass: QClass) -> DNSResult<()> {
-        // fill header
-        // create a random ID
-        let mut rng = rand::thread_rng();
-        self.header.id = rng.gen::<u16>();
+    pub fn with_length(mut self) -> Self {
+        self.length = Some(0u16);
 
-        self.header.flags.qr = PacketType::Query;
-        self.header.flags.op_code = OpCode::Query;
-        //self.header.flags.recursion_desired = true;
-        self.header.qd_count = 1;
-
-        // fill question
-        self.question.qname = DomainName::try_from(domain)?;
-        self.question.qtype = *qtype;
-        self.question.qclass = qclass;
-
-        Ok(())
+        self
     }
 
     // Send the query through the wire
-    pub fn send<T: Transporter>(&mut self, trp: &mut T) -> DNSResult<usize> {
+    pub fn send<T: Transporter>(&mut self, trp: &mut T) -> Result<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;
@@ -79,26 +94,16 @@ impl<'a> Query<'a> {
         // if using TCP, we need to prepend the message sent with length of message
         if trp.uses_leading_length() {
             let bytes = (message_size - 2).to_be_bytes();
-            buffer[0] = bytes[0];
-            buffer[1] = bytes[1];
+            buffer[..2].copy_from_slice(&bytes);
         };
         trace!("buffer to send: {:0X?}", buffer);
 
         // send packet through the wire
-        trace!("query ==> {:#?}", self);
         let sent = trp.send(&buffer)?;
         debug!("sent {} bytes", sent);
 
         Ok(sent)
     }
-
-    // define all set flags functions
-    set_flag!(set_aa, authorative_answer);
-    set_flag!(set_ad, authentic_data);
-    set_flag!(set_cd, checking_disabled);
-    set_flag!(set_ra, recursion_available);
-    set_flag!(set_rd, recursion_desired);
-    set_flag!(set_tc, truncation);
 
     pub fn display(&self) {
         // header first
@@ -117,7 +122,7 @@ impl<'a> fmt::Debug for Query<'a> {
 
         if let Some(add) = &self.additional {
             for rr in add {
-                debug_rr(rr, f)?;
+                write!(f, "{:?}", rr)?;
             }
         }
 
@@ -125,27 +130,26 @@ impl<'a> fmt::Debug for Query<'a> {
     }
 }
 
-fn debug_rr<T: Any>(value: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let value_any = value as &dyn Any;
-    // println!(
-    //     "=> {:?}",
-    //     value_any.downcast_ref::<ResourceRecord<'_, Vec<OptOption>>>()
-    // );
-    if let Some(rr) = value_any.downcast_ref::<OptQuery>() {
-        write!(f, "OPT: <{:?}>", rr)?;
+impl<'a> fmt::Display for Query<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.header)?;
+        write!(f, "{}", self.question)?;
+        write!(f, "{:?}", self.additional)
     }
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{rfc::response_code::ResponseCode, tests::get_packets};
+    use crate::{
+        rfc::{opcode::OpCode, packet_type::PacketType, response_code::ResponseCode},
+        tests::get_packets,
+    };
 
     use type2network::FromNetworkOrder;
 
     #[test]
-    fn cap1() -> DNSResult<()> {
+    fn cap1() -> Result<()> {
         let pcap = get_packets("./tests/cap1.pcap", 0, 1);
         let mut buffer = std::io::Cursor::new(&pcap.0[0x2A..]);
 
@@ -155,12 +159,12 @@ mod tests {
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
-        assert!(!query.header.flags.authorative_answer);
-        assert!(!query.header.flags.truncation);
-        assert!(query.header.flags.recursion_desired);
-        assert!(!query.header.flags.recursion_available);
-        assert!(!query.header.flags.z);
-        assert!(query.header.flags.authentic_data);
+        assert!(!query.header.flags.bitflags.authorative_answer);
+        assert!(!query.header.flags.bitflags.truncation);
+        assert!(query.header.flags.bitflags.recursion_desired);
+        assert!(!query.header.flags.bitflags.recursion_available);
+        assert!(!query.header.flags.bitflags.z);
+        assert!(query.header.flags.bitflags.authentic_data);
         assert_eq!(query.header.flags.response_code, ResponseCode::NoError);
 
         assert_eq!(query.header.qd_count, 1);
@@ -177,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    fn cap2() -> DNSResult<()> {
+    fn cap2() -> Result<()> {
         let pcap = get_packets("./tests/cap2.pcap", 0, 1);
         let mut buffer = std::io::Cursor::new(&pcap.0[0x2A..]);
 
@@ -187,12 +191,12 @@ mod tests {
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
-        assert!(!query.header.flags.authorative_answer);
-        assert!(!query.header.flags.truncation);
-        assert!(query.header.flags.recursion_desired);
-        assert!(!query.header.flags.recursion_available);
-        assert!(!query.header.flags.z);
-        assert!(query.header.flags.authentic_data);
+        assert!(!query.header.flags.bitflags.authorative_answer);
+        assert!(!query.header.flags.bitflags.truncation);
+        assert!(query.header.flags.bitflags.recursion_desired);
+        assert!(!query.header.flags.bitflags.recursion_available);
+        assert!(!query.header.flags.bitflags.z);
+        assert!(query.header.flags.bitflags.authentic_data);
         assert_eq!(query.header.flags.response_code, ResponseCode::NoError);
 
         assert_eq!(query.header.qd_count, 1);

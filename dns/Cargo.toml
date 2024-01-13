@@ -6,25 +6,30 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4.20"
-byteorder = "1.5.0"
-rand = "0.8.5"
+# enum_from = { path = "/data/projects/rust/enum_from" }
 # type2network = { path = "/data/projects/rust/type2network" }
 # type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
-# enum_from = { path = "/data/projects/rust/enum_from" }
-type2network = { git = "https://github.com/dandyvica/type2network" }
-type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
-enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
-resolver = { git = "https://github.com/dandyvica/resolver.git" }
+base16 = "0.2.1"
 base64 = "0.21.5"
-rustls = "0.21.10"
-webpki-roots = "0.25.3"
-rustls-pki-types = "1.1.0"
-either = "1.9.0"
-reqwest = { version = "0.11.22", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
+byteorder = "1.5.0"
 bytes = "1.5.0"
 chrono = "0.4.31"
-base16 = "0.2.1"
+either = "1.9.0"
+enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+error = { path = "../error" }
+log = "0.4.20"
+rand = "0.8.5"
+reqwest = { version = "0.11.22", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
+resolver = { git = "https://github.com/dandyvica/resolver.git" }
+rustls = "0.22.2"
+rustls-pki-types = "1.1.0"
+serde = { version = "1.0.195", features = [ "derive" ] }
+serde_json = { version = "1.0.111", features = ["preserve_order"] }
+show = { path = "../show" }
+transport = { path = "../transport" }
+type2network = { git = "https://github.com/dandyvica/type2network" }
+type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
+webpki-roots = "0.26.0"
 
 [dev-dependencies]
 pcap-file = "2.0.0"

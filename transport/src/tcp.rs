@@ -6,16 +6,16 @@ use std::{
 
 use log::debug;
 
-use crate::error::{DNSResult, Error};
+use error::{Error, Result};
 
-use super::{mode::TransportMode, Transporter};
+use super::{protocol::Protocol, Transporter};
 
-pub struct TcpTransport {
+pub struct TcpProtocol {
     stream: TcpStream,
 }
 
-impl TcpTransport {
-    pub fn new<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> DNSResult<Self> {
+impl TcpProtocol {
+    pub fn new<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> Result<Self> {
         let mut stream: Option<TcpStream> = None;
 
         // find the first address for which the connexion succeeds
@@ -28,7 +28,7 @@ impl TcpTransport {
 
         // if None, none of the connexions is OK
         if stream.is_none() {
-            let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.into_iter().collect();
+            let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.collect();
             return Err(Error::NoValidTCPConnection(addresses));
         }
 
@@ -42,23 +42,23 @@ impl TcpTransport {
     }
 }
 
-impl Transporter for TcpTransport {
-    fn send(&mut self, buffer: &[u8]) -> DNSResult<usize> {
+impl Transporter for TcpProtocol {
+    fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.stream.write(buffer)?;
         self.stream.flush()?;
         Ok(sent)
     }
 
-    fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
-        <TcpTransport as Transporter>::tcp_read(&mut self.stream, buffer)
+    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        super::tcp_read(&mut self.stream, buffer)
     }
 
     fn uses_leading_length(&self) -> bool {
         true
     }
 
-    fn mode(&self) -> TransportMode {
-        TransportMode::Tcp
+    fn mode(&self) -> Protocol {
+        Protocol::Tcp
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

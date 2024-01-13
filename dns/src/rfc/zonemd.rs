@@ -44,10 +44,25 @@ impl<'a> fmt::Display for ZONEMD<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for ZONEMD<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(4))?;
+        seq.serialize_entry("serial", &self.serial)?;
+        seq.serialize_entry("scheme", &self.scheme)?;
+        seq.serialize_entry("hash_algorithm", &self.hash_algorithm)?;
+        seq.serialize_entry("digest", &self.digest.to_string())?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

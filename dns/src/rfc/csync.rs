@@ -43,10 +43,24 @@ impl fmt::Display for CSYNC {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl Serialize for CSYNC {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("soa_serial", &self.soa_serial)?;
+        seq.serialize_entry("flags", &self.flags)?;
+        seq.serialize_entry("types", &self.types.to_string())?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

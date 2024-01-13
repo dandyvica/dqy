@@ -1,34 +1,32 @@
 //! Manage command line arguments here.
-use std::net::{IpAddr, Ipv6Addr, SocketAddr, ToSocketAddrs};
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::str::FromStr;
 use std::time::Duration;
 
 //use crate::plus;
 
-use crate::plus::PlusArgList;
+// use crate::plus::PlusArgList;
 
-use super::plus::PlusArg;
+// use super::plus::PlusArg;
 
 use clap::{Arg, ArgAction, Command};
 
 //use log::debug;
 
-use dns::err_internal;
-use dns::{
-    error::{DNSResult, Error, ProtocolError},
-    rfc::{qclass::QClass, qtype::QType},
-    transport::mode::{IPVersion, TransportMode},
-};
+use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
+use error::{err_internal, Error, ProtocolError};
+use transport::endpoint::EndPointSocketAddrs;
+use transport::protocol::{IPVersion, Protocol};
 
 use log::trace;
 use resolver::ResolverList;
 
-macro_rules! plus_arg_bool {
-    ($opt:expr, $field:ident, $map:ident) => {
-        // option is found is the list of + arguments
-        if $map.contains(stringify!($field)) {
-            let pa = &$map[stringify!($field)];
-            $opt.$field = !pa.is_no();
+// help to set or unset flags
+macro_rules! set_unset_flag {
+    ($opt_flag:expr, $v:expr, $flag:literal, $bool:literal) => {
+        // set or uset flag
+        if $v.contains(&&$flag.to_string()) {
+            $opt_flag = $bool;
         }
     };
 }
@@ -41,28 +39,35 @@ macro_rules! plus_arg_bool {
 #[derive(Debug, Default)]
 pub struct QueryFlags {
     // AA = Authoritative Answer
-    pub aaflag: bool,
+    pub aa: bool,
 
     // AD = Authenticated Data (for DNSSEC only; indicates that the data was authenticated)
-    pub adflag: bool,
+    pub ad: bool,
 
     // CD = Checking Disabled (DNSSEC only; disables checking at the receiving server)
-    pub cdflag: bool,
+    pub cd: bool,
 
     // RA = Recursion Available (if set, denotes recursive query support is available)
-    pub raflag: bool,
+    pub ra: bool,
 
     // RD = Recursion Desired (set in a query and copied into the response if recursion is supported)
-    pub rdflag: bool,
+    pub rd: bool,
 
     // TC TrunCation (truncated due to length greater than that permitted on the transmission channel)
-    pub tcflag: bool,
+    pub tc: bool,
+
+    // Z is unused but ...
+    pub z: bool,
 }
 
-#[derive(Debug, Default)]
 //───────────────────────────────────────────────────────────────────────────────────
 // EDNS options
 //───────────────────────────────────────────────────────────────────────────────────
+// pub enum OptControl {
+//     Off = 0,   // don't include OPT record
+// }
+
+#[derive(Debug, Default)]
 pub struct Edns {
     // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the
     // additional section of the query.
@@ -81,6 +86,9 @@ pub struct Edns {
 
     // edns-key-tag
     pub keytag: Option<Vec<u16>>,
+
+    // if true, OPT is included
+    pub no_opt: bool,
 }
 
 #[derive(Debug, Default)]
@@ -89,7 +97,7 @@ pub struct Edns {
 //───────────────────────────────────────────────────────────────────────────────────
 pub struct Transport {
     // UPD, TCP, DoH or DoT
-    pub transport_mode: TransportMode,
+    pub transport_mode: Protocol,
 
     // V4 or V6
     pub ip_version: IPVersion,
@@ -125,7 +133,7 @@ pub struct Transport {
 //───────────────────────────────────────────────────────────────────────────────────
 // Protocol options: linked to the DNS protocol itself
 //───────────────────────────────────────────────────────────────────────────────────
-pub struct Protocol {
+pub struct DnsProtocol {
     pub qtype: Vec<QType>,
 
     // Qclass is IN by default
@@ -148,19 +156,29 @@ pub struct Protocol {
 pub struct Display {
     // print out stats like elasped time etc
     pub stats: bool,
+
+    // iterative lookup
+    pub trace: bool,
+
+    // JSON output if true
+    pub json: bool,
+    pub json_pretty: bool,
+
+    // true if we want the question in non-JSON print
+    pub question: bool,
 }
 
 /// This structure holds the command line arguments.
 #[derive(Debug, Default)]
 pub struct CliOptions {
     // DNS protocol options
-    pub protocol: Protocol,
+    pub protocol: DnsProtocol,
 
     // transport related
     pub transport: Transport,
 
     // all flags
-    pub flags: QueryFlags,
+    pub flags: BitFlags,
 
     // EDNS options
     pub edns: Edns,
@@ -170,22 +188,18 @@ pub struct CliOptions {
 }
 
 impl CliOptions {
-    pub fn options(args: &[String]) -> DNSResult<Self> {
+    pub fn options(args: &[String]) -> error::Result<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
 
         // split arguments into 2 sets: those not starting with a '-' which should be first
         // and the others
         let dash_pos = args.iter().position(|arg| arg.starts_with('-'));
-        //println!("dash_pos={:?}", dash_pos);
 
         let (without_dash, with_dash) = match dash_pos {
             Some(pos) => (&args[0..pos], &args[pos..]),
             None => (&args[..], &[] as &[String]),
         };
-
-        // hold the + arguments like +short, +bufsize=4096 or +noaaflag
-        //let mut plus_args = Vec::new();
 
         trace!("options without dash:{:?}", without_dash);
         trace!("options with dash:{:?}", with_dash);
@@ -205,24 +219,12 @@ impl CliOptions {
                 continue;
             }
 
-            // manage + options
-            // if arg.starts_with('+') && arg.len() > 1 {
-            //     plus_args.push(PlusArg::new(&arg[1..]));
-            //     continue;
-            // }
-
             // otherwise it's a Qtype
             if let Ok(qt) = QType::from_str(arg.to_uppercase().as_str()) {
                 options.protocol.qtype.push(qt);
                 continue;
             }
         }
-
-        // //───────────────────────────────────────────────────────────────────────────────────
-        // // manage plus args
-        // //───────────────────────────────────────────────────────────────────────────────────
-        // trace!("plus args={:?}", plus_args);
-        // let plus_map = PlusArgList::from(plus_args.as_slice());
 
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
@@ -272,14 +274,22 @@ impl CliOptions {
                     .value_name("DOMAIN")
             )
             .arg(
-                Arg::new("port")
-                    .short('p')
-                    .long("port")
-                    .long_help("Optional DNS port number. If not specified, default port for the transport will be used (e.g.: 853 for DoT).")
+                Arg::new("ptr")
+                    .short('x')
+                    .long("ptr")
+                    .long_help("Reverses DNS lookup. If used, other query types are ignored.")
                     .action(ArgAction::Set)
-                    .value_name("PORT")
-                    .value_parser(clap::value_parser!(u16)),
+                    .value_name("PTR")
+            )            
+            .arg(
+                Arg::new("trace")
+                    .long("trace")
+                    .long_help("Iterative lookup from a random root server.")
+                    .action(ArgAction::SetTrue)
             )
+            //───────────────────────────────────────────────────────────────────────────────────
+            // Protocol options
+            //───────────────────────────────────────────────────────────────────────────────────   
             .arg(
                 Arg::new("4")
                     .short('4')
@@ -287,6 +297,7 @@ impl CliOptions {
                     .long_help("Sets IP version 4. Only send queries to ipv4 enabled nameservers.")
                     .action(ArgAction::SetFalse)
                     .value_name("IPV4")
+                    .help_heading("Transport options")
             )
             .arg(
                 Arg::new("6")
@@ -295,22 +306,7 @@ impl CliOptions {
                     .long_help("Sets IP version 6. Only send queries to ipv6 enabled nameservers.")
                     .action(ArgAction::SetTrue)
                     .value_name("IPV6")
-            )
-            .arg(
-                Arg::new("tcp")
-                    .short('T')
-                    .long("tcp")
-                    .long_help("Forces transport to TCP.")
-                    .action(ArgAction::SetTrue)
-            )
-            .arg(
-                Arg::new("tls")
-                    .short('S')
-                    .long("tls")
-                    .long_help("Forces transport to DNS over TLS (DoT).")
-                    .visible_aliases(["dot", "DoT"])
-                    .action(ArgAction::SetTrue)
-                    .value_name("TLS")
+                    .help_heading("Transport options")
             )
             .arg(
                 Arg::new("https")
@@ -320,13 +316,25 @@ impl CliOptions {
                     .visible_aliases(["doh", "DoH"])
                     .action(ArgAction::SetTrue)
                     .value_name("https")
+                    .help_heading("Transport options")
             )
             .arg(
-                Arg::new("stats")
-                    .long("stats")
-                    .long_help("Prints out statistics around the query.")
+                Arg::new("port")
+                    .short('p')
+                    .long("port")
+                    .long_help("Optional DNS port number. If not specified, default port for the transport will be used (e.g.: 853 for DoT).")
+                    .action(ArgAction::Set)
+                    .value_name("PORT")
+                    .value_parser(clap::value_parser!(u16))
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("tcp")
+                    .short('T')
+                    .long("tcp")
+                    .long_help("Forces transport to TCP.")
                     .action(ArgAction::SetTrue)
-                    .value_name("STATS")
+                    .help_heading("Transport options")
             )
             .arg(
                 Arg::new("timeout")
@@ -336,43 +344,17 @@ impl CliOptions {
                     .value_parser(clap::value_parser!(u64))
                     .default_value("5000")
                     .value_name("TIMEOUT")
+                    .help_heading("Transport options")
             )
             .arg(
-                Arg::new("ptr")
-                    .short('x')
-                    .long("ptr")
-                    .long_help("Reverses DNS lookup. If used, other query types are ignored.")
-                    .action(ArgAction::Set)
-                    .value_name("PTR")
-            )
-            .arg(
-                Arg::new("dnssec")
-                    .long("dnssec")
-                    .long_help("Sets DNSSEC bit flag in OPT record.")
+                Arg::new("tls")
+                    .short('S')
+                    .long("tls")
+                    .long_help("Forces transport to DNS over TLS (DoT).")
+                    .visible_aliases(["dot", "DoT"])
                     .action(ArgAction::SetTrue)
-                    .value_name("DNSSEC FLAG")
-            )
-            .arg(
-                Arg::new("bufsize")
-                    .long("bufsize")
-                    .long_help("Sets the UDP message buffer size to BUFSIZE bytes in the OPT record.")
-                    .action(ArgAction::Set)
-                    .value_parser(clap::value_parser!(u16))
-                    .value_name("BUFSIZE")
-            )
-            .arg(
-                Arg::new("nsid")
-                    .long("nsid")
-                    .long_help("Sets the EDNS NSID option in the OPT record.")
-                    .action(ArgAction::SetTrue)
-            )
-            .arg(
-                Arg::new("padding")
-                    .long("padding")
-                    .long_help("Sets the EDNS Padding option in the OPT record to LENGTH.")
-                    .action(ArgAction::Set)
-                    .value_name("LENGTH")
-                    .value_parser(clap::value_parser!(u16))
+                    .value_name("TLS")
+                    .help_heading("Transport options")
             )
             .arg(
                 Arg::new("set")
@@ -382,6 +364,7 @@ impl CliOptions {
                     .num_args(1..=6)
                     .value_name("FLAGS")
                     .value_parser(["aa", "ad", "cd", "ra", "rd", "tc"])
+                    .help_heading("Transport options")
             )
             .arg(
                 Arg::new("unset")
@@ -391,13 +374,20 @@ impl CliOptions {
                     .num_args(1..=6)
                     .value_name("FLAGS")
                     .value_parser(["aa", "ad", "cd", "ra", "rd", "tc"])
+                    .help_heading("Transport options")
             )
+            //───────────────────────────────────────────────────────────────────────────────────
+            // EDNS options
+            //───────────────────────────────────────────────────────────────────────────────────   
             .arg(
-                Arg::new("verbose")
-                    .short('v')
-                    .long("verbose")
-                    .long_help("Verbose mode.")
-                    .action(ArgAction::Count)
+                Arg::new("bufsize")
+                    .long("bufsize")
+                    .long_help("Sets the UDP message buffer size to BUFSIZE bytes in the OPT record.")
+                    .action(ArgAction::Set)
+                    .value_parser(clap::value_parser!(u16))
+                    .default_value("1232")
+                    .value_name("BUFSIZE")
+                    .help_heading("EDNS options")
             )
             .arg(
                 Arg::new("dau")
@@ -408,6 +398,7 @@ impl CliOptions {
                     .value_parser(clap::value_parser!(u8))
                     .num_args(1..=255)
                     .value_name("ALG-CODE")
+                    .help_heading("EDNS options")
             )
             .arg(
                 Arg::new("dhu")
@@ -419,6 +410,15 @@ impl CliOptions {
                     .num_args(1..=255)
                     .value_name("ALG-CODE")
                     .value_parser(clap::value_parser!(u8))
+                    .help_heading("EDNS options")
+            )
+            .arg(
+                Arg::new("dnssec")
+                    .long("dnssec")
+                    .long_help("Sets DNSSEC bit flag in OPT record.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("DNSSEC FLAG")
+                    .help_heading("EDNS options")
             )
             .arg(
                 Arg::new("n3u")
@@ -430,6 +430,78 @@ impl CliOptions {
                     .num_args(1..=255)
                     .value_name("ALG-CODE")
                     .value_parser(clap::value_parser!(u8))
+                    .help_heading("EDNS options")
+            )
+            .arg(
+                Arg::new("no-opt")
+                    .long("no-opt")
+                    .long_help("If set, no OPT record is sent.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("EDNS options")
+            )
+            .arg(
+                Arg::new("nsid")
+                    .long("nsid")
+                    .long_help("Sets the EDNS NSID option in the OPT record.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("EDNS options")
+            )
+            .arg(
+                Arg::new("padding")
+                    .long("padding")
+                    .long_help("Sets the EDNS Padding option in the OPT record to LENGTH.")
+                    .action(ArgAction::Set)
+                    .value_name("LENGTH")
+                    .value_parser(clap::value_parser!(u16))
+                    .help_heading("EDNS options")
+            )
+            // hidden flag to allow threads to not crash in UT
+            .arg(
+                Arg::new("nolog")
+                    .long("nolog")
+                    .action(ArgAction::SetTrue)
+                    .hide(true)
+            )
+            //───────────────────────────────────────────────────────────────────────────────────
+            // Display options
+            //───────────────────────────────────────────────────────────────────────────────────            
+            .arg(
+                Arg::new("json")
+                    .short('j')
+                    .long("json")
+                    .long_help("Results are rendered as a JSON formatted string.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("json-pretty")
+                    .long("json-pretty")
+                    .long_help("Results are rendered as a JSON pretty-formatted string.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("question")
+                    .long("question")
+                    .long_help("The question section is displayed.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("stats")
+                    .long("stats")
+                    .long_help("Prints out statistics around the query.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("STATS")
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("verbose")
+                    .short('v')
+                    .long("verbose")
+                    .long_help("Verbose mode.")
+                    .action(ArgAction::Count)
+                    .help_heading("Display options")
             )
         .get_matches_from(with_dash);
 
@@ -464,14 +536,19 @@ impl CliOptions {
         // transport mode
         //───────────────────────────────────────────────────────────────────────────────────
         if matches.get_flag("tcp") || options.transport.tcp {
-            options.transport.transport_mode = TransportMode::Tcp;
+            options.transport.transport_mode = Protocol::Tcp;
         }
         if matches.get_flag("tls") || options.transport.tls || options.transport.dot {
-            options.transport.transport_mode = TransportMode::DoT;
+            options.transport.transport_mode = Protocol::DoT;
         }
         if matches.get_flag("https") || options.transport.https || options.transport.doh {
-            options.transport.transport_mode = TransportMode::DoH;
+            options.transport.transport_mode = Protocol::DoH;
         }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // bufsize
+        //───────────────────────────────────────────────────────────────────────────────────
+        options.transport.bufsize = *matches.get_one::<u16>("bufsize").unwrap();
 
         //───────────────────────────────────────────────────────────────────────────────────
         // port number is depending on transport mode or use one specified with --port
@@ -479,6 +556,13 @@ impl CliOptions {
         options.transport.port = *matches
             .get_one::<u16>("port")
             .unwrap_or(&options.transport.transport_mode.default_port());
+
+        // no server provided
+        // if options.protocol.server.is_empty() {
+        //     let resolvers = ResolverList::new()?;
+        //     let x = resolvers.as_slice();
+        //     let ep = EndPointSocketAddrs::from((resolvers.as_slice(), options.transport.port));
+        // }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // build the list of SocketAddrs
@@ -492,14 +576,14 @@ impl CliOptions {
             options.protocol.resolvers = resolvers.to_socketaddresses(options.transport.port);
 
             // DoT needs the server name
-            if options.transport.transport_mode == TransportMode::DoT {
+            if options.transport.transport_mode == Protocol::DoT {
                 options.protocol.server = resolvers[0].ip_list()[0].to_string();
             }
         }
         // a server name or ip address is provided: we need to buld the SocketAddr from either a dot address or a domain name
         // e.g.: 1.1.1.1 or ns1.google.com
         else {
-            if options.transport.transport_mode != TransportMode::DoH {
+            if options.transport.transport_mode != Protocol::DoH {
                 // build the SocketAddr
                 let addr_s = format!("{}:{}", options.protocol.server, options.transport.port);
                 let addr = addr_s.to_socket_addrs()?;
@@ -571,34 +655,39 @@ impl CliOptions {
         // Flags
         //───────────────────────────────────────────────────────────────────────────────────
         // by default, we want recursive queries, other flags are unset
-        options.flags.rdflag = true;
+        //options.flags.recursion_desired = true;
 
+        // all flags options are set to false except RD
         // set
         if let Some(v) = matches.get_many::<String>("set") {
             let flags: Vec<_> = v.collect();
-            options.flags.aaflag = flags.contains(&&"aa".to_string());
-            options.flags.adflag = flags.contains(&&"ad".to_string());
-            options.flags.cdflag = flags.contains(&&"cd".to_string());
-            options.flags.raflag = flags.contains(&&"ra".to_string());
-            options.flags.rdflag = flags.contains(&&"rd".to_string());
-            options.flags.tcflag = flags.contains(&&"tc".to_string());
+            set_unset_flag!(options.flags.authorative_answer, flags, "aa", true);
+            set_unset_flag!(options.flags.authentic_data, flags, "ad", true);
+            set_unset_flag!(options.flags.checking_disabled, flags, "cd", true);
+            set_unset_flag!(options.flags.recursion_available, flags, "ra", true);
+            set_unset_flag!(options.flags.recursion_desired, flags, "rd", true);
+            set_unset_flag!(options.flags.truncation, flags, "tc", true);
+            set_unset_flag!(options.flags.z, flags, "z", true);
         }
 
         // unset
         if let Some(v) = matches.get_many::<String>("unset") {
             let flags: Vec<_> = v.collect();
-            options.flags.aaflag = flags.contains(&&"aa".to_string());
-            options.flags.adflag = flags.contains(&&"ad".to_string());
-            options.flags.cdflag = flags.contains(&&"cd".to_string());
-            options.flags.raflag = flags.contains(&&"ra".to_string());
-            options.flags.rdflag = flags.contains(&&"rd".to_string());
-            options.flags.tcflag = flags.contains(&&"tc".to_string());
+            set_unset_flag!(options.flags.authorative_answer, flags, "aa", false);
+            set_unset_flag!(options.flags.authentic_data, flags, "ad", false);
+            set_unset_flag!(options.flags.checking_disabled, flags, "cd", false);
+            set_unset_flag!(options.flags.recursion_available, flags, "ra", false);
+            set_unset_flag!(options.flags.recursion_desired, flags, "rd", false);
+            set_unset_flag!(options.flags.truncation, flags, "tc", false);
+            set_unset_flag!(options.flags.z, flags, "z", false);
         }
         trace!("options flags: {:?}", options.flags);
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // OPT record and options
+        // EDNS or OPT record and options
         //───────────────────────────────────────────────────────────────────────────────────
+        options.edns.no_opt = matches.get_flag("no-opt");
+        options.edns.dnssec = matches.get_flag("dnssec");
         options.edns.nsid = matches.get_flag("nsid");
         options.edns.padding = matches.get_one::<u16>("padding").and_then(|v| Some(*v));
 
@@ -624,9 +713,12 @@ impl CliOptions {
         // manage other misc. options
         //───────────────────────────────────────────────────────────────────────────────────
         options.display.stats = matches.get_flag("stats");
+        options.display.json = matches.get_flag("json");
+        options.display.json_pretty = matches.get_flag("json-pretty");
+        options.display.question = matches.get_flag("question");
 
-        // verbosity
-        if matches.contains_id("verbose") {
+        // verbosity (for --nolog, see comments for unit tests)
+        if matches.contains_id("verbose") && !matches.get_flag("nolog") {
             let level = match matches.get_count("verbose") {
                 0 => log::LevelFilter::Off,
                 1 => log::LevelFilter::Info,
@@ -639,15 +731,16 @@ impl CliOptions {
             env_logger::Builder::new().filter_level(level).init();
         }
 
+        options.display.trace = matches.get_flag("trace");
+
         Ok(options)
     }
 }
 
 // value QTypes on the command line when using the -type option
-fn validate_qtypes(s: &str) -> Result<QType, String> {
+fn validate_qtypes(s: &str) -> std::result::Result<QType, String> {
     let qt_upper = s.to_uppercase();
-    let q = QType::from_str(&qt_upper);
-    
+
     QType::from_str(&qt_upper)
         .map_err(|e| format!("can't convert value '{e}' to a valid query type"))
 }
@@ -674,7 +767,7 @@ fn validate_qtypes(s: &str) -> Result<QType, String> {
 mod tests {
     use super::*;
 
-    fn args_to_options(args: &str) -> DNSResult<CliOptions> {
+    fn args_to_options(args: &str) -> error::Result<CliOptions> {
         let args: Vec<_> = args
             .split_ascii_whitespace()
             .map(|a| a.to_string())
@@ -682,9 +775,13 @@ mod tests {
         CliOptions::options(&args)
     }
 
+    // nolog is passed to prevent env_logger to be initialized
+    // otherwise UT threads crashes with the following error:
+    // Builder::init should not be called after logger initialized: SetLoggerError(())
+
     #[test]
     fn empty() {
-        let opts = args_to_options("");
+        let opts = args_to_options("--nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -693,12 +790,12 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, ".");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Udp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
     #[test]
     fn with_domain1() {
-        let opts = args_to_options("-d www.google.com");
+        let opts = args_to_options("-d www.google.com --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -707,12 +804,12 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Udp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
     #[test]
     fn with_domain2() {
-        let opts = args_to_options("-t AAAA -c CH -d www.google.com");
+        let opts = args_to_options("-t AAAA -c CH -d www.google.com --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -721,12 +818,12 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Udp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
     #[test]
     fn with_no_dash() {
-        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com");
+        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -735,12 +832,12 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Udp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
     #[test]
     fn with_ipv6() {
-        let opts = args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com -6");
+        let opts = args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com -6 --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -749,12 +846,13 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Udp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
     #[test]
     fn with_tcp() {
-        let opts = args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com +tcp -6");
+        let opts =
+            args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com --tcp -6 --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -763,12 +861,12 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Tcp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
     }
 
     #[test]
     fn with_ptr() {
-        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --tcp -x 1.2.3.4");
+        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --tcp -x 1.2.3.4 --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -777,17 +875,18 @@ mod tests {
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "4.3.2.1.in-addr.arpa");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
-        assert_eq!(opts.transport.transport_mode, TransportMode::Tcp);
+        assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
     }
 
     #[test]
     fn plus() {
-        let opts = args_to_options("@1.1.1.1 A www.google.com +dnssec +cdflag +noaaflag");
+        let opts =
+            args_to_options("@1.1.1.1 A www.google.com --dnssec --set cd --unset aa --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
         assert!(opts.edns.dnssec);
-        assert!(opts.flags.cdflag);
-        assert!(!opts.flags.aaflag);
+        assert!(opts.flags.checking_disabled);
+        assert!(!opts.flags.authorative_answer);
     }
 }

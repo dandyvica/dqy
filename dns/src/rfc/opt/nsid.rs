@@ -6,13 +6,15 @@ use type2network_derive::ToNetwork;
 use crate::databuf::Buffer;
 use crate::{opt_code, opt_data};
 
+use serde::Serialize;
+
 use super::{
     opt::{OptOptionCode, OptOptionData},
     OptionData,
 };
 
 // NSID: https://www.rfc-editor.org/rfc/rfc5001.html
-#[derive(Debug, Default, ToNetwork)]
+#[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct NSID(Option<Buffer>);
 
 impl From<Buffer> for NSID {

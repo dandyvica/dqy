@@ -3,7 +3,11 @@ use std::fmt;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use super::{flags::Flags, packet_type::PacketType};
+use rand::Rng;
+use serde::Serialize;
+
+use super::{flags::Flags, opcode::OpCode, packet_type::PacketType};
+use show::*;
 
 //  1  1  1  1  1  1
 //  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -20,7 +24,7 @@ use super::{flags::Flags, packet_type::PacketType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                    ARCOUNT                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default, ToNetwork, FromNetwork)]
+#[derive(Debug, ToNetwork, FromNetwork, Serialize)]
 pub struct Header {
     pub id: u16, // A 16 bit identifier assigned by the program that
     // generates any kind of query.  This identifier is copied
@@ -35,6 +39,28 @@ pub struct Header {
     // server resource records in the authority records section.
     pub ar_count: u16, // an unsigned 16 bit integer specifying the number of
                        // resource records in the additional records section.
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        // by default, we use the recursion desired flag at query
+        let flags = Flags {
+            qr: PacketType::Query,
+            op_code: OpCode::Query,
+            ..Default::default()
+        };
+
+        let mut rng = rand::thread_rng();
+
+        Self {
+            id: rng.gen::<u16>(),
+            flags,
+            qd_count: 1,
+            an_count: 0,
+            ns_count: 0,
+            ar_count: 0,
+        }
+    }
 }
 
 impl fmt::Display for Header {

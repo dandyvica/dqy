@@ -3,8 +3,10 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 // LOC RR (https://datatracker.ietf.org/doc/html/rfc1876)
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct LOC {
     pub(super) version: u8,
     pub(super) size: u8,
@@ -40,7 +42,6 @@ impl fmt::Display for LOC {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

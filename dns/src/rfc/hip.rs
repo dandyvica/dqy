@@ -4,8 +4,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
-
 use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc5205.html#section-5
@@ -57,18 +55,34 @@ new_rd_length!(HIP<'a>);
 
 impl<'a> fmt::Display for HIP<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hit_b64 = base16::encode_upper(&self.hit);
-        let pk_b64 = general_purpose::STANDARD.encode(&self.public_key);
-        write!(f, "{} {} {}", self.pk_algorithm, hit_b64, pk_b64)?;
+        write!(
+            f,
+            "{} {} {}",
+            self.pk_algorithm,
+            self.hit.as_b16(),
+            self.public_key.as_b64()
+        )
+    }
+}
 
-        Ok(())
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for HIP<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("pk_algorithm", &self.pk_algorithm)?;
+        seq.serialize_entry("hit", &self.hit.as_b16())?;
+        seq.serialize_entry("public_key", &self.public_key.as_b64())?;
+        seq.end()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

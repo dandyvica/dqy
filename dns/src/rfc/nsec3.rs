@@ -54,10 +54,24 @@ impl<'a> fmt::Display for NSEC3<'a> {
     }
 }
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for NSEC3<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("params", &self.params)?;
+        seq.serialize_entry("owner_name", &self.owner_name)?;
+        seq.serialize_entry("types", &self.types)?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         tests::get_packets,
     };
@@ -65,7 +79,7 @@ mod tests {
     use type2network::FromNetworkOrder;
 
     #[test]
-    fn rdata() -> DNSResult<()> {
+    fn rdata() -> error::Result<()> {
         {
             // extract response packet
             let data = get_packets("./tests/nsec3.pcap", 0, 1);

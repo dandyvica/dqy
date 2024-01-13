@@ -3,10 +3,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::domain::DomainName;
 
 // CNAME resource record
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct CNAME<'a>(DomainName<'a>);
 
 impl<'a> fmt::Display for CNAME<'a> {
@@ -15,11 +17,12 @@ impl<'a> fmt::Display for CNAME<'a> {
     }
 }
 
+pub type DNAME<'a> = CNAME<'a>;
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
-        rfc::{rdata::RData, response::Response},
+        rfc::{cname::DNAME, rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,
     };
@@ -29,13 +32,24 @@ mod tests {
     use super::CNAME;
 
     test_rdata!(
-        rdata,
+        rdata_cname,
         "./tests/cname.pcap",
         false,
         1,
         RData::CNAME,
         (|x: &CNAME, _| {
             assert_eq!(x.to_string(), "cname-txt.dns.netmeister.org.");
+        })
+    );
+
+    test_rdata!(
+        rdata,
+        "./tests/dname.pcap",
+        false,
+        1,
+        RData::DNAME,
+        (|x: &DNAME, _| {
+            assert_eq!(&x.to_string(), "dns.netmeister.org.");
         })
     );
 }

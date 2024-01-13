@@ -6,7 +6,7 @@ use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 
 use crate::{databuf::BufferMut, new_rd_length};
 
@@ -60,14 +60,26 @@ impl<'a> fmt::Display for CERT<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {}",
-            self.certificate_type, self.key_tag, self.algorithm
-        )?;
+            "{} {} {} {}",
+            self.certificate_type,
+            self.key_tag,
+            self.algorithm,
+            self.certificate.as_b64()
+        )
+    }
+}
 
-        let b64 = general_purpose::STANDARD.encode(&self.certificate);
-        write!(f, "{}", b64)?;
-
-        Ok(())
+impl<'a> Serialize for CERT<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(4))?;
+        seq.serialize_entry("flags", &self.certificate_type.to_string())?;
+        seq.serialize_entry("key_tag", &self.key_tag)?;
+        seq.serialize_entry("algorithm", &self.algorithm)?;
+        seq.serialize_entry("certificate", &self.certificate.as_b64())?;
+        seq.end()
     }
 }
 

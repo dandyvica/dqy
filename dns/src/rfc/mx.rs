@@ -3,10 +3,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::domain::DomainName;
 
 // MX RR
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct MX<'a> {
     pub preference: u16, // A 16 bit integer which specifies the preference given to
     // this RR among others at the same owner.  Lower values
@@ -23,7 +25,6 @@ impl<'a> fmt::Display for MX<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

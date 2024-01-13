@@ -5,23 +5,23 @@ use std::{
 
 use log::{debug, trace};
 
-use crate::error::DNSResult;
+use error::Result;
 
 use super::{
-    mode::{IPVersion, TransportMode},
+    protocol::{IPVersion, Protocol},
     Transporter,
 };
 
-pub struct UdpTransport {
+pub struct UdpProtocol {
     sock: UdpSocket,
 }
 
-impl UdpTransport {
+impl UdpProtocol {
     pub fn new<A: ToSocketAddrs>(
         addr: A,
         ip_version: &IPVersion,
         timeout: Duration,
-    ) -> DNSResult<Self> {
+    ) -> Result<Self> {
         let sock = if ip_version == &IPVersion::V4 {
             trace!("binding UDP socket to 0.0.0.0:0");
             UdpSocket::bind("0.0.0.0:0")?
@@ -39,12 +39,12 @@ impl UdpTransport {
     }
 }
 
-impl Transporter for UdpTransport {
-    fn send(&mut self, buffer: &[u8]) -> DNSResult<usize> {
+impl Transporter for UdpProtocol {
+    fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         Ok(self.sock.send(buffer)?)
     }
 
-    fn recv(&mut self, buffer: &mut [u8]) -> DNSResult<usize> {
+    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
         Ok(self.sock.recv(buffer)?)
     }
 
@@ -52,8 +52,8 @@ impl Transporter for UdpTransport {
         false
     }
 
-    fn mode(&self) -> TransportMode {
-        TransportMode::Udp
+    fn mode(&self) -> Protocol {
+        Protocol::Udp
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

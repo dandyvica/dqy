@@ -8,7 +8,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::DomainName;
 
-use crate::{buffer::Buffer, databuf::BufferMut, error::Error, new_rd_length};
+use crate::{databuf::BufferMut, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2
 // +===========+=================+================+=========+==========+
@@ -174,6 +174,20 @@ impl<'a> fmt::Display for SVCB<'a> {
         }
 
         Ok(())
+    }
+}
+
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for SVCB<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(2))?;
+        seq.serialize_entry("svc_priority", &self.svc_priority)?;
+        seq.serialize_entry("target_name", &self.target_name)?;
+        seq.end()
     }
 }
 

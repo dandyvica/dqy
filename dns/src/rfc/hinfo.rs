@@ -3,10 +3,12 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+use serde::Serialize;
+
 use super::char_string::CharacterString;
 
 // HINFO RR
-#[derive(Debug, Default, FromNetwork)]
+#[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct HINFO<'a> {
     cpu: CharacterString<'a>,
     os: CharacterString<'a>,
@@ -21,7 +23,6 @@ impl<'a> fmt::Display for HINFO<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,

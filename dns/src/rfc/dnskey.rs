@@ -3,8 +3,6 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use base64::{engine::general_purpose, Engine as _};
-
 use crate::{databuf::BufferMut, new_rd_length};
 
 use super::algorithm::DNSSECAlgorithmTypes;
@@ -73,22 +71,39 @@ new_rd_length!(DNSKEY<'a>);
 
 impl<'a> fmt::Display for DNSKEY<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {} ", self.flags, self.protocol, self.algorithm)?;
-
-        let b64 = general_purpose::STANDARD.encode(&self.key);
-        write!(f, "{}", b64)?;
-
-        Ok(())
+        write!(
+            f,
+            "{} {} {} {}",
+            self.flags,
+            self.protocol,
+            self.algorithm,
+            self.key.as_b64()
+        )
     }
 }
 
 #[allow(clippy::upper_case_acronyms)]
 pub(super) type CDNSKEY<'a> = DNSKEY<'a>;
 
+// Custom serialization
+use serde::{ser::SerializeMap, Serialize, Serializer};
+impl<'a> Serialize for DNSKEY<'a> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(4))?;
+        seq.serialize_entry("flags", &self.flags)?;
+        seq.serialize_entry("protocol", &self.protocol)?;
+        seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
+        seq.serialize_entry("key", &self.key.as_b64())?;
+        seq.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        error::DNSResult,
         rfc::{rdata::RData, response::Response},
         test_rdata,
         tests::get_packets,
