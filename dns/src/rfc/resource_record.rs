@@ -321,6 +321,7 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, self.rd_length)
                 }
                 QType::OPT => {
+                    println!("=======================================> OPT");
                     let mut v: Vec<OptOption> = Vec::new();
                     let mut current_length = 0u16;
 

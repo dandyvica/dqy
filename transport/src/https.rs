@@ -3,7 +3,7 @@
 use std::{net::SocketAddr, time::Duration};
 
 use bytes::Bytes;
-//use log::debug;
+use http::version::*;
 
 use reqwest::{
     blocking::Client,
@@ -29,14 +29,19 @@ pub struct HttpsProtocol<'a> {
 }
 
 impl<'a> HttpsProtocol<'a> {
-    pub fn new(server: &'a str, timeout: Duration) -> Result<Self> {
-        let client = Client::builder()
+    pub fn new(server: &'a str, timeout: Duration, http_version: Version) -> Result<Self> {
+        let x = Client::builder()
             // same headers for all requests
             .default_headers(Self::construct_headers())
             // HTTP/2 by default as recommended by RFC8484
-            .http2_prior_knowledge()
-            .timeout(timeout)
-            .build()?;
+            // .http2_prior_knowledge()
+            .timeout(timeout);
+
+        let client = match http_version {
+            HTTP_11 => x.http1_only().build()?,
+            HTTP_2 => x.http2_prior_knowledge().build()?,
+            _ => unimplemented!("version {:?} of HTTP is not yet implemented", http_version),
+        };
 
         Ok(Self {
             server,
@@ -45,6 +50,22 @@ impl<'a> HttpsProtocol<'a> {
             peer: None,
         })
     }
+    // pub fn new(server: &'a str, timeout: Duration) -> Result<Self> {
+    //     let client = Client::builder()
+    //         // same headers for all requests
+    //         .default_headers(Self::construct_headers())
+    //         // HTTP/2 by default as recommended by RFC8484
+    //         .http2_prior_knowledge()
+    //         .timeout(timeout)
+    //         .build()?;
+
+    //     Ok(Self {
+    //         server,
+    //         client,
+    //         bytes_recv: Bytes::default(),
+    //         peer: None,
+    //     })
+    // }
 
     fn construct_headers() -> HeaderMap {
         let mut headers = HeaderMap::new();

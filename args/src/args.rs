@@ -10,6 +10,7 @@ use std::time::Duration;
 // use super::plus::PlusArg;
 
 use clap::{Arg, ArgAction, Command};
+use http::*;
 
 //use log::debug;
 
@@ -124,6 +125,9 @@ pub struct Transport {
     // true if HTTPS/DOH
     pub https: bool,
     pub doh: bool,
+
+    // http version
+    pub https_version: version::Version,
 
     // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
@@ -280,7 +284,7 @@ impl CliOptions {
                     .long_help("Reverses DNS lookup. If used, other query types are ignored.")
                     .action(ArgAction::Set)
                     .value_name("PTR")
-            )            
+            )
             .arg(
                 Arg::new("trace")
                     .long("trace")
@@ -316,6 +320,16 @@ impl CliOptions {
                     .visible_aliases(["doh", "DoH"])
                     .action(ArgAction::SetTrue)
                     .value_name("https")
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("https-version")
+                    .long("https-version")
+                    .long_help("Sets the HTTPS version when using DNS over https (DoH).")
+                    .action(ArgAction::Set)
+                    .value_name("https-version")
+                    .value_parser(["v1", "v2", "v3"])
+                    .default_value("v2")
                     .help_heading("Transport options")
             )
             .arg(
@@ -543,6 +557,19 @@ impl CliOptions {
         }
         if matches.get_flag("https") || options.transport.https || options.transport.doh {
             options.transport.transport_mode = Protocol::DoH;
+
+            // set HTTP version
+            let v = matches
+                .get_one::<String>("https-version")
+                .unwrap()
+                .to_string();
+
+            match v.as_str() {
+                "v1" => options.transport.https_version = version::Version::HTTP_11,
+                "v2" => options.transport.https_version = version::Version::HTTP_2,
+                "v3" => options.transport.https_version = version::Version::HTTP_3,
+                _ => unimplemented!("this version of HTTP is not implemented"),
+            }
         }
 
         //───────────────────────────────────────────────────────────────────────────────────

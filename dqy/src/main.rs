@@ -131,7 +131,7 @@ fn run() -> error::Result<()> {
         }
         Protocol::DoH => {
             let mut https_transport =
-                HttpsProtocol::new(&options.protocol.server, options.transport.timeout)?;
+                HttpsProtocol::new(&options.protocol.server, options.transport.timeout, options.transport.https_version)?;
             send_receive_query(&options, &mut https_transport)?;
         }
     }
