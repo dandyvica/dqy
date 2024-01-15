@@ -1,12 +1,13 @@
 use std::{
     io::Write,
-    net::{SocketAddr, TcpStream, ToSocketAddrs},
-    time::Duration,
+    net::{SocketAddr, TcpStream},
 };
 
 use log::debug;
 
-use error::{Error, Result};
+use error::Result;
+
+use crate::{get_tcpstream_ok, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
@@ -15,30 +16,16 @@ pub struct TcpProtocol {
 }
 
 impl TcpProtocol {
-    pub fn new<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> Result<Self> {
-        let mut stream: Option<TcpStream> = None;
-
-        // find the first address for which the connexion succeeds
-        for addr in addrs.to_socket_addrs()? {
-            if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
-                stream = Some(s);
-                break;
-            }
-        }
-
-        // if None, none of the connexions is OK
-        if stream.is_none() {
-            let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.collect();
-            return Err(Error::NoValidTCPConnection(addresses));
-        }
+    pub fn new(trp_options: &TransportOptions) -> Result<Self> {
+        let stream = get_tcpstream_ok(&trp_options.end_point, trp_options.timeout)?;
 
         // now it's safe to unwrap
-        let tcp_stream = stream.unwrap();
-        tcp_stream.set_read_timeout(Some(timeout))?;
-        tcp_stream.set_write_timeout(Some(timeout))?;
+        //let tcp_stream = stream.unwrap();
+        stream.set_read_timeout(Some(trp_options.timeout))?;
+        stream.set_write_timeout(Some(trp_options.timeout))?;
 
-        debug!("created TCP socket to {}", tcp_stream.peer_addr()?);
-        Ok(Self { stream: tcp_stream })
+        debug!("created TCP socket to {}", stream.peer_addr()?);
+        Ok(Self { stream })
     }
 }
 

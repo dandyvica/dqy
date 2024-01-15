@@ -7,55 +7,67 @@ use std::{
     vec::IntoIter,
 };
 
-pub enum EndPoint<'a> {
+#[derive(Debug)]
+pub enum EndPoint {
     // either an ip address like 1.1.1.1, or a SNI name like one.one.one.one
     // or an https address like https://dns.google/dns-query
-    Domain(&'a str),
+    Server(String, u16),
 
-    // the list of ip addresses taken for the OS' resolvers
-    List(Vec<IpAddr>),
+    // the list of ip addresses taken from the OS' resolvers
+    IpList(Vec<IpAddr>, u16),
 }
 
-impl<'a> EndPoint<'a> {
-    pub fn domain(&self) -> Option<&str> {
+impl EndPoint {
+    pub fn server(&self) -> Option<&str> {
         match self {
-            Self::Domain(d) => Some(d),
+            Self::Server(d, _) => Some(d),
             _ => None,
+        }
+    }
+
+    pub fn ip_list(&self) -> Option<&[IpAddr]> {
+        match self {
+            Self::IpList(d, _) => Some(d),
+            _ => None,
+        }
+    }
+
+    pub fn port(&self) -> u16 {
+        match self {
+            Self::Server(_, p) => *p,
+            Self::IpList(_, p) => *p,
         }
     }
 }
 
-// newtype to allow implementing ToSocketAddrs
-pub struct EndPointSocketAddrs<'a>(EndPoint<'a>, u16);
-
-impl<'a> EndPointSocketAddrs<'a> {
-    pub fn endpoint(&self) -> &EndPoint<'a> {
-        &self.0
+impl From<(&str, u16)> for EndPoint {
+    fn from(value: (&str, u16)) -> Self {
+        EndPoint::Server(value.0.to_string(), value.1)
     }
 }
 
-impl<'a> From<(&'a str, u16)> for EndPointSocketAddrs<'a> {
-    fn from(value: (&'a str, u16)) -> Self {
-        Self(EndPoint::Domain(value.0), value.1)
-    }
-}
-
-impl<'a> From<(&'a [IpAddr], u16)> for EndPointSocketAddrs<'a> {
+impl<'a> From<(&'a [IpAddr], u16)> for EndPoint {
     fn from(value: (&'a [IpAddr], u16)) -> Self {
-        Self(EndPoint::List(value.0.to_vec()), value.1)
+        EndPoint::IpList(value.0.to_vec(), value.1)
     }
 }
 
-impl<'a> ToSocketAddrs for EndPointSocketAddrs<'a> {
+impl Default for EndPoint {
+    fn default() -> Self {
+        Self::Server("127.0.0.1".to_string(), 53)
+    }
+}
+
+impl ToSocketAddrs for EndPoint {
     type Iter = IntoIter<SocketAddr>;
 
     fn to_socket_addrs(&self) -> std::io::Result<IntoIter<SocketAddr>> {
-        match &self.0 {
-            EndPoint::Domain(domain) => (domain.to_string(), self.1).to_socket_addrs(),
-            EndPoint::List(addrs) => {
+        match &self {
+            EndPoint::Server(domain, port) => (domain.to_string(), *port).to_socket_addrs(),
+            EndPoint::IpList(addrs, port) => {
                 let socket_addresses: Vec<SocketAddr> = addrs
                     .iter()
-                    .map(|ip| SocketAddr::from((*ip, self.1)))
+                    .map(|ip| SocketAddr::from((*ip, *port)))
                     .collect();
 
                 Ok(socket_addresses.into_iter())
@@ -66,14 +78,41 @@ impl<'a> ToSocketAddrs for EndPointSocketAddrs<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
-    fn endpoint() {
-        let ep = EndPointSocketAddrs(EndPoint::Domain("1.1.1.1"), 53);
-        // let f = ep.to_socket_addrs().unwrap();
-        // println!("f=============> {:?}", f.into_iter().collect::<Vec<SocketAddr>>());
-        // assert_eq!(ep.to_socket_addrs().iter().collect::Vec<_>(), [""]);
-        assert_eq!(ep.endpoint().domain().unwrap(), "1.1.1.1");
+    fn endpoint_ip() {
+        let ep = EndPoint::from(("1.1.1.1", 53));
+        let sa = ep.to_socket_addrs().unwrap();
+        let v: Vec<_> = sa.into_iter().collect();
+        assert_eq!(v.len(), 1);
+        assert_eq!(v[0].to_string(), "1.1.1.1:53");
+    }
+
+    #[test]
+    fn endpoint_name() {
+        let ep = EndPoint::from(("one.one.one.one", 53));
+        let sa = ep.to_socket_addrs().unwrap();
+        let v: Vec<_> = sa.into_iter().map(|a| a.to_string()).collect();
+        assert_eq!(v.len(), 4);
+        assert!(v.contains(&"1.1.1.1:53".to_string()));
+        assert!(v.contains(&"1.0.0.1:53".to_string()));
+    }
+
+    #[test]
+    fn endpoint_iplist() {
+        let ips = vec![
+            IpAddr::from_str("2.2.2.2").unwrap(),
+            IpAddr::from_str("3.3.3.3").unwrap(),
+        ];
+
+        let ep = EndPoint::from((&ips[..], 53));
+        let sa = ep.to_socket_addrs().unwrap();
+        let v: Vec<_> = sa.into_iter().map(|a| a.to_string()).collect();
+        assert_eq!(v.len(), 2);
+        assert!(v.contains(&"2.2.2.2:53".to_string()));
+        assert!(v.contains(&"3.3.3.3:53".to_string()));
     }
 }

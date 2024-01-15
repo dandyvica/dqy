@@ -55,7 +55,6 @@ pub struct OPT {
 }
 
 impl OPT {
-    #[allow(clippy::field_reassign_with_default)]
     pub fn new(bufsize: u16) -> Self {
         Self {
             r#type: QType::OPT,
@@ -65,7 +64,6 @@ impl OPT {
     }
 
     // set DNSSEC bit to 1
-    #[allow(clippy::field_reassign_with_default)]
     pub fn set_dnssec(&mut self) {
         self.flags = 0x8000;
     }

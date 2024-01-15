@@ -13,7 +13,6 @@ use super::{
 
 use crate::{
     databuf::Buffer,
-    either_or::EitherOr,
     rfc::{
         afsdb::AFSDB,
         apl::APL,
@@ -360,6 +359,11 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = RData::UNKNOWN(buf);
                 }
             }
+        }
+        // a specific processing when OPT record has no options (rd_length == 0)
+        // because by default RData enum is UNKNOWN
+        else if self.r#type == QType::OPT {
+            self.r_data = RData::OPT(Vec::new());
         }
 
         Ok(())

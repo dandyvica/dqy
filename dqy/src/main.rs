@@ -20,11 +20,14 @@ use dns::rfc::{
     response_code::ResponseCode,
 };
 
-use args::args::{CliOptions, Display, Edns};
+use args::{
+    args::CliOptions,
+    options::{DisplayOptions, EdnsOptions},
+};
 use error::Error;
 use transport::{
     https::HttpsProtocol,
-    protocol::{IPVersion, Protocol},
+    protocol::Protocol,
     tcp::TcpProtocol,
     tls::TlsProtocol,
     // transport,
@@ -107,31 +110,22 @@ fn run() -> error::Result<()> {
     // depending on mode, different processing
     match options.transport.transport_mode {
         Protocol::Udp => {
-            let mut udp_transport = UdpProtocol::new(
-                options.protocol.resolvers.as_slice(),
-                &options.transport.ip_version,
-                options.transport.timeout,
-            )?;
+            let mut udp_transport = UdpProtocol::new(&options.transport)?;
             send_receive_query(&options, &mut udp_transport)?;
         }
         Protocol::Tcp => {
-            let mut tcp_transport = TcpProtocol::new(
-                options.protocol.resolvers.as_slice(),
-                options.transport.timeout,
-            )?;
+            let mut tcp_transport = TcpProtocol::new(&options.transport)?;
             send_receive_query(&options, &mut tcp_transport)?;
         }
         Protocol::DoT => {
             // we need to initialize the TLS connexion using TCP stream and TLS features
-            let mut tls_transport =
-                TlsProtocol::new(&options.protocol.server, options.transport.timeout)?;
+            let mut tls_transport = TlsProtocol::new(&options.transport)?;
 
             // we need to initialize the TLS connexion using TCP stream and TLS features
             send_receive_query(&options, &mut tls_transport)?;
         }
         Protocol::DoH => {
-            let mut https_transport =
-                HttpsProtocol::new(&options.protocol.server, options.transport.timeout, options.transport.https_version)?;
+            let mut https_transport = HttpsProtocol::new(&options.transport)?;
             send_receive_query(&options, &mut https_transport)?;
         }
     }
@@ -165,10 +159,7 @@ fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> erro
             info!("query for {} caused truncation, resending using TCP", qt);
             let mut buffer = [0u8; 4096];
 
-            let mut tcp_transport = TcpProtocol::new(
-                &options.protocol.resolvers.as_slice(),
-                options.transport.timeout,
-            )?;
+            let mut tcp_transport = TcpProtocol::new(&options.transport)?;
             let query = send_query(options, qt, &mut tcp_transport)?;
             let response = receive_response(&mut tcp_transport, &mut buffer)?;
 
@@ -228,7 +219,7 @@ fn build_query<'a>(options: &'a CliOptions, qt: &QType) -> error::Result<Query<'
 //───────────────────────────────────────────────────────────────────────────────────
 // build OPT RR from the cli options
 //───────────────────────────────────────────────────────────────────────────────────
-fn build_opt<'a>(bufsize: u16, edns: &Edns) -> Option<OPT> {
+fn build_opt<'a>(bufsize: u16, edns: &EdnsOptions) -> Option<OPT> {
     // --no-opt
     if edns.no_opt {
         return None;
@@ -330,7 +321,7 @@ fn check_response_vs_query<'a>(query: &Query<'a>, response: &Response<'a>) {
 //───────────────────────────────────────────────────────────────────────────────────
 // check if response corresponds to what the client sent
 //───────────────────────────────────────────────────────────────────────────────────
-fn display<'a>(display_options: &Display, query: &Query<'a>, response: &Response<'a>) {
+fn display<'a>(display_options: &DisplayOptions, query: &Query<'a>, response: &Response<'a>) {
     // JSON
     if display_options.json_pretty {
         let j = serde_json::json!({

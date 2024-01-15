@@ -1,23 +1,19 @@
 //! Manage command line arguments here.
-use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
+use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
 
-//use crate::plus;
-
-// use crate::plus::PlusArgList;
-
-// use super::plus::PlusArg;
+use crate::options::{DisplayOptions, DnsProtocolOptions, EdnsOptions};
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
 
-//use log::debug;
-
 use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
-use error::{err_internal, Error, ProtocolError};
-use transport::endpoint::EndPointSocketAddrs;
-use transport::protocol::{IPVersion, Protocol};
+use transport::endpoint::EndPoint;
+use transport::{
+    protocol::{IPVersion, Protocol},
+    TransportOptions,
+};
 
 use log::trace;
 use resolver::ResolverList;
@@ -32,163 +28,23 @@ macro_rules! set_unset_flag {
     };
 }
 
-//────────────────────────────────────────────────────────────────────────────────────────────
-// List of flags to set or not
-//
-// Useful: https://serverfault.com/questions/729025/what-are-all-the-flags-in-a-dig-response
-//────────────────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
-pub struct QueryFlags {
-    // AA = Authoritative Answer
-    pub aa: bool,
-
-    // AD = Authenticated Data (for DNSSEC only; indicates that the data was authenticated)
-    pub ad: bool,
-
-    // CD = Checking Disabled (DNSSEC only; disables checking at the receiving server)
-    pub cd: bool,
-
-    // RA = Recursion Available (if set, denotes recursive query support is available)
-    pub ra: bool,
-
-    // RD = Recursion Desired (set in a query and copied into the response if recursion is supported)
-    pub rd: bool,
-
-    // TC TrunCation (truncated due to length greater than that permitted on the transmission channel)
-    pub tc: bool,
-
-    // Z is unused but ...
-    pub z: bool,
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// EDNS options
-//───────────────────────────────────────────────────────────────────────────────────
-// pub enum OptControl {
-//     Off = 0,   // don't include OPT record
-// }
-
-#[derive(Debug, Default)]
-pub struct Edns {
-    // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the
-    // additional section of the query.
-    pub dnssec: bool,
-
-    // add NSID option if true
-    pub nsid: bool,
-
-    // padding if the form of +padding=20
-    pub padding: Option<u16>,
-
-    // DAU, DHU, N3U same process
-    pub dau: Option<Vec<u8>>,
-    pub dhu: Option<Vec<u8>>,
-    pub n3u: Option<Vec<u8>>,
-
-    // edns-key-tag
-    pub keytag: Option<Vec<u16>>,
-
-    // if true, OPT is included
-    pub no_opt: bool,
-}
-
-#[derive(Debug, Default)]
-//───────────────────────────────────────────────────────────────────────────────────
-// Transport options
-//───────────────────────────────────────────────────────────────────────────────────
-pub struct Transport {
-    // UPD, TCP, DoH or DoT
-    pub transport_mode: Protocol,
-
-    // V4 or V6
-    pub ip_version: IPVersion,
-
-    // timeout for network operations
-    pub timeout: Duration,
-
-    // resolver
-    pub resolver: String,
-
-    // if true, elasped time and some stats are printed out
-    pub stats: bool,
-
-    // buffer size of EDNS0
-    pub bufsize: u16,
-
-    // true if TLS/DoT
-    pub tls: bool,
-    pub dot: bool,
-
-    // true if TCP
-    pub tcp: bool,
-
-    // true if HTTPS/DOH
-    pub https: bool,
-    pub doh: bool,
-
-    // http version
-    pub https_version: version::Version,
-
-    // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
-    pub port: u16,
-}
-
-#[derive(Debug, Default)]
-//───────────────────────────────────────────────────────────────────────────────────
-// Protocol options: linked to the DNS protocol itself
-//───────────────────────────────────────────────────────────────────────────────────
-pub struct DnsProtocol {
-    pub qtype: Vec<QType>,
-
-    // Qclass is IN by default
-    pub qclass: QClass,
-
-    // list of resolvers found in the client machine
-    pub resolvers: Vec<SocketAddr>,
-
-    // domain name to query. IDNA domains are punycoded before being sent
-    pub domain: String,
-
-    // server is the name passed after @
-    pub server: String,
-}
-
-#[derive(Debug, Default)]
-//───────────────────────────────────────────────────────────────────────────────────
-// Display options
-//───────────────────────────────────────────────────────────────────────────────────
-pub struct Display {
-    // print out stats like elasped time etc
-    pub stats: bool,
-
-    // iterative lookup
-    pub trace: bool,
-
-    // JSON output if true
-    pub json: bool,
-    pub json_pretty: bool,
-
-    // true if we want the question in non-JSON print
-    pub question: bool,
-}
-
 /// This structure holds the command line arguments.
 #[derive(Debug, Default)]
 pub struct CliOptions {
     // DNS protocol options
-    pub protocol: DnsProtocol,
+    pub protocol: DnsProtocolOptions,
 
     // transport related
-    pub transport: Transport,
+    pub transport: TransportOptions,
 
     // all flags
     pub flags: BitFlags,
 
     // EDNS options
-    pub edns: Edns,
+    pub edns: EdnsOptions,
 
     // Display options
-    pub display: Display,
+    pub display: DisplayOptions,
 }
 
 impl CliOptions {
@@ -208,12 +64,15 @@ impl CliOptions {
         trace!("options without dash:{:?}", without_dash);
         trace!("options with dash:{:?}", with_dash);
 
+        let mut server = "";
+
         //───────────────────────────────────────────────────────────────────────────────────
         // process the arguments not starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
         for arg in without_dash {
             if let Some(s) = arg.strip_prefix('@') {
-                options.protocol.server = s.to_string();
+                server = s;
+                // options.protocol.server = s.to_string();
                 continue;
             }
 
@@ -284,6 +143,14 @@ impl CliOptions {
                     .long_help("Reverses DNS lookup. If used, other query types are ignored.")
                     .action(ArgAction::Set)
                     .value_name("PTR")
+            )
+            .arg(
+                Arg::new("server")
+                    .short('s')
+                    .long("server")
+                    .long_help("Server name to query.")
+                    .action(ArgAction::Set)
+                    .value_name("SERVER")
             )
             .arg(
                 Arg::new("trace")
@@ -584,51 +451,57 @@ impl CliOptions {
             .get_one::<u16>("port")
             .unwrap_or(&options.transport.transport_mode.default_port());
 
-        // no server provided
-        // if options.protocol.server.is_empty() {
-        //     let resolvers = ResolverList::new()?;
-        //     let x = resolvers.as_slice();
-        //     let ep = EndPointSocketAddrs::from((resolvers.as_slice(), options.transport.port));
-        // }
-
         //───────────────────────────────────────────────────────────────────────────────────
-        // build the list of SocketAddrs
+        // build the endpoint
         //───────────────────────────────────────────────────────────────────────────────────
-        // no server provided
-        if options.protocol.server.is_empty() {
-            // fetch the resolvers
-            let resolvers = ResolverList::new()?;
 
-            // convert to a vector of SocketAddrs
-            options.protocol.resolvers = resolvers.to_socketaddresses(options.transport.port);
-
-            // DoT needs the server name
-            if options.transport.transport_mode == Protocol::DoT {
-                options.protocol.server = resolvers[0].ip_list()[0].to_string();
-            }
+        // a server name or ip address is provided
+        if !server.is_empty() {
+            options.transport.end_point = EndPoint::from((server, options.transport.port));
         }
-        // a server name or ip address is provided: we need to buld the SocketAddr from either a dot address or a domain name
-        // e.g.: 1.1.1.1 or ns1.google.com
+        // fetch OS resolvers
         else {
-            if options.transport.transport_mode != Protocol::DoH {
-                // build the SocketAddr
-                let addr_s = format!("{}:{}", options.protocol.server, options.transport.port);
-                let addr = addr_s.to_socket_addrs()?;
-
-                // new to filter for either IPV4 or IPV6
-                let sock_addr = if options.transport.ip_version == IPVersion::V4 {
-                    addr.filter(|x| x.is_ipv4()).nth(0)
-                } else {
-                    addr.filter(|x| x.is_ipv6()).nth(0)
-                };
-
-                if sock_addr.is_none() {
-                    return Err(err_internal!(CantCreateSocketAddress));
-                }
-
-                options.protocol.resolvers = vec![sock_addr.unwrap()];
-            }
+            //????
+            let resolvers = ResolverList::new().unwrap();
+            options.transport.end_point =
+                EndPoint::from((&resolvers.to_ip_list()[..], options.transport.port));
         }
+
+        // if options.protocol.server.is_empty() {
+        //     // fetch the resolvers
+        //     let resolvers = ResolverList::new()?;
+        //     let ip_list
+
+        //     // convert to a vector of IpAddr
+        //     options.protocol.resolvers = resolvers.to_socketaddresses(options.transport.port);
+
+        //     // DoT needs the server name
+        //     if options.transport.transport_mode == Protocol::DoT {
+        //         options.protocol.server = resolvers[0].ip_list()[0].to_string();
+        //     }
+        // }
+        // // a server name or ip address is provided: we need to buld the SocketAddr from either a dot address or a domain name
+        // // e.g.: 1.1.1.1 or ns1.google.com
+        // else {
+        //     if options.transport.transport_mode != Protocol::DoH {
+        //         // build the SocketAddr
+        //         let addr_s = format!("{}:{}", options.protocol.server, options.transport.port);
+        //         let addr = addr_s.to_socket_addrs()?;
+
+        //         // new to filter for either IPV4 or IPV6
+        //         let sock_addr = if options.transport.ip_version == IPVersion::V4 {
+        //             addr.filter(|x| x.is_ipv4()).nth(0)
+        //         } else {
+        //             addr.filter(|x| x.is_ipv6()).nth(0)
+        //         };
+
+        //         if sock_addr.is_none() {
+        //             return Err(err_internal!(CantCreateSocketAddress));
+        //         }
+
+        //         options.protocol.resolvers = vec![sock_addr.unwrap()];
+        //     }
+        // }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // timeout

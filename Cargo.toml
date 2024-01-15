@@ -5,8 +5,9 @@ edition = "2021"
 members = [ 
     "args", 
     "dns",
-    "transport",
+    "dqy",
     "error",
-    "dqy"
-, "show"]
+    "options",
+    "transport",
+    "show"]
 resolver = "2"

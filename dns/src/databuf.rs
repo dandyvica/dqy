@@ -61,6 +61,14 @@ impl<T> DataBuf<T> {
     {
         base16::encode_upper(&self.data.as_ref())
     }
+
+    // useful for JSON output
+    pub fn as_hex(&self) -> String
+    where
+        T: AsRef<[u8]> + fmt::Debug,
+    {
+        format!("{:?}", self)
+    }
 }
 
 impl<T> Deref for DataBuf<T> {
@@ -115,6 +123,16 @@ where
     {
         serializer.serialize_str(&self.to_string())
     }
+}
+
+pub(crate) fn serialize_buffermut<'a, S>(
+    owner: &BufferMut<'a>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&owner.as_hex())
 }
 
 // These are the 2 aliases used

@@ -51,7 +51,7 @@ impl<'a> fmt::Display for CAA<'a> {
     }
 }
 
-use serde::{ser::SerializeMap, Serialize, Serializer};
+use serde::Serialize;
 // impl<'a> Serialize for CAA<'a> {
 //     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 //     where

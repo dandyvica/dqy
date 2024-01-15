@@ -7,66 +7,61 @@ use std::{
     time::Duration,
 };
 
+use error::{Error, Result};
+
 use log::debug;
 // use log::debug;
-use rustls::{quic::ClientConnection, Stream};
+use crate::{get_tcpstream_ok, TransportOptions};
+use rustls::{
+    quic::{ClientConnection, Version},
+    ClientConfig, RootCertStore, Stream,StreamOwned
+};
 
-use crate::error::{DNSResult, Error};
-
-use super::{mode::TransportMode, Transporter};
+use super::{protocol::Protocol, Transporter};
 
 pub struct QuicTransport<'a> {
     tls_stream: Stream<'a, ClientConnection, TcpStream>,
 }
 
 impl<'a> QuicTransport<'a> {
-    pub fn new(tls: &'a mut (TcpStream, ClientConnection), timeout: Duration) -> DNSResult<Self> {
-        tls.0.set_read_timeout(Some(timeout))?;
-        tls.0.set_write_timeout(Some(timeout))?;
-        let tls_stream = rustls::Stream::new(&mut tls.1, &mut tls.0);
-        Ok(Self { tls_stream })
-    }
-
-    pub fn init_tls(
-        server: &str,
-        port: u16,
-        timeout: Duration,
-    ) -> DNSResult<(TcpStream, ClientConnection)> {
+    pub fn new(trp_options: &TransportOptions) -> Result<Self> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
-        let mut root_store = rustls::RootCertStore::empty();
-        root_store.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
-            rustls::OwnedTrustAnchor::from_subject_spki_name_constraints(
-                ta.subject,
-                ta.spki,
-                ta.name_constraints,
-            )
-        }));
+        let root_store = Self::root_store();
 
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
-        let config = rustls::ClientConfig::builder()
-            .with_safe_defaults()
-            .with_root_certificates(root_store)
-            .with_no_client_auth();
+        let config = Self::config(root_store);
 
-        // create the stream to the endpoint
-        let destination = format!("{}:{}", server, port);
-        let socket_addr = SocketAddr::from_str(&destination)?;
-        let stream = if let Ok(s) = TcpStream::connect_timeout(&socket_addr, timeout) {
-            s
-        } else {
-            return Err(Error::NoValidTCPConnection(vec![socket_addr]));
-        };
-        debug!("created TLS-TCP socket to {destination}");
+        let stream = get_tcpstream_ok(&trp_options.end_point, trp_options.timeout)?;
+        debug!("created QUIC socket to {}", stream.peer_addr()?);
 
         // build ServerName type which is used by ClientConnection::new()
-        let server_name = server
+        let server_name = trp_options
+            .end_point
+            .server()
+            .unwrap()
+            .to_string()
             .try_into()
             .map_err(|_e| Error::Tls(rustls::Error::EncryptError))?;
 
-        let conn = ClientConnection::new(Arc::new(config), server_name)?;
+        let conn = ClientConnection::new(Arc::new(config), Version::V1, server_name, Vec::new())?;
 
-        Ok((stream, conn))
+        let tls_stream = StreamOwned::new(conn, stream);
+
+        Ok(Self { tls_stream })
+    }
+
+    fn root_store() -> RootCertStore {
+        let mut root_store = rustls::RootCertStore::empty();
+        root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+
+        root_store
+    }
+
+    fn config(root_store: RootCertStore) -> ClientConfig {
+        ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_no_client_auth()
     }
 }
 

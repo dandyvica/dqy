@@ -12,6 +12,8 @@ use reqwest::{
 
 use error::Result;
 
+use crate::TransportOptions;
+
 use super::{protocol::Protocol, Transporter};
 
 pub struct HttpsProtocol<'a> {
@@ -29,19 +31,25 @@ pub struct HttpsProtocol<'a> {
 }
 
 impl<'a> HttpsProtocol<'a> {
-    pub fn new(server: &'a str, timeout: Duration, http_version: Version) -> Result<Self> {
+    pub fn new(trp_options: &'a TransportOptions) -> Result<Self> {
         let x = Client::builder()
             // same headers for all requests
             .default_headers(Self::construct_headers())
             // HTTP/2 by default as recommended by RFC8484
             // .http2_prior_knowledge()
-            .timeout(timeout);
+            .timeout(trp_options.timeout);
 
-        let client = match http_version {
-            HTTP_11 => x.http1_only().build()?,
-            HTTP_2 => x.http2_prior_knowledge().build()?,
-            _ => unimplemented!("version {:?} of HTTP is not yet implemented", http_version),
+        let client = match trp_options.https_version {
+            Version::HTTP_11 => x.http1_only().build()?,
+            Version::HTTP_2 => x.http2_prior_knowledge().build()?,
+            _ => unimplemented!(
+                "version {:?} of HTTP is not yet implemented",
+                trp_options.https_version
+            ),
         };
+
+        debug_assert!(trp_options.end_point.server().is_some());
+        let server = trp_options.end_point.server().unwrap();
 
         Ok(Self {
             server,
@@ -50,22 +58,6 @@ impl<'a> HttpsProtocol<'a> {
             peer: None,
         })
     }
-    // pub fn new(server: &'a str, timeout: Duration) -> Result<Self> {
-    //     let client = Client::builder()
-    //         // same headers for all requests
-    //         .default_headers(Self::construct_headers())
-    //         // HTTP/2 by default as recommended by RFC8484
-    //         .http2_prior_knowledge()
-    //         .timeout(timeout)
-    //         .build()?;
-
-    //     Ok(Self {
-    //         server,
-    //         client,
-    //         bytes_recv: Bytes::default(),
-    //         peer: None,
-    //     })
-    // }
 
     fn construct_headers() -> HeaderMap {
         let mut headers = HeaderMap::new();

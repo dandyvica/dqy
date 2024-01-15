@@ -1,11 +1,13 @@
 use std::fmt::Debug;
 use std::io::Read;
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
+use endpoint::EndPoint;
+use http::version::Version;
 use log::trace;
 
-use error::Result;
+use error::{Error, Result};
 
 use self::https::HttpsProtocol;
 use self::protocol::{IPVersion, Protocol};
@@ -13,13 +15,54 @@ use self::tcp::TcpProtocol;
 use self::tls::TlsProtocol;
 use self::udp::UdpProtocol;
 
+pub mod endpoint;
 pub mod https;
 pub mod protocol;
 // pub mod quic;
-pub mod endpoint;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
+
+#[derive(Debug, Default)]
+//───────────────────────────────────────────────────────────────────────────────────
+// Transport options
+//───────────────────────────────────────────────────────────────────────────────────
+pub struct TransportOptions {
+    // UPD, TCP, DoH or DoT
+    pub transport_mode: Protocol,
+
+    // V4 or V6
+    pub ip_version: IPVersion,
+
+    // timeout for network operations
+    pub timeout: Duration,
+
+    // resolver
+    pub end_point: EndPoint,
+
+    // if true, elasped time and some stats are printed out
+    pub stats: bool,
+
+    // buffer size of EDNS0
+    pub bufsize: u16,
+
+    // true if TLS/DoT
+    pub tls: bool,
+    pub dot: bool,
+
+    // true if TCP
+    pub tcp: bool,
+
+    // true if HTTPS/DOH
+    pub https: bool,
+    pub doh: bool,
+
+    // http version
+    pub https_version: Version,
+
+    // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
+    pub port: u16,
+}
 
 pub trait Transporter {
     // send query using the underlying transport
@@ -110,4 +153,25 @@ where
     stream.read_exact(&mut buffer[..length])?;
 
     Ok(length)
+}
+
+// A helper function to get the TcpStream which connects succesfully
+pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> Result<TcpStream> {
+    let mut stream: Option<TcpStream> = None;
+
+    // find the first address for which the connexion succeeds
+    for addr in addrs.to_socket_addrs()? {
+        if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
+            stream = Some(s);
+            break;
+        }
+    }
+
+    // if None, none of the connexions is OK
+    if stream.is_none() {
+        let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.into_iter().collect();
+        return Err(Error::NoValidTCPConnection(addresses.to_vec()));
+    }
+
+    Ok(stream.unwrap())
 }
