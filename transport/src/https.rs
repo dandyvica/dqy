@@ -1,6 +1,6 @@
 // Transport for sending DNS messages
 
-use std::{net::SocketAddr, time::Duration};
+use std::net::SocketAddr;
 
 use bytes::Bytes;
 use http::version::*;

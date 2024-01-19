@@ -3,7 +3,7 @@ use std::fmt::{self};
 use serde::Serialize;
 use type2network::ToNetworkOrder;
 
-use crate::databuf::{Buffer, DataBuf};
+use crate::buffer::Buffer;
 
 use super::{
     a::A,
@@ -48,67 +48,67 @@ use super::{
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize)]
-pub(super) enum RData<'a> {
+pub(super) enum RData {
     // RData definitions
     A(A),
     AAAA(AAAA),
-    AFSDB(AFSDB<'a>),
-    APL(APL<'a>),
-    CAA(CAA<'a>),
-    CDNSKEY(CDNSKEY<'a>),
-    CDS(CDS<'a>),
-    CERT(CERT<'a>),
-    CNAME(CNAME<'a>),
+    AFSDB(AFSDB),
+    APL(APL),
+    CAA(CAA),
+    CDNSKEY(CDNSKEY),
+    CDS(CDS),
+    CERT(CERT),
+    CNAME(CNAME),
     CSYNC(CSYNC),
-    DHCID(DHCID<'a>),
-    DLV(DLV<'a>),
-    DNAME(DNAME<'a>),
-    DNSKEY(DNSKEY<'a>),
-    DS(DS<'a>),
+    DHCID(DHCID),
+    DLV(DLV),
+    DNAME(DNAME),
+    DNSKEY(DNSKEY),
+    DS(DS),
     EUI48(EUI48),
     EUI64(EUI64),
-    HINFO(HINFO<'a>),
-    HIP(HIP<'a>),
-    HTTPS(HTTPS<'a>),
-    IPSECKEY(IPSECKEY<'a>),
-    KX(KX<'a>),
+    HINFO(HINFO),
+    HIP(HIP),
+    HTTPS(HTTPS),
+    IPSECKEY(IPSECKEY),
+    KX(KX),
     LOC(LOC),
-    MX(MX<'a>),
-    NAPTR(NAPTR<'a>),
-    NS(NS<'a>),
-    NSEC(NSEC<'a>),
-    NSEC3(NSEC3<'a>),
-    NSEC3PARAM(NSEC3PARAM<'a>),
-    OPENPGPKEY(OPENPGPKEY<'a>),
+    MX(MX),
+    NAPTR(NAPTR),
+    NS(NS),
+    NSEC(NSEC),
+    NSEC3(NSEC3),
+    NSEC3PARAM(NSEC3PARAM),
+    OPENPGPKEY(OPENPGPKEY),
     OPT(Vec<OptOption>),
-    PTR(PTR<'a>),
-    RP(RP<'a>),
-    RRSIG(RRSIG<'a>),
-    SMIMEA(SMIMEA<'a>),
-    SOA(SOA<'a>),
-    SRV(SRV<'a>),
-    SSHFP(SSHFP<'a>),
-    SVCB(SVCB<'a>),
-    TLSA(TLSA<'a>),
-    TXT(TXT<'a>),
+    PTR(PTR),
+    RP(RP),
+    RRSIG(RRSIG),
+    SMIMEA(SMIMEA),
+    SOA(SOA),
+    SRV(SRV),
+    SSHFP(SSHFP),
+    SVCB(SVCB),
+    TLSA(TLSA),
+    TXT(TXT),
     UNKNOWN(Buffer),
-    URI(URI<'a>),
-    ZONEMD(ZONEMD<'a>),
+    URI(URI),
+    ZONEMD(ZONEMD),
 }
 
-impl<'a> Default for RData<'a> {
+impl Default for RData {
     fn default() -> Self {
-        Self::UNKNOWN(DataBuf::default())
+        Self::UNKNOWN(Buffer::default())
     }
 }
 
-impl<'a> ToNetworkOrder for RData<'a> {
+impl ToNetworkOrder for RData {
     fn serialize_to(&self, _buffer: &mut Vec<u8>) -> std::io::Result<usize> {
         Ok(0)
     }
 }
 
-impl<'a> fmt::Display for RData<'a> {
+impl fmt::Display for RData {
     #[allow(unreachable_patterns)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

@@ -4,7 +4,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc4255#section-3
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -17,7 +17,7 @@ use crate::{databuf::BufferMut, new_rd_length};
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct SSHFP<'a> {
+pub struct SSHFP {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -25,14 +25,14 @@ pub struct SSHFP<'a> {
     algorithm: u8,
     fp_type: u8,
 
-    #[deser(with_code( self.fingerprint = BufferMut::with_capacity(self.rd_length - 2); ))]
-    fingerprint: BufferMut<'a>,
+    #[deser(with_code( self.fingerprint = Buffer::with_capacity(self.rd_length - 2); ))]
+    fingerprint: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(SSHFP<'a>);
+new_rd_length!(SSHFP);
 
-impl<'a> fmt::Display for SSHFP<'a> {
+impl fmt::Display for SSHFP {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -44,7 +44,7 @@ impl<'a> fmt::Display for SSHFP<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for SSHFP<'a> {
+impl Serialize for SSHFP {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

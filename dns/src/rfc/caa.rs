@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc8659
 //-------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ use crate::{databuf::BufferMut, new_rd_length};
 // +----------------+----------------+.....+----------------+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct CAA<'a> {
+pub(super) struct CAA {
     // transmistted through RR deserialization
     #[serde(skip_serializing)]
     #[deser(ignore)]
@@ -29,17 +29,17 @@ pub(super) struct CAA<'a> {
     flags: u8,
     tag_length: u8,
 
-    #[deser(with_code( self.tag_key = BufferMut::with_capacity(self.tag_length); ))]
-    tag_key: BufferMut<'a>,
+    #[deser(with_code( self.tag_key = Buffer::with_capacity(self.tag_length); ))]
+    tag_key: Buffer,
 
-    #[deser(with_code( self.tag_value = BufferMut::with_capacity(self.rd_length - self.tag_length as u16 - 2 ); ))]
-    tag_value: BufferMut<'a>,
+    #[deser(with_code( self.tag_value = Buffer::with_capacity(self.rd_length - self.tag_length as u16 - 2 ); ))]
+    tag_value: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(CAA<'a>);
+new_rd_length!(CAA);
 
-impl<'a> fmt::Display for CAA<'a> {
+impl fmt::Display for CAA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -52,7 +52,7 @@ impl<'a> fmt::Display for CAA<'a> {
 }
 
 use serde::Serialize;
-// impl<'a> Serialize for CAA<'a> {
+// impl Serialize for CAA {
 //     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 //     where
 //         S: Serializer,

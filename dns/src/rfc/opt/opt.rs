@@ -2,7 +2,6 @@ use std::{fmt, io::Cursor};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use bytes::buf;
 use enum_from::{EnumDisplay, EnumTryFrom};
 use log::trace;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
@@ -11,11 +10,11 @@ use type2network_derive::{FromNetwork, ToNetwork};
 use serde::Serialize;
 
 use crate::{
-    databuf::Buffer,
+    buffer::Buffer,
     rfc::{
         opt::nsid::NSID,
         qtype::QType,
-        resource_record::{OptClassTtl, OptOrElse, ResourceRecord, RR},
+        // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
     },
 };
 

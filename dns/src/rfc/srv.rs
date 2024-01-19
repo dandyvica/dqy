@@ -11,14 +11,14 @@ use super::domain::DomainName;
 
 // https://datatracker.ietf.org/doc/html/rfc2782
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct SRV<'a> {
+pub struct SRV {
     priority: u16,
     weight: u16,
     port: u16,
-    target: DomainName<'a>,
+    target: DomainName,
 }
 
-impl<'a> fmt::Display for SRV<'a> {
+impl fmt::Display for SRV {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

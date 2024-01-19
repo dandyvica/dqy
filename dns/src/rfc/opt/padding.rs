@@ -5,7 +5,7 @@ use type2network_derive::ToNetwork;
 
 use serde::Serialize;
 
-use crate::{databuf::Buffer, opt_code, opt_data};
+use crate::{buffer::Buffer, opt_code, opt_data};
 
 use super::{
     opt::{OptOptionCode, OptOptionData},
@@ -21,8 +21,8 @@ impl Padding {
         if len == 0 {
             Self(None)
         } else {
-            let mut buf = Buffer::with_capacity(len);
-            buf.fill(0);
+            let buf = Buffer::with_capacity(len);
+            //buf.fill(0);
             Self(Some(buf))
         }
     }

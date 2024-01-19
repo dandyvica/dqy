@@ -8,12 +8,12 @@ use super::domain::DomainName;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct AFSDB<'a> {
+pub(super) struct AFSDB {
     subtype: u16,
-    hostname: DomainName<'a>,
+    hostname: DomainName,
 }
 
-impl<'a> fmt::Display for AFSDB<'a> {
+impl fmt::Display for AFSDB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} ", self.subtype, self.hostname)
     }

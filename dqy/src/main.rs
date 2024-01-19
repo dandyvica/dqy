@@ -3,40 +3,26 @@
 //! TODO: specialize RUST_LOG
 use std::{process::ExitCode, time::Instant};
 
-use log::{debug, error, info, trace};
+use log::debug;
 
 // my DNS library
-use dns::rfc::{
-    domain::DomainName,
-    opt::{
-        dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
-        nsid::NSID,
-        opt::OPT,
-        padding::Padding,
-    },
-    qtype::QType,
-    query::{MetaRR, Query},
-    response::Response,
-    response_code::ResponseCode,
-};
+use dns::rfc::message::MessageList;
 
-use args::{
-    args::CliOptions,
-    options::{DisplayOptions, EdnsOptions},
-};
+use args::args::CliOptions;
 use error::Error;
+use show::Show;
 use transport::{
-    https::HttpsProtocol,
-    protocol::Protocol,
-    tcp::TcpProtocol,
-    tls::TlsProtocol,
-    // transport,
-    udp::UdpProtocol,
-    Transporter,
+    https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol,
 };
 
 // mod trace;
 // use trace::*;
+
+mod protocol;
+use protocol::DnsProtocol;
+
+//
+const BUFFER_CHUNK: usize = 4096;
 
 // use this trick to be able to display error
 fn main() -> ExitCode {
@@ -108,27 +94,49 @@ fn run() -> error::Result<()> {
     // foo(&options, &mut trp);
 
     // depending on mode, different processing
-    match options.transport.transport_mode {
+    // match options.transport.transport_mode {
+    //     Protocol::Udp => {
+    //         let mut udp_transport = UdpProtocol::new(&options.transport)?;
+    //         DnsProtocol::send_receive(&options, &mut udp_transport)?;
+    //     }
+    //     Protocol::Tcp => {
+    //         let mut tcp_transport = TcpProtocol::new(&options.transport)?;
+    //         DnsProtocol::send_receive(&options, &mut tcp_transport)?;
+    //     }
+    //     Protocol::DoT => {
+    //         // we need to initialize the TLS connexion using TCP stream and TLS features
+    //         let mut tls_transport = TlsProtocol::new(&options.transport)?;
+
+    //         // we need to initialize the TLS connexion using TCP stream and TLS features
+    //         DnsProtocol::send_receive(&options, &mut tls_transport)?;
+    //     }
+    //     Protocol::DoH => {
+    //         let mut https_transport = HttpsProtocol::new(&options.transport)?;
+    //         DnsProtocol::send_receive(&options, &mut https_transport)?;
+    //     }
+    // }
+
+    let messages = match options.transport.transport_mode {
         Protocol::Udp => {
             let mut udp_transport = UdpProtocol::new(&options.transport)?;
-            send_receive_query(&options, &mut udp_transport)?;
+            DnsProtocol::send_receive(&options, &mut udp_transport, BUFFER_CHUNK)?
         }
         Protocol::Tcp => {
             let mut tcp_transport = TcpProtocol::new(&options.transport)?;
-            send_receive_query(&options, &mut tcp_transport)?;
+            DnsProtocol::send_receive(&options, &mut tcp_transport, BUFFER_CHUNK)?
         }
         Protocol::DoT => {
             // we need to initialize the TLS connexion using TCP stream and TLS features
             let mut tls_transport = TlsProtocol::new(&options.transport)?;
 
             // we need to initialize the TLS connexion using TCP stream and TLS features
-            send_receive_query(&options, &mut tls_transport)?;
+            DnsProtocol::send_receive(&options, &mut tls_transport, BUFFER_CHUNK)?
         }
         Protocol::DoH => {
             let mut https_transport = HttpsProtocol::new(&options.transport)?;
-            send_receive_query(&options, &mut https_transport)?;
+            DnsProtocol::send_receive(&options, &mut https_transport, BUFFER_CHUNK)?
         }
-    }
+    };
 
     let elapsed = now.elapsed();
     if options.display.stats {
@@ -140,208 +148,23 @@ fn run() -> error::Result<()> {
         );
     }
 
-    Ok(())
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// This sends and receive queries using a transport
-//───────────────────────────────────────────────────────────────────────────────────
-fn send_receive_query<T: Transporter>(options: &CliOptions, trp: &mut T) -> error::Result<()> {
-    let mut buffer = [0u8; 4096];
-
-    for qt in &options.protocol.qtype {
-        // send query, response is depending on TC falg if UDP
-        let query = send_query(options, qt, trp)?;
-        let response = receive_response(trp, &mut buffer)?;
-
-        // check for the truncation (TC) header flag. If set and UDP, resend using TCP
-        if response.tc() && trp.mode() == Protocol::Udp {
-            info!("query for {} caused truncation, resending using TCP", qt);
-            let mut buffer = [0u8; 4096];
-
-            let mut tcp_transport = TcpProtocol::new(&options.transport)?;
-            let query = send_query(options, qt, &mut tcp_transport)?;
-            let response = receive_response(&mut tcp_transport, &mut buffer)?;
-
-            check_response_vs_query(&query, &response);
-            display(&options.display, &query, &response);
-            continue;
-        }
-
-        check_response_vs_query(&query, &response);
-        // //println!("{}", serde_json::to_string(&response.question).unwrap());
-        // response.show(ShowType::Color);
-        display(&options.display, &query, &response);
-    }
+    display(&options.display, &messages);
 
     Ok(())
 }
 
-//───────────────────────────────────────────────────────────────────────────────────
-// build query from the cli options
-//───────────────────────────────────────────────────────────────────────────────────
-fn build_query<'a>(options: &'a CliOptions, qt: &QType) -> error::Result<Query<'a>> {
-    //───────────────────────────────────────────────────────────────────────────────────
-    // build the OPT record to be added in the additional section
-    //───────────────────────────────────────────────────────────────────────────────────
-    let opt = build_opt(options.transport.bufsize, &options.edns);
-    trace!("OPT record: {:#?}", &opt);
-
-    //───────────────────────────────────────────────────────────────────────────────────
-    // build Query
-    //───────────────────────────────────────────────────────────────────────────────────
-    let domain = DomainName::try_from(options.protocol.domain.as_str())?;
-
-    let mut query = Query::build()
-        .with_type(qt)
-        .with_class(&options.protocol.qclass)
-        .with_domain(domain)
-        .with_flags(&options.flags);
-
-    //───────────────────────────────────────────────────────────────────────────────────
-    // Reserve length if TCP or TLS
-    //───────────────────────────────────────────────────────────────────────────────────
-    if options.transport.transport_mode.uses_leading_length() {
-        query = query.with_length();
-    }
-
-    //───────────────────────────────────────────────────────────────────────────────────
-    // Add OPT if any
-    //───────────────────────────────────────────────────────────────────────────────────
-    if let Some(opt) = opt {
-        query = query.with_additional(MetaRR::OPT(opt));
-    }
-    trace!("Query record: {:#?}", &query);
-
-    Ok(query)
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// build OPT RR from the cli options
-//───────────────────────────────────────────────────────────────────────────────────
-fn build_opt<'a>(bufsize: u16, edns: &EdnsOptions) -> Option<OPT> {
-    // --no-opt
-    if edns.no_opt {
-        return None;
-    }
-
-    let mut opt = OPT::build(bufsize);
-
-    //───────────────────────────────────────────────────────────────────────────────
-    // add OPT options according to cli options
-    //───────────────────────────────────────────────────────────────────────────────
-
-    // NSID
-    if edns.nsid {
-        opt.add_option(NSID::default());
-    }
-
-    // padding
-    if let Some(len) = edns.padding {
-        opt.add_option(Padding::new(len));
-    }
-
-    // DAU, DHU & N3U
-    if let Some(list) = &edns.dau {
-        opt.add_option(DAU::from(list.as_slice()));
-    }
-    if let Some(list) = &edns.dhu {
-        opt.add_option(DHU::from(list.as_slice()));
-    }
-    if let Some(list) = &edns.n3u {
-        opt.add_option(N3U::from(list.as_slice()));
-    }
-
-    // edns-key-tag
-    if let Some(list) = &edns.keytag {
-        opt.add_option(EdnsKeyTag::from(list.as_slice()));
-    }
-
-    // dnssec flag ?
-    if edns.dnssec {
-        opt.set_dnssec();
-    }
-
-    Some(opt)
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// send the query to the resolver
-//───────────────────────────────────────────────────────────────────────────────────
-fn send_query<'a, T: Transporter>(
-    options: &'a CliOptions,
-    qt: &QType,
-    trp: &mut T,
-) -> error::Result<Query<'a>> {
-    let mut query = build_query(options, qt)?;
-
-    // send query using the chosen transport
-    let bytes = query.send(trp)?;
-    info!(
-        "sent query of {} bytes to remote address {}",
-        bytes,
-        trp.peer()?
-    );
-
-    Ok(query)
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// receive response from resolver
-//───────────────────────────────────────────────────────────────────────────────────
-fn receive_response<'a, T: Transporter>(
-    trp: &mut T,
-    buffer: &'a mut [u8],
-) -> error::Result<Response<'a>> {
-    let mut response = Response::default();
-    let _ = response.recv(trp, buffer)?;
-
-    Ok(response)
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// check if response corresponds to what the client sent
-//───────────────────────────────────────────────────────────────────────────────────
-fn check_response_vs_query<'a>(query: &Query<'a>, response: &Response<'a>) {
-    if response.id() != query.header.id || query.question != response.question {
-        error!(
-            "query and response ID are not equal, discarding answer for type {:?}",
-            query.question.qtype
-        );
-    }
-
-    // check return code
-    if response.rcode() != ResponseCode::NoError
-        || (response.rcode() == ResponseCode::NXDomain && response.ns_count() == 0)
-    {
-        eprintln!("response error:{}", response.rcode());
-    }
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// check if response corresponds to what the client sent
-//───────────────────────────────────────────────────────────────────────────────────
-fn display<'a>(display_options: &DisplayOptions, query: &Query<'a>, response: &Response<'a>) {
+fn display(display_options: &show::DisplayOptions, messages: &MessageList) {
     // JSON
     if display_options.json_pretty {
-        let j = serde_json::json!({
-            "query": query,
-            "response": response
-        });
-
-        println!("{}", serde_json::to_string_pretty(&j).unwrap());
+        println!("fooo {}", serde_json::to_string_pretty(messages).unwrap());
     } else if display_options.json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "query": query,
-                "response": response
-            })
-        );
+        println!("{}", serde_json::to_string(messages).unwrap());
     } else {
-        if display_options.question {
-            println!("{}", query);
+        // if display_options.question {
+        //     println!("{:?}", msg_list.query);
+        // }
+        for msg in messages.iter() {
+            msg.response().show(display_options);
         }
-        println!("{}", response);
     }
 }

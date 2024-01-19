@@ -4,7 +4,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc5205.html#section-5
 // 0                   1                   2                   3
@@ -31,7 +31,7 @@ use crate::{databuf::BufferMut, new_rd_length};
 // |             |
 // +-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct HIP<'a> {
+pub struct HIP {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -40,20 +40,20 @@ pub struct HIP<'a> {
     pk_algorithm: u8,
     pk_length: u16,
 
-    #[deser(with_code( self.hit = BufferMut::with_capacity(self.hit_length); ))]
-    hit: BufferMut<'a>,
+    #[deser(with_code( self.hit = Buffer::with_capacity(self.hit_length); ))]
+    hit: Buffer,
 
-    #[deser(with_code( self.public_key = BufferMut::with_capacity(self.pk_length); ))]
-    public_key: BufferMut<'a>,
+    #[deser(with_code( self.public_key = Buffer::with_capacity(self.pk_length); ))]
+    public_key: Buffer,
 
-    #[deser(with_code( self.rendezvous_servers = BufferMut::with_capacity(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
-    rendezvous_servers: BufferMut<'a>,
+    #[deser(with_code( self.rendezvous_servers = Buffer::with_capacity(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
+    rendezvous_servers: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(HIP<'a>);
+new_rd_length!(HIP);
 
-impl<'a> fmt::Display for HIP<'a> {
+impl fmt::Display for HIP {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -67,7 +67,7 @@ impl<'a> fmt::Display for HIP<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for HIP<'a> {
+impl Serialize for HIP {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

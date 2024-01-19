@@ -14,12 +14,12 @@ use super::domain::DomainName;
 // /                                               /
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct KX<'a> {
+pub(super) struct KX {
     preference: u16,
-    exchanger: DomainName<'a>,
+    exchanger: DomainName,
 }
 
-impl<'a> fmt::Display for KX<'a> {
+impl fmt::Display for KX {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.preference, self.exchanger)
     }

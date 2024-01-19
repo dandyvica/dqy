@@ -25,16 +25,16 @@ use super::{char_string::CharacterString, domain::DomainName};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct NAPTR<'a> {
+pub(super) struct NAPTR {
     order: u16,
     preference: u16,
-    flags: CharacterString<'a>,
-    services: CharacterString<'a>,
-    regex: CharacterString<'a>,
-    replacement: DomainName<'a>,
+    flags: CharacterString,
+    services: CharacterString,
+    regex: CharacterString,
+    replacement: DomainName,
 }
 
-impl<'a> fmt::Display for NAPTR<'a> {
+impl fmt::Display for NAPTR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

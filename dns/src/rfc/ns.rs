@@ -9,9 +9,9 @@ use super::domain::DomainName;
 
 // NS resource record
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct NS<'a>(pub DomainName<'a>);
+pub struct NS(pub DomainName);
 
-impl<'a> fmt::Display for NS<'a> {
+impl fmt::Display for NS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }

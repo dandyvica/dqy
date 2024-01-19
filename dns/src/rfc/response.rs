@@ -2,6 +2,7 @@ use std::{fmt, io::Cursor};
 
 use log::{debug, trace};
 
+use show::Show;
 use type2network::FromNetworkOrder;
 
 use serde::Serialize;
@@ -11,18 +12,18 @@ use transport::Transporter;
 
 use super::{header::Header, question::Question, rrset::RRSet};
 
-#[derive(Default, Serialize)]
-pub struct Response<'a> {
+#[derive(Debug, Default, Serialize)]
+pub struct Response {
     //pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
-    pub question: Question<'a>,
-    pub(super) answer: Option<RRSet<'a>>,
-    pub(super) authority: Option<RRSet<'a>>,
-    pub(super) additional: Option<RRSet<'a>>,
+    pub question: Question,
+    pub(super) answer: Option<RRSet>,
+    pub(super) authority: Option<RRSet>,
+    pub(super) additional: Option<RRSet>,
 }
 
 // hide internal fields
-impl<'a> Response<'a> {
+impl Response {
     #[inline]
     pub fn rcode(&self) -> ResponseCode {
         self.header.flags.response_code
@@ -44,11 +45,7 @@ impl<'a> Response<'a> {
     }
 
     // Receive message for DNS resolver
-    pub fn recv<T: Transporter>(
-        &mut self,
-        trp: &mut T,
-        buffer: &'a mut [u8],
-    ) -> error::Result<usize> {
+    pub fn recv<T: Transporter>(&mut self, trp: &mut T, buffer: &mut [u8]) -> error::Result<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
@@ -73,7 +70,7 @@ impl<'a> Response<'a> {
     }
 }
 
-impl<'a> fmt::Display for Response<'a> {
+impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // print out anwser, authority, additional if any
         if let Some(answer) = &self.answer {
@@ -98,7 +95,7 @@ impl<'a> fmt::Display for Response<'a> {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for Response<'a> {
+impl<'a> FromNetworkOrder<'a> for Response {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.header.deserialize_from(buffer)?;
         trace!("deserialized header: {}", self.header);
@@ -125,6 +122,22 @@ impl<'a> FromNetworkOrder<'a> for Response<'a> {
         }
 
         Ok(())
+    }
+}
+
+impl Show for Response {
+    fn show(&self, display_options: &show::DisplayOptions) {
+        if self.header.an_count > 0 {
+            self.answer.as_ref().unwrap().show(display_options);
+        }
+
+        if self.header.ns_count > 0 && !display_options.no_authorative {
+            self.authority.as_ref().unwrap().show(display_options);
+        }
+
+        if self.header.ar_count > 0 && !display_options.no_additional {
+            self.additional.as_ref().unwrap().show(display_options);
+        }
     }
 }
 

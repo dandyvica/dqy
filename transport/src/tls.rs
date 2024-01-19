@@ -1,10 +1,8 @@
 // Specific TLS handling
 use std::{
     io::Write,
-    net::{IpAddr, SocketAddr, TcpStream, ToSocketAddrs},
-    str::FromStr,
+    net::{SocketAddr, TcpStream},
     sync::Arc,
-    time::Duration,
 };
 
 use error::{Error, Result};

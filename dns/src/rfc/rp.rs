@@ -8,12 +8,12 @@ use serde::Serialize;
 use super::domain::DomainName;
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct RP<'a> {
-    mbox: DomainName<'a>,
-    hostname: DomainName<'a>,
+pub(super) struct RP {
+    mbox: DomainName,
+    hostname: DomainName,
 }
 
-impl<'a> fmt::Display for RP<'a> {
+impl fmt::Display for RP {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.mbox, self.hostname)
     }

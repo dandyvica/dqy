@@ -9,15 +9,15 @@ use super::domain::DomainName;
 
 // CNAME resource record
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct CNAME<'a>(DomainName<'a>);
+pub struct CNAME(DomainName);
 
-impl<'a> fmt::Display for CNAME<'a> {
+impl fmt::Display for CNAME {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-pub type DNAME<'a> = CNAME<'a>;
+pub type DNAME = CNAME;
 
 #[cfg(test)]
 mod tests {

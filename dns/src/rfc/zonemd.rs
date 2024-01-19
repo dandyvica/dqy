@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc8976
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
@@ -19,7 +19,7 @@ use crate::{databuf::BufferMut, new_rd_length};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct ZONEMD<'a> {
+pub(super) struct ZONEMD {
     #[deser(ignore)]
     rd_length: u16,
 
@@ -27,14 +27,14 @@ pub(super) struct ZONEMD<'a> {
     scheme: u8,
     hash_algorithm: u8,
 
-    #[deser(with_code( self.digest = BufferMut::with_capacity(self.rd_length - 6); ))]
-    digest: BufferMut<'a>,
+    #[deser(with_code( self.digest = Buffer::with_capacity(self.rd_length - 6); ))]
+    digest: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(ZONEMD<'a>);
+new_rd_length!(ZONEMD);
 
-impl<'a> fmt::Display for ZONEMD<'a> {
+impl fmt::Display for ZONEMD {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -46,7 +46,7 @@ impl<'a> fmt::Display for ZONEMD<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for ZONEMD<'a> {
+impl Serialize for ZONEMD {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

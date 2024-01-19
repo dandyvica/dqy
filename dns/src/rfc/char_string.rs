@@ -7,27 +7,27 @@ use serde::{Serialize, Serializer};
 
 // Character string as described in: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default, PartialEq)]
-pub struct CharacterString<'a> {
+pub struct CharacterString {
     length: u8,
-    data: &'a [u8],
+    data: Vec<u8>,
 }
 
-impl<'a> From<&'a str> for CharacterString<'a> {
-    fn from(s: &'a str) -> Self {
+impl From<&str> for CharacterString {
+    fn from(s: &str) -> Self {
         CharacterString {
             length: s.len() as u8,
-            data: s.as_bytes(),
+            data: s.as_bytes().to_vec(),
         }
     }
 }
 
-impl<'a> fmt::Display for CharacterString<'a> {
+impl fmt::Display for CharacterString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", String::from_utf8_lossy(self.data))
+        write!(f, "{}", String::from_utf8_lossy(&self.data))
     }
 }
 
-impl<'a> Serialize for CharacterString<'a> {
+impl Serialize for CharacterString {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -36,14 +36,15 @@ impl<'a> Serialize for CharacterString<'a> {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for CharacterString<'a> {
+impl<'a> FromNetworkOrder<'a> for CharacterString {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         // copy text length
         self.length.deserialize_from(buffer)?;
         let current_position = buffer.position() as usize;
 
         // slice to data
-        self.data = &buffer.get_ref()[current_position..current_position + self.length as usize];
+        let s = &buffer.get_ref()[current_position..current_position + self.length as usize];
+        self.data = s.to_vec();
 
         // don't forget to move the position
         buffer.seek(SeekFrom::Current(self.length as i64))?;
@@ -77,6 +78,6 @@ mod tests {
         let mut cs = CharacterString::default();
         assert!(cs.deserialize_from(&mut buffer).is_ok());
         assert_eq!(cs.length, 6u8);
-        assert_eq!(std::str::from_utf8(cs.data).unwrap(), "google");
+        assert_eq!(std::str::from_utf8(&cs.data).unwrap(), "google");
     }
 }

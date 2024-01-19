@@ -9,9 +9,9 @@ use super::domain::DomainName;
 
 // CNAME resource record
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct PTR<'a>(DomainName<'a>);
+pub struct PTR(DomainName);
 
-impl<'a> fmt::Display for PTR<'a> {
+impl fmt::Display for PTR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }

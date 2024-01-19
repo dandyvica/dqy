@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::databuf::Buffer;
+use crate::buffer::Buffer;
 use crate::{opt_code, opt_data};
 
 use serde::Serialize;

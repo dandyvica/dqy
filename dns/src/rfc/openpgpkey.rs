@@ -3,26 +3,26 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 //-------------------------------------------------------------------------------------
 // OPENPGPKEY
 //-------------------------------------------------------------------------------------
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct OPENPGPKEY<'a> {
+pub(super) struct OPENPGPKEY {
     // transmistted through RR deserialization
     #[deser(ignore)]
     rd_length: u16,
 
-    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length); ))]
-    key: BufferMut<'a>,
+    #[deser(with_code( self.key = Buffer::with_capacity(self.rd_length); ))]
+    key: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(OPENPGPKEY<'a>);
+new_rd_length!(OPENPGPKEY);
 
-impl<'a> fmt::Display for OPENPGPKEY<'a> {
+impl fmt::Display for OPENPGPKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.key.as_b64())
     }
@@ -30,7 +30,7 @@ impl<'a> fmt::Display for OPENPGPKEY<'a> {
 
 // Custom serialization
 use serde::{Serialize, Serializer};
-impl<'a> Serialize for OPENPGPKEY<'a> {
+impl Serialize for OPENPGPKEY {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

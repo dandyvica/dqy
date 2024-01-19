@@ -4,7 +4,7 @@ use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 //use type2network_derive::FromNetwork;
 
-use crate::databuf::BufferMut;
+use crate::buffer::Buffer;
 
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -15,23 +15,23 @@ use crate::databuf::BufferMut;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::len_without_is_empty)]
 #[derive(Debug, Default, FromNetwork)]
-pub struct NSEC3PARAM<'a> {
+pub struct NSEC3PARAM {
     algorithm: u8,
     flags: u8,
     iterations: u16,
     salt_length: u8,
 
-    #[deser(with_code( self.salt = BufferMut::with_capacity(self.salt_length); ))]
-    salt: BufferMut<'a>,
+    #[deser(with_code( self.salt = Buffer::with_capacity(self.salt_length); ))]
+    salt: Buffer,
 }
 
-impl<'a> NSEC3PARAM<'a> {
+impl NSEC3PARAM {
     pub fn len(&self) -> usize {
         5usize + self.salt_length as usize
     }
 }
 
-impl<'a> fmt::Display for NSEC3PARAM<'a> {
+impl fmt::Display for NSEC3PARAM {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -44,7 +44,7 @@ impl<'a> fmt::Display for NSEC3PARAM<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for NSEC3PARAM<'a> {
+impl Serialize for NSEC3PARAM {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

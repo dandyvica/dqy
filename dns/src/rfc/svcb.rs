@@ -8,7 +8,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::DomainName;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://datatracker.ietf.org/doc/html/rfc9460#section-14.3.2
 // +===========+=================+================+=========+==========+
@@ -85,20 +85,20 @@ pub(super) enum SvcParamKeys {
 #[derive(Debug, Default)]
 #[allow(non_camel_case_types)]
 #[allow(clippy::unnecessary_cast)]
-pub(super) struct SvcParam<'a> {
+pub(super) struct SvcParam {
     // param key:  2-octet field containing the SvcParamKey as an integer in network byte order
     key: u16,
     length: u16,
-    value: BufferMut<'a>,
+    value: Buffer,
 }
 
-impl<'a> SvcParam<'a> {
+impl SvcParam {
     pub fn len(&self) -> usize {
         4 + self.value.len()
     }
 }
 
-impl<'a> fmt::Display for SvcParam<'a> {
+impl fmt::Display for SvcParam {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.key {
             1 => write!(f, "alpn=\"{}\"", self.value)?,
@@ -123,23 +123,23 @@ impl<'a> fmt::Display for SvcParam<'a> {
 
 // https://www.rfc-editor.org/rfc/rfc9460.txt
 #[derive(Debug, Default)]
-pub struct SVCB<'a> {
+pub struct SVCB {
     // transmistted through RR deserialization
     //#[deser(ignore)]
     pub(super) rd_length: u16,
 
     svc_priority: u16,
-    target_name: DomainName<'a>,
+    target_name: DomainName,
 
     //#[deser(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
-    svc_params: Vec<SvcParam<'a>>,
+    svc_params: Vec<SvcParam>,
 }
 
 // auto-implement new
-new_rd_length!(SVCB<'a>);
+new_rd_length!(SVCB);
 
 // implement FromNetwork because of the special SVCB format
-impl<'a> FromNetworkOrder<'a> for SVCB<'a> {
+impl<'a> FromNetworkOrder<'a> for SVCB {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.svc_priority.deserialize_from(buffer)?;
         self.target_name.deserialize_from(buffer)?;
@@ -154,7 +154,7 @@ impl<'a> FromNetworkOrder<'a> for SVCB<'a> {
             param.key.deserialize_from(buffer)?;
             param.length.deserialize_from(buffer)?;
 
-            param.value = BufferMut::with_capacity(param.length);
+            param.value = Buffer::with_capacity(param.length);
             param.value.deserialize_from(buffer)?;
 
             current_length += param.len() as u16;
@@ -166,7 +166,7 @@ impl<'a> FromNetworkOrder<'a> for SVCB<'a> {
     }
 }
 
-impl<'a> fmt::Display for SVCB<'a> {
+impl fmt::Display for SVCB {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} ", self.svc_priority, self.target_name)?;
         for param in &self.svc_params {
@@ -179,7 +179,7 @@ impl<'a> fmt::Display for SVCB<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for SVCB<'a> {
+impl Serialize for SVCB {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -192,7 +192,7 @@ impl<'a> Serialize for SVCB<'a> {
 }
 
 // HTTPS is like SVCB
-pub(super) type HTTPS<'a> = SVCB<'a>;
+pub(super) type HTTPS = SVCB;
 
 // #[cfg(test)]
 // mod tests {

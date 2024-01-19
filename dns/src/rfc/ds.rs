@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 use super::algorithm::Algorithm;
 
@@ -21,7 +21,7 @@ use super::algorithm::Algorithm;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub struct DS<'a> {
+pub struct DS {
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
@@ -29,14 +29,14 @@ pub struct DS<'a> {
     algorithm: Algorithm,
     digest_type: u8,
 
-    #[deser(with_code( self.digest = BufferMut::with_capacity(self.rd_length - 4); ))]
-    pub(super) digest: BufferMut<'a>,
+    #[deser(with_code( self.digest = Buffer::with_capacity(self.rd_length - 4); ))]
+    pub(super) digest: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(DS<'a>);
+new_rd_length!(DS);
 
-impl<'a> fmt::Display for DS<'a> {
+impl fmt::Display for DS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -48,7 +48,7 @@ impl<'a> fmt::Display for DS<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for DS<'a> {
+impl Serialize for DS {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -63,10 +63,10 @@ impl<'a> Serialize for DS<'a> {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type DLV<'a> = DS<'a>;
+pub(super) type DLV = DS;
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type CDS<'a> = DS<'a>;
+pub(super) type CDS = DS;
 
 #[cfg(test)]
 mod tests {

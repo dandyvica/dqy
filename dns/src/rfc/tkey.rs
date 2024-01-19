@@ -3,7 +3,7 @@
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 use super::domain::DomainName;
 
@@ -18,27 +18,27 @@ use super::domain::DomainName;
 // Other Size:  u_int16_t
 // Other Data:  octet-stream  undefined by this specification
 #[derive(Debug, Default, FromNetwork)]
-pub struct TKEY<'a> {
+pub struct TKEY {
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
-    algorithm: DomainName<'a>,
+    algorithm: DomainName,
     inception: u32,
     expiration: u32,
     mode: u16,
     error: u16,
 
     key_size: u16,
-    #[deser(with_code( self.key_data = BufferMut::with_capacity(self.key_size); ))]
-    key_data: BufferMut<'a>,
+    #[deser(with_code( self.key_data = Buffer::with_capacity(self.key_size); ))]
+    key_data: Buffer,
 
     other_size: u16,
-    #[deser(with_code( self.key_data = BufferMut::with_capacity(self.other_size); ))]
-    other_data: BufferMut<'a>,
+    #[deser(with_code( self.key_data = Buffer::with_capacity(self.other_size); ))]
+    other_data: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(TKEY<'a>);
+new_rd_length!(TKEY);
 
 // impl fmt::Display for TKEY {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

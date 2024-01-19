@@ -9,9 +9,9 @@ use super::char_string::CharacterString;
 
 // MX RR
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct TXT<'a>(pub CharacterString<'a>);
+pub struct TXT(pub CharacterString);
 
-impl<'a> fmt::Display for TXT<'a> {
+impl fmt::Display for TXT {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }

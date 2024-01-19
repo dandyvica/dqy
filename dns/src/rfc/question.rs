@@ -21,13 +21,13 @@ use show::*;
 // |                     QCLASS                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork, Serialize)]
-pub struct Question<'a> {
-    pub qname: DomainName<'a>,
+pub struct Question {
+    pub qname: DomainName,
     pub qtype: QType,
     pub qclass: QClass,
 }
 
-impl<'a> fmt::Display for Question<'a> {
+impl fmt::Display for Question {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}   {:?}   {:?}", self.qname, self.qtype, self.qclass)
     }

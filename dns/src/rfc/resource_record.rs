@@ -1,5 +1,6 @@
 use std::{fmt, io::Cursor};
 
+use show::Show;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -7,12 +8,11 @@ use serde::Serialize;
 
 use super::{
     a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC,
-    mx::MX, ns::NS, opt::opt::OptTTL, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData,
-    soa::SOA, txt::TXT,
+    mx::MX, ns::NS, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA, txt::TXT,
 };
 
 use crate::{
-    databuf::Buffer,
+    buffer::Buffer,
     rfc::{
         afsdb::AFSDB,
         apl::APL,
@@ -157,12 +157,9 @@ impl Serialize for OptOrElse {
 }
 
 #[derive(Debug, Default, ToNetwork, Serialize)]
-pub struct ResourceRecord<'a, T>
-where
-    T: ToNetworkOrder,
-{
-    pub name: DomainName<'a>, // an owner name, i.e., the name of the node to which this resource record pertains.
-    pub r#type: QType,        // two octets containing one of the RR TYPE codes.
+pub(super) struct ResourceRecord {
+    pub name: DomainName, // an owner name, i.e., the name of the node to which this resource record pertains.
+    pub r#type: QType,    // two octets containing one of the RR TYPE codes.
 
     // pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
     // pub ttl: EitherOr<u32, OptTTL>, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
@@ -176,26 +173,16 @@ where
     // cached.  For example, SOA records are always distributed
     // with a zero TTL to prohibit caching.  Zero values can
     // also be used for extremely volatile data.
-    pub rd_length: u16, // an unsigned 16 bit integer that specifies the length in octets of the RDATA field.
+    pub(super) rd_length: u16, // an unsigned 16 bit integer that specifies the length in octets of the RDATA field.
 
     #[serde(flatten)]
-    pub r_data: T,
+    pub(super) r_data: RData,
     //  a variable length string of octets that describes the
     //  resource.  The format of this information varies
     //  according to the TYPE and CLASS of the resource record.
 }
 
-//───────────────────────────────────────────────────────────────────────────────────
-// define RRs used in query and response
-//───────────────────────────────────────────────────────────────────────────────────
-
-// a Meta RR is like OPT or TSIG sent in query in the additional section
-//pub type MetaRR<'a> = ResourceRecord<'a, Vec<u8>>;
-
-// other RRs found only is responses
-pub(super) type RR<'a> = ResourceRecord<'a, RData<'a>>;
-
-impl<'a> fmt::Display for RR<'a> {
+impl fmt::Display for ResourceRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -216,6 +203,16 @@ impl<'a> fmt::Display for RR<'a> {
     }
 }
 
+impl Show for ResourceRecord {
+    fn show(&self, display_options: &show::DisplayOptions) {
+        if display_options.short {
+            println!("{}", self.r_data);
+        } else {
+            println!("{}", self);
+        }
+    }
+}
+
 // Macro used to ease the ResourceRecord implementation of the FromNetworkOrder trait
 macro_rules! get_rr {
     // to deserialize "simple" structs (like A)
@@ -233,7 +230,7 @@ macro_rules! get_rr {
     }};
 }
 
-impl<'a> FromNetworkOrder<'a> for RR<'a> {
+impl<'a> FromNetworkOrder<'a> for ResourceRecord {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.name.deserialize_from(buffer)?;
         self.r#type.deserialize_from(buffer)?;
@@ -320,7 +317,6 @@ impl<'a> FromNetworkOrder<'a> for RR<'a> {
                     self.r_data = get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, self.rd_length)
                 }
                 QType::OPT => {
-                    println!("=======================================> OPT");
                     let mut v: Vec<OptOption> = Vec::new();
                     let mut current_length = 0u16;
 

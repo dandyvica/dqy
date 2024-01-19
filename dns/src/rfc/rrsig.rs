@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, date_time::DateTime, new_rd_length};
+use crate::{buffer::Buffer, date_time::DateTime, new_rd_length};
 
 use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 
@@ -33,7 +33,7 @@ use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub struct RRSIG<'a> {
+pub struct RRSIG {
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
@@ -47,16 +47,16 @@ pub struct RRSIG<'a> {
 
     // will be deserialized locally
     // #[deser(ignore)]
-    pub name: DomainName<'a>,
+    pub name: DomainName,
 
-    #[deser(with_code( self.signature = BufferMut::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
-    pub signature: BufferMut<'a>,
+    #[deser(with_code( self.signature = Buffer::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
+    pub signature: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(RRSIG<'a>);
+new_rd_length!(RRSIG);
 
-impl<'a> fmt::Display for RRSIG<'a> {
+impl fmt::Display for RRSIG {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -74,7 +74,7 @@ impl<'a> fmt::Display for RRSIG<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for RRSIG<'a> {
+impl Serialize for RRSIG {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

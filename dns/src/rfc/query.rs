@@ -3,6 +3,7 @@ use std::fmt;
 use log::{debug, trace};
 use serde::Serialize;
 
+use show::*;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
@@ -26,15 +27,15 @@ impl Default for MetaRR {
 }
 
 #[derive(Default, ToNetwork, Serialize)]
-pub struct Query<'a> {
+pub struct Query {
     #[serde(skip_serializing)]
     pub length: Option<u16>, // length in case of TCP/TLS transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
-    pub question: Question<'a>,
+    pub question: Question,
     pub additional: Option<Vec<MetaRR>>,
 }
 
-impl<'a> Query<'a> {
+impl Query {
     //───────────────────────────────────────────────────────────────────────────────────
     // builder pattern for adding lots of options to a query
     //───────────────────────────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ impl<'a> Query<'a> {
         self
     }
 
-    pub fn with_domain(mut self, domain: DomainName<'a>) -> Self {
+    pub fn with_domain(mut self, domain: DomainName) -> Self {
         self.question.qname = domain;
         self
     }
@@ -112,7 +113,7 @@ impl<'a> Query<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Query<'a> {
+impl fmt::Debug for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -130,7 +131,7 @@ impl<'a> fmt::Debug for Query<'a> {
     }
 }
 
-impl<'a> fmt::Display for Query<'a> {
+impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.header)?;
         write!(f, "{}", self.question)?;

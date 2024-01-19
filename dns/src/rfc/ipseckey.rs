@@ -7,19 +7,19 @@ use type2network::FromNetworkOrder;
 
 use super::domain::DomainName;
 
-use crate::databuf::BufferMut;
+use crate::buffer::Buffer;
 use crate::new_rd_length;
 
 // Gateway format is depending on type (https://datatracker.ietf.org/doc/html/rfc4025#section-2.5)
 #[derive(Debug)]
-enum Gateway<'a> {
+enum Gateway {
     NoGateway(()),
     IpV4(Ipv4Addr),
     IpV6(Ipv6Addr),
-    Domain(DomainName<'a>),
+    Domain(DomainName),
 }
 
-impl<'a> Gateway<'a> {
+impl Gateway {
     fn len(&self) -> usize {
         match self {
             Gateway::NoGateway(_) => 0,
@@ -30,13 +30,13 @@ impl<'a> Gateway<'a> {
     }
 }
 
-impl<'a> Default for Gateway<'a> {
+impl Default for Gateway {
     fn default() -> Self {
         Self::NoGateway(())
     }
 }
 
-impl<'a> fmt::Display for Gateway<'a> {
+impl fmt::Display for Gateway {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Gateway::NoGateway(_) => write!(f, "."),
@@ -60,20 +60,20 @@ impl<'a> fmt::Display for Gateway<'a> {
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-|
 #[derive(Debug, Default)]
-pub struct IPSECKEY<'a> {
+pub struct IPSECKEY {
     pub(super) rd_length: u16,
 
     precedence: u8,
     gateway_type: u8,
     algorithm: u8,
-    gateway: Gateway<'a>,
-    public_key: BufferMut<'a>,
+    gateway: Gateway,
+    public_key: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(IPSECKEY<'a>);
+new_rd_length!(IPSECKEY);
 
-impl<'a> fmt::Display for IPSECKEY<'a> {
+impl fmt::Display for IPSECKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -89,7 +89,7 @@ impl<'a> fmt::Display for IPSECKEY<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for IPSECKEY<'a> {
+impl Serialize for IPSECKEY {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -104,7 +104,7 @@ impl<'a> Serialize for IPSECKEY<'a> {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for IPSECKEY<'a> {
+impl<'a> FromNetworkOrder<'a> for IPSECKEY {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         // deserialize "easy" fields
         self.precedence.deserialize_from(buffer)?;
@@ -142,7 +142,7 @@ impl<'a> FromNetworkOrder<'a> for IPSECKEY<'a> {
 
         // to deserialize the key, we need to get the remaining lenght of RData
         let l = self.rd_length - 3 - self.gateway.len() as u16;
-        self.public_key = BufferMut::with_capacity(l);
+        self.public_key = Buffer::with_capacity(l);
         self.public_key.deserialize_from(buffer)?;
 
         // if a pointer, get pointer value and call

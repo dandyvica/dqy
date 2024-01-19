@@ -19,21 +19,21 @@ use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct NSEC<'a> {
+pub(super) struct NSEC {
     // transmistted through RR deserialization
     #[deser(ignore)]
     rd_length: u16,
 
-    domain: DomainName<'a>,
+    domain: DomainName,
 
     #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - self.domain.len() as u16); ))]
     types: TypeBitMaps,
 }
 
 // auto-implement new
-new_rd_length!(NSEC<'a>);
+new_rd_length!(NSEC);
 
-impl<'a> fmt::Display for NSEC<'a> {
+impl fmt::Display for NSEC {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.domain, self.types)
     }
@@ -41,7 +41,7 @@ impl<'a> fmt::Display for NSEC<'a> {
 
 // Custom serialization
 // use serde::{ser::SerializeMap, Serialize, Serializer};
-// impl<'a> Serialize for NSEC<'a> {
+// impl Serialize for NSEC {
 //     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 //     where
 //         S: Serializer,

@@ -9,7 +9,7 @@ use log::trace;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 //───────────────────────────────────────────────────────────────────────────────────
 // InnerAPL
@@ -25,16 +25,16 @@ use crate::{databuf::BufferMut, new_rd_length};
 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct InnerAPL<'a> {
+pub(super) struct InnerAPL {
     address_family: u16,
     prefix: u8,
     afdlength: u8,
 
-    #[deser(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = BufferMut::with_capacity(length); ))]
-    afdpart: BufferMut<'a>,
+    #[deser(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = Buffer::with_capacity(length); ))]
+    afdpart: Buffer,
 }
 
-impl<'a> fmt::Display for InnerAPL<'a> {
+impl fmt::Display for InnerAPL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // get rid of 'N'
         let length = (self.afdlength << 1) >> 1;
@@ -68,7 +68,7 @@ impl<'a> fmt::Display for InnerAPL<'a> {
 
 // Custom serialization
 use serde::{Serialize, Serializer};
-impl<'a> Serialize for InnerAPL<'a> {
+impl Serialize for InnerAPL {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -82,16 +82,16 @@ impl<'a> Serialize for InnerAPL<'a> {
 //───────────────────────────────────────────────────────────────────────────────────
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, Serialize)]
-pub(super) struct APL<'a> {
+pub(super) struct APL {
     #[serde(skip_serializing)]
     rd_length: u16,
-    apl: Vec<InnerAPL<'a>>,
+    apl: Vec<InnerAPL>,
 }
 
 // auto-implement new
-new_rd_length!(APL<'a>);
+new_rd_length!(APL);
 
-impl<'a> FromNetworkOrder<'a> for APL<'a> {
+impl<'a> FromNetworkOrder<'a> for APL {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         let mut inner_length = 0;
 
@@ -111,7 +111,7 @@ impl<'a> FromNetworkOrder<'a> for APL<'a> {
     }
 }
 
-impl<'a> fmt::Display for APL<'a> {
+impl fmt::Display for APL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for a in &self.apl {
             write!(f, "{} ", a)?;

@@ -9,10 +9,10 @@ use super::domain::DomainName;
 
 // SOA RR
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct SOA<'a> {
-    pub mname: DomainName<'a>, // The <domain-name> of the name server that was the
+pub struct SOA {
+    pub mname: DomainName, // The <domain-name> of the name server that was the
     // original or primary source of data for this zone.
-    pub rname: DomainName<'a>, // A <domain-name> which specifies the mailbox of the
+    pub rname: DomainName, // A <domain-name> which specifies the mailbox of the
     // person responsible for this zone.
     pub serial: u32, // The unsigned 32 bit version number of the original copy
     // of the zone.  Zone transfers preserve this value.  This
@@ -29,7 +29,7 @@ pub struct SOA<'a> {
                       //exported with any RR from this zone.
 }
 
-impl<'a> fmt::Display for SOA<'a> {
+impl fmt::Display for SOA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

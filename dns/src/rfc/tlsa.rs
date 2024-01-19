@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -16,7 +16,7 @@ use crate::{databuf::BufferMut, new_rd_length};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct TLSA<'a> {
+pub(super) struct TLSA {
     #[deser(ignore)]
     rd_length: u16,
 
@@ -24,14 +24,14 @@ pub(super) struct TLSA<'a> {
     selector: u8,
     matching_type: u8,
 
-    #[deser(with_code( self.data = BufferMut::with_capacity(self.rd_length - 3); ))]
-    data: BufferMut<'a>,
+    #[deser(with_code( self.data = Buffer::with_capacity(self.rd_length - 3); ))]
+    data: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(TLSA<'a>);
+new_rd_length!(TLSA);
 
-impl<'a> fmt::Display for TLSA<'a> {
+impl fmt::Display for TLSA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -43,7 +43,7 @@ impl<'a> fmt::Display for TLSA<'a> {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for TLSA<'a> {
+impl Serialize for TLSA {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -59,7 +59,7 @@ impl<'a> Serialize for TLSA<'a> {
 
 // https://datatracker.ietf.org/doc/html/rfc8162
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type SMIMEA<'a> = TLSA<'a>;
+pub(super) type SMIMEA = TLSA;
 
 #[cfg(test)]
 mod tests {

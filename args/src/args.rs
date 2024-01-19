@@ -3,12 +3,13 @@ use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::options::{DisplayOptions, DnsProtocolOptions, EdnsOptions};
+use crate::options::{DnsProtocolOptions, EdnsOptions};
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
 
 use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
+use show;
 use transport::endpoint::EndPoint;
 use transport::{
     protocol::{IPVersion, Protocol},
@@ -44,7 +45,7 @@ pub struct CliOptions {
     pub edns: EdnsOptions,
 
     // Display options
-    pub display: DisplayOptions,
+    pub display: show::DisplayOptions,
 }
 
 impl CliOptions {
@@ -102,6 +103,7 @@ impl CliOptions {
         
             "#,
             )
+            .after_long_help("Examples:")
             .no_binary_name(true)
             .arg(
                 Arg::new("type")
@@ -347,6 +349,20 @@ impl CliOptions {
             // Display options
             //───────────────────────────────────────────────────────────────────────────────────            
             .arg(
+                Arg::new("no-add")
+                    .long("no-add")
+                    .long_help("Don't show the additional RR section. Showed by default.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("no-auth")
+                    .long("no-auth")
+                    .long_help("Don't show the authorative RR section. Showed by default.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
                 Arg::new("json")
                     .short('j')
                     .long("json")
@@ -365,6 +381,13 @@ impl CliOptions {
                 Arg::new("question")
                     .long("question")
                     .long_help("The question section is displayed.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("short")
+                    .long("short")
+                    .long_help("If set, only the RDATA part of a RR is showed.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -616,6 +639,9 @@ impl CliOptions {
         options.display.json = matches.get_flag("json");
         options.display.json_pretty = matches.get_flag("json-pretty");
         options.display.question = matches.get_flag("question");
+        options.display.no_authorative = matches.get_flag("no-auth");
+        options.display.no_additional = matches.get_flag("no-add");
+        options.display.short = matches.get_flag("short");
 
         // verbosity (for --nolog, see comments for unit tests)
         if matches.contains_id("verbose") && !matches.get_flag("nolog") {

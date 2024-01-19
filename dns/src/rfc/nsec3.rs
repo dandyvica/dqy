@@ -7,7 +7,7 @@ use type2network_derive::FromNetwork;
 use serde::Serialize;
 
 use crate::{
-    databuf::{serialize_buffermut, BufferMut},
+    buffer::{serialize_buffer, Buffer},
     new_rd_length,
 };
 
@@ -29,28 +29,28 @@ use super::{nsec3param::NSEC3PARAM, type_bitmaps::TypeBitMaps};
 // /                         Type Bit Maps                         /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct NSEC3<'a> {
+pub struct NSEC3 {
     // transmistted through RR deserialization
     #[serde(skip_serializing)]
     #[deser(ignore)]
     pub(super) rd_length: u16,
 
     #[serde(flatten)]
-    params: NSEC3PARAM<'a>,
+    params: NSEC3PARAM,
     hash_length: u8,
 
-    #[serde(serialize_with = "serialize_buffermut")]
-    #[deser(with_code( self.owner_name = BufferMut::with_capacity(self.hash_length); ))]
-    owner_name: BufferMut<'a>,
+    #[serde(serialize_with = "serialize_buffer")]
+    #[deser(with_code( self.owner_name = Buffer::with_capacity(self.hash_length); ))]
+    owner_name: Buffer,
 
     #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - (self.params.len() + 1 + self.hash_length as usize) as u16); ))]
     types: TypeBitMaps,
 }
 
 // auto-implement new
-new_rd_length!(NSEC3<'a>);
+new_rd_length!(NSEC3);
 
-impl<'a> fmt::Display for NSEC3<'a> {
+impl fmt::Display for NSEC3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {:?} ", self.params, self.owner_name)?;
 

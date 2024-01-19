@@ -9,32 +9,31 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use error::{err_internal, Error, ProtocolError};
 
 use serde::{Serialize, Serializer};
-use type2network_derive::ToNetwork;
 
 //---------------------------------------------------------------------------------------------
 // Define a Label first
 //---------------------------------------------------------------------------------------------
 
 // a label is part of a domain name
-#[derive(Debug, Default, Serialize, ToNetwork)]
-struct Label(Vec<u8>);
+#[derive(Debug, Default, Serialize)]
+struct Label<'a>(&'a [u8]);
 
 // Deref to ease methods calls on inner value
-impl Deref for Label {
-    type Target = [u8];
+impl<'a> Deref for Label<'a> {
+    type Target = &'a [u8];
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl fmt::Display for Label {
+impl<'a> fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for c in &self.0 {
-            if c > &32 && c < &128 {
+        for c in self.0 {
+            if *c > 32 && *c < 128 {
                 write!(f, "{}", *c as char)?;
             } else {
-                write!(f, "\\{:03}", c)?;
+                write!(f, "\\{:03}", *c)?;
             }
         }
         Ok(())
@@ -46,7 +45,7 @@ impl fmt::Display for Label {
 // Name servers and resolvers must
 // compare labels in a case-insensitive manner (i.e., A=a), assuming ASCII
 // with zero parity.  Non-alphabetic codes must match exactly.
-impl PartialEq for Label {
+impl<'a> PartialEq for Label<'a> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -64,14 +63,14 @@ impl PartialEq for Label {
 
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default)]
-pub struct DomainName {
+pub struct DomainName<'a> {
     // a domain name is a list of labels as defined in the RFC1035
-    labels: Vec<Label>,
+    labels: Vec<Label<'a>>,
 }
 
 // a special serializer because the standard serialization isn't what is expected
 // for a domain name
-impl Serialize for DomainName {
+impl<'a> Serialize for DomainName<'a> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -83,7 +82,7 @@ impl Serialize for DomainName {
     }
 }
 
-impl DomainName {
+impl<'a> DomainName<'a> {
     // this identifies a compressed label
     // From RFC1035:
     //
@@ -110,7 +109,7 @@ impl DomainName {
         self.labels.iter()
     }
 
-    pub fn from_position<'a>(&mut self, pos: usize, buffer: &'a [u8]) -> error::Result<usize> {
+    pub fn from_position<'b: 'a>(&mut self, pos: usize, buffer: &&'b [u8]) -> error::Result<usize> {
         let mut index = pos;
         let at_index = *buffer
             .get(index)
@@ -182,7 +181,7 @@ impl DomainName {
                 .get(index + 1..index + size + 1)
                 .ok_or(err_internal!(CantCreateDomainName))?;
 
-            let label = Label(limb.to_vec());
+            let label = Label(limb);
 
             //dbg!(label);
             //let label_as_utf8 = std::str::from_utf8(label)?;
@@ -196,7 +195,7 @@ impl DomainName {
             //     label_as_utf8, index, buffer[index]
             // );
 
-            self.labels.push(label);
+            self.labels.push(Label(&label));
 
             // adjust index
             index += size + 1;
@@ -212,7 +211,7 @@ impl DomainName {
     }
 }
 
-impl PartialEq for DomainName {
+impl<'a> PartialEq for DomainName<'a> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -222,7 +221,7 @@ impl PartialEq for DomainName {
     }
 }
 
-impl fmt::Display for DomainName {
+impl<'a> fmt::Display for DomainName<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.labels.is_empty() {
             write!(f, ".")?;
@@ -251,7 +250,7 @@ impl fmt::Display for DomainName {
 // }
 
 // Convert a str to a domain name
-impl<'a> TryFrom<&'a str> for DomainName {
+impl<'a> TryFrom<&'a str> for DomainName<'a> {
     type Error = Error;
 
     fn try_from(domain: &'a str) -> std::result::Result<Self, Self::Error> {
@@ -266,7 +265,7 @@ impl<'a> TryFrom<&'a str> for DomainName {
             domain
                 .split('.')
                 .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
-                .map(|x| Label(x.as_bytes().to_vec()))
+                .map(|x| Label(x.as_bytes()))
                 .collect()
         };
 
@@ -284,7 +283,7 @@ impl<'a> TryFrom<&'a str> for DomainName {
     }
 }
 
-impl ToNetworkOrder for DomainName {
+impl<'a> ToNetworkOrder for DomainName<'a> {
     fn serialize_to(&self, buffer: &mut Vec<u8>) -> Result<usize> {
         let mut length = 0usize;
 
@@ -300,7 +299,7 @@ impl ToNetworkOrder for DomainName {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for DomainName {
+impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> Result<()> {
         //dbg!("============================");
 
@@ -346,9 +345,9 @@ mod tests {
         assert_eq!(
             dn.labels,
             &[
-                Label("www".as_bytes().to_vec()),
-                Label("google".as_bytes().to_vec()),
-                Label("ie".as_bytes().to_vec())
+                Label("www".as_bytes()),
+                Label("google".as_bytes()),
+                Label("ie".as_bytes())
             ]
         );
     }
@@ -384,14 +383,14 @@ mod tests {
         assert_eq!(
             dn.labels,
             &[
-                Label("www".as_bytes().to_vec()),
-                Label("example".as_bytes().to_vec()),
-                Label("com".as_bytes().to_vec())
+                Label("www".as_bytes()),
+                Label("example".as_bytes()),
+                Label("com".as_bytes())
             ]
         );
         let dn = DomainName::try_from("com.").unwrap();
         assert_eq!(dn.labels.len(), 1);
-        assert_eq!(dn.labels, &[Label("com".as_bytes().to_vec())]);
+        assert_eq!(dn.labels, &[Label("com".as_bytes())]);
         let dn = DomainName::try_from(".").unwrap();
         assert_eq!(dn.labels.len(), 0);
         assert!(dn.labels.is_empty());
@@ -442,9 +441,9 @@ mod tests {
         assert_eq!(
             dn.labels,
             &[
-                Label("www".as_bytes().to_vec()),
-                Label("google".as_bytes().to_vec()),
-                Label("ie".as_bytes().to_vec())
+                Label("www".as_bytes()),
+                Label("google".as_bytes()),
+                Label("ie".as_bytes())
             ]
         );
     }

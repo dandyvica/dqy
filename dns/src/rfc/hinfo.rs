@@ -9,12 +9,12 @@ use super::char_string::CharacterString;
 
 // HINFO RR
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct HINFO<'a> {
-    cpu: CharacterString<'a>,
-    os: CharacterString<'a>,
+pub struct HINFO {
+    cpu: CharacterString,
+    os: CharacterString,
 }
 
-impl<'a> fmt::Display for HINFO<'a> {
+impl fmt::Display for HINFO {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.cpu, self.os)
     }

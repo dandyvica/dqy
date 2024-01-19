@@ -8,7 +8,7 @@ use type2network_derive::FromNetwork;
 
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc4398.html#section-2.2
 #[derive(
@@ -40,7 +40,7 @@ pub enum CertificateTypeValues {
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-|
 #[derive(Debug, Default, FromNetwork)]
-pub struct CERT<'a> {
+pub struct CERT {
     // transmistted through RR deserialization
     #[deser(ignore)]
     pub(super) rd_length: u16,
@@ -49,14 +49,14 @@ pub struct CERT<'a> {
     key_tag: u16,
     algorithm: u8,
 
-    #[deser(with_code( self.certificate = BufferMut::with_capacity(self.rd_length - 5); ))]
-    certificate: BufferMut<'a>,
+    #[deser(with_code( self.certificate = Buffer::with_capacity(self.rd_length - 5); ))]
+    certificate: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(CERT<'a>);
+new_rd_length!(CERT);
 
-impl<'a> fmt::Display for CERT<'a> {
+impl fmt::Display for CERT {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -69,7 +69,7 @@ impl<'a> fmt::Display for CERT<'a> {
     }
 }
 
-impl<'a> Serialize for CERT<'a> {
+impl Serialize for CERT {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

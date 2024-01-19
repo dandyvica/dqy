@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{databuf::BufferMut, new_rd_length};
+use crate::{buffer::Buffer, new_rd_length};
 
 use super::algorithm::DNSSECAlgorithmTypes;
 
@@ -19,7 +19,7 @@ use super::algorithm::DNSSECAlgorithmTypes;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct DNSKEY<'a> {
+pub(super) struct DNSKEY {
     #[deser(ignore)]
     rd_length: u16,
 
@@ -62,14 +62,14 @@ pub(super) struct DNSKEY<'a> {
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
-    #[deser(with_code( self.key = BufferMut::with_capacity(self.rd_length - 4); ))]
-    key: BufferMut<'a>,
+    #[deser(with_code( self.key = Buffer::with_capacity(self.rd_length - 4); ))]
+    key: Buffer,
 }
 
 // auto-implement new
-new_rd_length!(DNSKEY<'a>);
+new_rd_length!(DNSKEY);
 
-impl<'a> fmt::Display for DNSKEY<'a> {
+impl fmt::Display for DNSKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -83,11 +83,11 @@ impl<'a> fmt::Display for DNSKEY<'a> {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-pub(super) type CDNSKEY<'a> = DNSKEY<'a>;
+pub(super) type CDNSKEY = DNSKEY;
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serialize, Serializer};
-impl<'a> Serialize for DNSKEY<'a> {
+impl Serialize for DNSKEY {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
