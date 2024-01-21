@@ -490,42 +490,6 @@ impl CliOptions {
                 EndPoint::from((&resolvers.to_ip_list()[..], options.transport.port));
         }
 
-        // if options.protocol.server.is_empty() {
-        //     // fetch the resolvers
-        //     let resolvers = ResolverList::new()?;
-        //     let ip_list
-
-        //     // convert to a vector of IpAddr
-        //     options.protocol.resolvers = resolvers.to_socketaddresses(options.transport.port);
-
-        //     // DoT needs the server name
-        //     if options.transport.transport_mode == Protocol::DoT {
-        //         options.protocol.server = resolvers[0].ip_list()[0].to_string();
-        //     }
-        // }
-        // // a server name or ip address is provided: we need to buld the SocketAddr from either a dot address or a domain name
-        // // e.g.: 1.1.1.1 or ns1.google.com
-        // else {
-        //     if options.transport.transport_mode != Protocol::DoH {
-        //         // build the SocketAddr
-        //         let addr_s = format!("{}:{}", options.protocol.server, options.transport.port);
-        //         let addr = addr_s.to_socket_addrs()?;
-
-        //         // new to filter for either IPV4 or IPV6
-        //         let sock_addr = if options.transport.ip_version == IPVersion::V4 {
-        //             addr.filter(|x| x.is_ipv4()).nth(0)
-        //         } else {
-        //             addr.filter(|x| x.is_ipv6()).nth(0)
-        //         };
-
-        //         if sock_addr.is_none() {
-        //             return Err(err_internal!(CantCreateSocketAddress));
-        //         }
-
-        //         options.protocol.resolvers = vec![sock_addr.unwrap()];
-        //     }
-        // }
-
         //───────────────────────────────────────────────────────────────────────────────────
         // timeout
         //───────────────────────────────────────────────────────────────────────────────────

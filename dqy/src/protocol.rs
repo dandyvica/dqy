@@ -15,10 +15,8 @@ use dns::rfc::{
     response::Response,
 };
 
-use args::{
-    args::CliOptions,
-    options::{DisplayOptions, EdnsOptions},
-};
+use args::{args::CliOptions, options::EdnsOptions};
+use show::DisplayOptions;
 use transport::{protocol::Protocol, tcp::TcpProtocol, Transporter};
 
 //a unit strutc with gathers all high level functions

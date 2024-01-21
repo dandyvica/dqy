@@ -35,10 +35,6 @@ pub struct QueryFlagsOptions {
 //───────────────────────────────────────────────────────────────────────────────────
 // EDNS options
 //───────────────────────────────────────────────────────────────────────────────────
-// pub enum OptControl {
-//     Off = 0,   // don't include OPT record
-// }
-
 #[derive(Debug, Default)]
 pub struct EdnsOptions {
     // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the
@@ -80,23 +76,4 @@ pub struct DnsProtocolOptions {
     pub domain: String,
     // server is the name passed after @
     //pub server: String,
-}
-
-//───────────────────────────────────────────────────────────────────────────────────
-// Display options
-//───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
-pub struct DisplayOptions {
-    // print out stats like elasped time etc
-    pub stats: bool,
-
-    // iterative lookup
-    pub trace: bool,
-
-    // JSON output if true
-    pub json: bool,
-    pub json_pretty: bool,
-
-    // true if we want the question in non-JSON print
-    pub question: bool,
 }

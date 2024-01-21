@@ -1,3 +1,10 @@
+# [workspace.package]
+# version = "0.1.0"
+# authors = ["Alain Viguier <dandyvica@gmail.com>"]
+# description = "A short description of my package"
+# homepage = "https://github.com/dandyvica/dqy"
+# repository = "https://github.com/dandyvica/dqy"
+
 [workspace]
 name = "dqy"
 version = "0.1.0"
@@ -7,7 +14,7 @@ members = [
     "dns",
     "dqy",
     "error",
-    "options",
     "transport",
     "show"]
 resolver = "2"
+

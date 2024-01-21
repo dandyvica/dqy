@@ -1,7 +1,5 @@
 //! A DNS resource query tool
-//!
-//! TODO: specialize RUST_LOG
-use std::{process::ExitCode, time::Instant};
+use std::{net::SocketAddr, process::ExitCode, time::Instant};
 
 use log::debug;
 
@@ -12,7 +10,7 @@ use args::args::CliOptions;
 use error::Error;
 use show::Show;
 use transport::{
-    https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol,
+    https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol, Transporter
 };
 
 // mod trace;
@@ -21,7 +19,7 @@ use transport::{
 mod protocol;
 use protocol::DnsProtocol;
 
-//
+// the initial length of the Vec buffer
 const BUFFER_CHUNK: usize = 4096;
 
 // use this trick to be able to display error
@@ -116,33 +114,40 @@ fn run() -> error::Result<()> {
     //     }
     // }
 
+    // we'll keep the peer address where the transport is connected
+    let mut peer: Option<SocketAddr> = None;
+
     let messages = match options.transport.transport_mode {
         Protocol::Udp => {
             let mut udp_transport = UdpProtocol::new(&options.transport)?;
+            peer = udp_transport.peer().ok();
             DnsProtocol::send_receive(&options, &mut udp_transport, BUFFER_CHUNK)?
         }
         Protocol::Tcp => {
             let mut tcp_transport = TcpProtocol::new(&options.transport)?;
+            peer = tcp_transport.peer().ok();            
             DnsProtocol::send_receive(&options, &mut tcp_transport, BUFFER_CHUNK)?
         }
         Protocol::DoT => {
             // we need to initialize the TLS connexion using TCP stream and TLS features
             let mut tls_transport = TlsProtocol::new(&options.transport)?;
-
-            // we need to initialize the TLS connexion using TCP stream and TLS features
+            peer = tls_transport.peer().ok();            
             DnsProtocol::send_receive(&options, &mut tls_transport, BUFFER_CHUNK)?
         }
         Protocol::DoH => {
             let mut https_transport = HttpsProtocol::new(&options.transport)?;
-            DnsProtocol::send_receive(&options, &mut https_transport, BUFFER_CHUNK)?
+            let messages = DnsProtocol::send_receive(&options, &mut https_transport, BUFFER_CHUNK)?;
+            peer = https_transport.peer().ok();   
+
+            messages
         }
     };
 
     let elapsed = now.elapsed();
     if options.display.stats {
         eprintln!(
-            "stats ==> server:{}, transport:{:?}, elapsed:{} ms",
-            options.protocol.resolvers[0],
+            "stats ==> endpoint:{:?}, transport:{:?}, elapsed:{} ms",
+            peer.unwrap(),
             options.transport.transport_mode,
             elapsed.as_millis()
         );
@@ -156,7 +161,7 @@ fn run() -> error::Result<()> {
 fn display(display_options: &show::DisplayOptions, messages: &MessageList) {
     // JSON
     if display_options.json_pretty {
-        println!("fooo {}", serde_json::to_string_pretty(messages).unwrap());
+        println!("{}", serde_json::to_string_pretty(messages).unwrap());
     } else if display_options.json {
         println!("{}", serde_json::to_string(messages).unwrap());
     } else {

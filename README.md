@@ -1,3 +1,5 @@
+[![Actions](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml/badge.svg)](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml)
+
 # dqy
 A DNS query tool
 
