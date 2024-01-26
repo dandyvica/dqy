@@ -107,11 +107,6 @@ impl fmt::Display for ProtocolError {
 }
 
 impl Error {
-    // Helper function to create a new DNS error from a string
-    // pub fn new(s: &str) -> Self {
-    //     Error::DNS(String::from(s))
-    // }
-
     pub fn new_internal(e: ProtocolError) -> Self {
         Error::InternalError(e)
     }
@@ -141,29 +136,11 @@ impl From<io::Error> for Error {
     }
 }
 
-// impl From<String> for Error {
-//     fn from(err: String) -> Self {
-//         Error::DNS(err)
-//     }
-// }
-
-// impl From<std::string::FromUtf8Error> for Error {
-//     fn from(err: std::string::FromUtf8Error) -> Self {
-//         Error::FromUtf8(err)
-//     }
-// }
-
 impl From<str::Utf8Error> for Error {
     fn from(err: str::Utf8Error) -> Self {
         Error::Utf8(err)
     }
 }
-
-// impl From<log::SetLoggerError> for Error {
-//     fn from(err: log::SetLoggerError) -> Self {
-//         Error::LoggerError(err)
-//     }
-// }
 
 impl From<AddrParseError> for Error {
     fn from(err: AddrParseError) -> Self {

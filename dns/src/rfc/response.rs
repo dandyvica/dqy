@@ -147,8 +147,8 @@ mod tests {
     use super::*;
     use crate::{
         rfc::{
-            a::A, opcode::OpCode, opt::opt::OptTTL, packet_type::PacketType, qclass::QClass,
-            qtype::QType, rdata::RData, response_code::ResponseCode,
+            opcode::OpCode, packet_type::PacketType, qclass::QClass, qtype::QType, rdata::RData,
+            resource_record::OptOrElse, response_code::ResponseCode,
         },
         tests::get_packets,
     };
@@ -189,8 +189,8 @@ mod tests {
         let answer = &answer[0];
         assert_eq!(format!("{}", answer.name), "www.google.com.");
         assert_eq!(answer.r#type, QType::A);
-        // assert_eq!(answer.class.as_ref().unwrap_left(), &QClass::IN);
-        // assert_eq!(answer.ttl.as_ref().unwrap_left(), &119);
+        assert!(matches!(&answer.opt_or_else, OptOrElse::Regular(x) if x.class == QClass::IN));
+        assert!(matches!(&answer.opt_or_else, OptOrElse::Regular(x) if x.ttl == 119));
         assert_eq!(answer.rd_length, 4);
 
         // assert!(
@@ -258,8 +258,7 @@ mod tests {
 
         assert_eq!(format!("{}", add.name), ".");
         assert_eq!(add.r#type, QType::OPT);
-        // assert_eq!(add.class.unwrap_right(), 1232);
-        // assert_eq!(add.ttl.unwrap_right(), OptTTL::default());
+        assert!(matches!(&add.opt_or_else, OptOrElse::Opt(x) if x.payload == 1232));
         assert_eq!(add.rd_length, 0);
 
         Ok(())

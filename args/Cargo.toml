@@ -1,6 +1,9 @@
 [package]
 name = "args"
-version = "0.1.0"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,12 +11,13 @@ edition = "2021"
 [dependencies]
 clap = "4.4.8"
 dns = { path = "../dns" }
-env_logger = "0.10.1"
+env_logger.workspace = true
 error = { path = "../error" }
-http = "1.0.0"
+http.workspace = true
 idna = "0.4.0"
-log = "0.4.20"
-resolver = { git = "https://github.com/dandyvica/resolver.git" }
+log.workspace = true
+resolver.workspace = true
 show = { path = "../show" }
 transport = { path = "../transport" }
+
 

@@ -87,14 +87,14 @@ use log::{debug, trace};
 // +------------+--------------+------------------------------+
 
 // When a RR is a standard RR (not a pseudo or meta-RR)
-#[derive(Debug, Default, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
 pub(super) struct RegularClassTtl {
-    class: QClass,
-    ttl: u32,
+    pub(super) class: QClass,
+    pub(super) ttl: u32,
 }
 
 // Case of OPT RR
-#[derive(Debug, Default, ToNetwork, FromNetwork)]
+#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
 pub(super) struct OptClassTtl {
     pub(super) payload: u16,
     pub(super) extended_rcode: u8,
@@ -103,8 +103,8 @@ pub(super) struct OptClassTtl {
 }
 
 #[derive(Debug, ToNetwork)]
-
 // CLASS & TTL vary if RR is OPT or not
+#[derive(PartialEq)]
 pub(super) enum OptOrElse {
     Regular(RegularClassTtl),
     Opt(OptClassTtl),

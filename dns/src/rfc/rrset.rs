@@ -7,10 +7,11 @@ use show::Show;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
+#[allow(unused_imports)]
 use rand::seq::IteratorRandom;
 use serde::Serialize;
 
-use super::{qtype::QType, resource_record::ResourceRecord};
+use super::resource_record::ResourceRecord;
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct RRSet(Vec<ResourceRecord>);

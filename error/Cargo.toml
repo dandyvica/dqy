@@ -1,13 +1,16 @@
 [package]
 name = "error"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mlua = "0.9.4"
-reqwest = { version = "0.11.22", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
-resolver = { git = "https://github.com/dandyvica/resolver.git" }
-rustls = "0.22.2"
+mlua.workspace = true
+reqwest.workspace = true
+resolver.workspace = true
+rustls.workspace = true
 

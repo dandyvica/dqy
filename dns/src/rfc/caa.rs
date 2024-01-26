@@ -41,13 +41,7 @@ new_rd_length!(CAA);
 
 impl fmt::Display for CAA {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} \"{}\"",
-            self.flags,
-            self.tag_key,
-            self.tag_value
-        )
+        write!(f, "{} {} \"{}\"", self.flags, self.tag_key, self.tag_value)
     }
 }
 

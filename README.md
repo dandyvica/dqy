@@ -1,4 +1,4 @@
-[![Actions](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml/badge.svg)](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml)
+[![Actions](https://github.com/dandyvica/dqy/actions/workflows/rust.yml/badge.svg)](https://github.com/dandyvica/dqy/actions/workflows/rust.yml)
 
 Note: this is currently under development in my free time. Version is not even yet 0.1.0 
 but hope to release executables in a couple of weeks.

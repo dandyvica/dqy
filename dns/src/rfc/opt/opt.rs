@@ -38,7 +38,7 @@ use super::{
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
 #[allow(non_camel_case_types)]
-pub(super) type OPT_OPTIONS = Vec<OptOption>;
+//pub(super) type OPT_OPTIONS = Vec<OptOption>;
 
 // OPT is a special (weird) case of RR
 #[derive(Debug, Default, ToNetwork, Serialize)]

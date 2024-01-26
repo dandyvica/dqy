@@ -1,11 +1,14 @@
 [package]
 name = "show"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+documentation.workspace = true
+edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mlua = { version = "0.9.4", features = [ "lua54", "serialize" ] }
-serde = { version = "1.0.195", features = [ "derive" ] }
-serde_json = { version = "1.0.111", features = ["preserve_order"] }
+mlua.workspace = true
+serde.workspace = true
+serde_json.workspace = true
