@@ -12,7 +12,7 @@ use reqwest::{
 
 use error::Result;
 
-use crate::TransportOptions;
+use crate::{NetworkStats, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
@@ -28,6 +28,9 @@ pub struct HttpsProtocol<'a> {
 
     // peer address to which the client is connected
     peer: Option<SocketAddr>,
+
+    // bytes sent & received
+    pub stats: NetworkStats,
 }
 
 impl<'a> HttpsProtocol<'a> {
@@ -56,6 +59,7 @@ impl<'a> HttpsProtocol<'a> {
             client,
             bytes_recv: Bytes::default(),
             peer: None,
+            stats: (0, 0),
         })
     }
 
@@ -77,6 +81,7 @@ impl<'a> Transporter for HttpsProtocol<'a> {
         // and From<Body> is not implemented for &[u8]. See here: https://docs.rs/reqwest/latest/reqwest/blocking/struct.Body.html
         // it can then be consumed by the body() method
         let bytes_sent = Bytes::copy_from_slice(buffer);
+        self.stats.0 = bytes_sent.len();
 
         // add buffer length as content-length header. header() method consume the RequestBuilder and returns a new one
         let resp = self
@@ -96,11 +101,13 @@ impl<'a> Transporter for HttpsProtocol<'a> {
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let len = self.bytes_recv.len();
-        // copy Bytes to buffer
-        buffer[..len].copy_from_slice(&self.bytes_recv);
+        let received = self.bytes_recv.len();
+        self.stats.1 = received;
 
-        Ok(self.bytes_recv.len())
+        // copy Bytes to buffer
+        buffer[..received].copy_from_slice(&self.bytes_recv);
+
+        Ok(received)
     }
 
     // don't add the message length even if it's TCP

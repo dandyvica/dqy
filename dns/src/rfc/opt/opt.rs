@@ -37,7 +37,7 @@ use super::{
 // | RDLEN      | u_int16_t    | length of all RDATA          |
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
-//pub type OPT = ResourceRecord<'static, Vec<OptOption>>;
+#[allow(non_camel_case_types)]
 pub(super) type OPT_OPTIONS = Vec<OptOption>;
 
 // OPT is a special (weird) case of RR
@@ -69,10 +69,11 @@ impl OPT {
 
     pub fn add_option<T: OptionData>(&mut self, data: T) {
         // build the option structure
-        let mut option = OptOption::default();
-        option.code = data.code();
-        option.length = data.len();
-        option.data = data.data();
+        let option = OptOption {
+            code: data.code(),
+            length: data.len(),
+            data: data.data(),
+        };
 
         trace!("OPTION:{:?}", option);
 

@@ -192,6 +192,7 @@ impl Serialize for SVCB {
 }
 
 // HTTPS is like SVCB
+#[allow(clippy::upper_case_acronyms)]
 pub(super) type HTTPS = SVCB;
 
 // #[cfg(test)]

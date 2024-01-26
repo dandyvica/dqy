@@ -20,9 +20,6 @@ pub enum Error {
     Io(io::Error),
 
     // a conversion to str caused an error
-    //FromUtf8(std::string::FromUtf8Error),
-
-    // a conversion to str caused an error
     Utf8(str::Utf8Error),
 
     // an str to IP conversion error
@@ -42,6 +39,9 @@ pub enum Error {
 
     // No connexion to any TCP address succeeds
     NoValidTCPConnection(Vec<SocketAddr>),
+
+    // Error during Lua calls
+    Lua(mlua::Error),
 }
 
 #[derive(Debug)]
@@ -129,6 +129,7 @@ impl fmt::Debug for Error {
             Error::Tls(e) => write!(f, "TLS error {:?}", e),
             Error::Resolv(e) => write!(f, "error {:?} fetching resolvers", e),
             Error::NoValidTCPConnection(e) => write!(f, "error {:?} for TCP connections", e),
+            Error::Lua(e) => write!(f, "Lua error: {:?}", e),
         }
     }
 }
@@ -185,5 +186,11 @@ impl From<rustls::Error> for Error {
 impl From<resolver::error::Error> for Error {
     fn from(err: resolver::error::Error) -> Self {
         Error::Resolv(err)
+    }
+}
+
+impl From<mlua::Error> for Error {
+    fn from(err: mlua::Error) -> Self {
+        Error::Lua(err)
     }
 }

@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-resolver = { git = "https://github.com/dandyvica/resolver.git" }
+mlua = "0.9.4"
 reqwest = { version = "0.11.22", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
+resolver = { git = "https://github.com/dandyvica/resolver.git" }
 rustls = "0.22.2"
 

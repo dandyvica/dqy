@@ -110,7 +110,7 @@ impl DomainName {
         self.labels.iter()
     }
 
-    pub fn from_position<'a>(&mut self, pos: usize, buffer: &'a [u8]) -> error::Result<usize> {
+    pub fn from_position(&mut self, pos: usize, buffer: &[u8]) -> error::Result<usize> {
         let mut index = pos;
         let at_index = *buffer
             .get(index)

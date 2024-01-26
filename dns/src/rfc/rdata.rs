@@ -48,6 +48,7 @@ use super::{
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize)]
+#[serde(tag = "type", content = "rdata")]
 pub(super) enum RData {
     // RData definitions
     A(A),

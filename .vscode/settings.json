@@ -4,5 +4,9 @@
         "./Cargo.toml",
         "./dns/Cargo.toml",
     ],
-    "rust-analyzer.showUnlinkedFileNotification": false
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "Lua.diagnostics.globals": [
+        "dns",
+        "info"
+    ]
 }

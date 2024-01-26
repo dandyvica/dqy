@@ -6,7 +6,6 @@ use type2network_derive::{FromNetwork, ToNetwork};
 use serde::Serialize;
 
 use crate::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
-use show::*;
 
 // Question structure: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 // 1  1  1  1  1  1

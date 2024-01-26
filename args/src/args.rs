@@ -1,5 +1,7 @@
 //! Manage command line arguments here.
+use std::fs;
 use std::net::IpAddr;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -29,7 +31,9 @@ macro_rules! set_unset_flag {
     };
 }
 
-/// This structure holds the command line arguments.
+//───────────────────────────────────────────────────────────────────────────────────
+// This structure holds the command line arguments.
+//───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Default)]
 pub struct CliOptions {
     // DNS protocol options
@@ -59,7 +63,7 @@ impl CliOptions {
 
         let (without_dash, with_dash) = match dash_pos {
             Some(pos) => (&args[0..pos], &args[pos..]),
-            None => (&args[..], &[] as &[String]),
+            None => (args, &[] as &[String]),
         };
 
         trace!("options without dash:{:?}", without_dash);
@@ -347,21 +351,7 @@ impl CliOptions {
             )
             //───────────────────────────────────────────────────────────────────────────────────
             // Display options
-            //───────────────────────────────────────────────────────────────────────────────────            
-            .arg(
-                Arg::new("no-add")
-                    .long("no-add")
-                    .long_help("Don't show the additional RR section. Showed by default.")
-                    .action(ArgAction::SetTrue)
-                    .help_heading("Display options")
-            )
-            .arg(
-                Arg::new("no-auth")
-                    .long("no-auth")
-                    .long_help("Don't show the authorative RR section. Showed by default.")
-                    .action(ArgAction::SetTrue)
-                    .help_heading("Display options")
-            )
+            //───────────────────────────────────────────────────────────────────────────────────   
             .arg(
                 Arg::new("json")
                     .short('j')
@@ -374,6 +364,30 @@ impl CliOptions {
                 Arg::new("json-pretty")
                     .long("json-pretty")
                     .long_help("Results are rendered as a JSON pretty-formatted string.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("lua")
+                .short('l')
+                    .long("lua")
+                    .long_help("Name of a lua script that will be called to display results.")
+                    .action(ArgAction::Set)
+                    .value_name("lua")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("no-add")
+                    .long("no-add")
+                    .long_help("Don't show the additional RR section. Showed by default.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("no-auth")
+                    .long("no-auth")
+                    .long_help("Don't show the authorative RR section. Showed by default.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -484,10 +498,17 @@ impl CliOptions {
         }
         // fetch OS resolvers
         else {
-            //????
-            let resolvers = ResolverList::new().unwrap();
-            options.transport.end_point =
-                EndPoint::from((&resolvers.to_ip_list()[..], options.transport.port));
+            let resolvers = ResolverList::new()?;
+            let ip_list = resolvers.to_ip_list();
+            options.transport.end_point = EndPoint::from((&ip_list[..], options.transport.port));
+
+            // TLS needs are server name or ip address
+            // in that case, get the first ip address from resolvers
+            if options.transport.transport_mode == Protocol::DoT {
+                let server = ip_list[0].to_string();
+                options.transport.end_point =
+                    EndPoint::from((server.as_str(), options.transport.port));
+            }
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -525,7 +546,7 @@ impl CliOptions {
 
                 // this will convert to ["2001", "0470", "0030", "0084", "e276", "63ff", "fe72", "3900"]
                 let split = ip
-                    .split(":") // split accordsing to ":"
+                    .split(':') // split accordsing to ":"
                     .map(|x| format!("{:0>4}", x)) // convert to string with heading 0
                     .collect::<Vec<String>>()
                     .join(""); // and finally join to get a whole string
@@ -541,9 +562,6 @@ impl CliOptions {
         //───────────────────────────────────────────────────────────────────────────────────
         // Flags
         //───────────────────────────────────────────────────────────────────────────────────
-        // by default, we want recursive queries, other flags are unset
-        //options.flags.recursion_desired = true;
-
         // all flags options are set to false except RD
         // set
         if let Some(v) = matches.get_many::<String>("set") {
@@ -576,25 +594,17 @@ impl CliOptions {
         options.edns.no_opt = matches.get_flag("no-opt");
         options.edns.dnssec = matches.get_flag("dnssec");
         options.edns.nsid = matches.get_flag("nsid");
-        options.edns.padding = matches.get_one::<u16>("padding").and_then(|v| Some(*v));
+        options.edns.padding = matches.get_one::<u16>("padding").copied();
 
-        options.edns.dau = if let Some(v) = matches.get_many::<u8>("dau") {
-            Some(v.copied().collect::<Vec<u8>>())
-        } else {
-            None
-        };
-
-        options.edns.dhu = if let Some(v) = matches.get_many::<u8>("dhu") {
-            Some(v.copied().collect::<Vec<u8>>())
-        } else {
-            None
-        };
-
-        options.edns.n3u = if let Some(v) = matches.get_many::<u8>("n3u") {
-            Some(v.copied().collect::<Vec<u8>>())
-        } else {
-            None
-        };
+        options.edns.dau = matches
+            .get_many::<u8>("dau")
+            .map(|v| v.copied().collect::<Vec<u8>>());
+        options.edns.dhu = matches
+            .get_many::<u8>("dhu")
+            .map(|v| v.copied().collect::<Vec<u8>>());
+        options.edns.n3u = matches
+            .get_many::<u8>("n3u")
+            .map(|v| v.copied().collect::<Vec<u8>>());
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage other misc. options
@@ -622,6 +632,13 @@ impl CliOptions {
         }
 
         options.display.trace = matches.get_flag("trace");
+
+        // open Lua script to load code
+        if let Some(path) = matches.get_one::<PathBuf>("lua") {
+            // open Lua script and load code
+            let code = fs::read_to_string(path)?;
+            options.display.lua_code = Some(code);
+        }
 
         Ok(options)
     }
@@ -723,6 +740,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
+        assert_eq!(&opts.transport.end_point.server().unwrap(), &"1.1.1.1");
     }
 
     #[test]
@@ -737,6 +755,10 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
+        assert_eq!(
+            &opts.transport.end_point.server().unwrap(),
+            &"2606:4700:4700::1111"
+        );
     }
 
     #[test]

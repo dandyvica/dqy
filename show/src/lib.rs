@@ -24,6 +24,9 @@ pub struct DisplayOptions {
 
     // true if no authorative section is printed out
     pub no_authorative: bool,
+
+    // Lua code if specified
+    pub lua_code: Option<String>,
 }
 
 pub trait Show {

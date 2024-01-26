@@ -23,6 +23,8 @@ pub mod tcp;
 pub mod tls;
 pub mod udp;
 
+type NetworkStats = (usize, usize);
+
 #[derive(Debug, Default)]
 //───────────────────────────────────────────────────────────────────────────────────
 // Transport options
@@ -62,6 +64,10 @@ pub struct TransportOptions {
 
     // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
+
+    // keep bytes sent and received
+    pub bytes_sent: usize,
+    pub bytes_received: usize,
 }
 
 pub trait Transporter {
@@ -169,7 +175,7 @@ pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) ->
 
     // if None, none of the connexions is OK
     if stream.is_none() {
-        let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.into_iter().collect();
+        let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.collect();
         return Err(Error::NoValidTCPConnection(addresses.to_vec()));
     }
 

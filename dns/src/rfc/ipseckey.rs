@@ -11,6 +11,7 @@ use crate::buffer::Buffer;
 use crate::new_rd_length;
 
 // Gateway format is depending on type (https://datatracker.ietf.org/doc/html/rfc4025#section-2.5)
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 enum Gateway {
     NoGateway(()),

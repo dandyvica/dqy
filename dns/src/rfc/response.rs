@@ -143,7 +143,6 @@ impl Show for Response {
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv4Addr;
 
     use super::*;
     use crate::{

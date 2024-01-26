@@ -4,7 +4,7 @@ use log::{debug, trace};
 
 use error::Result;
 
-use crate::TransportOptions;
+use crate::{NetworkStats, TransportOptions};
 
 use super::{
     protocol::{IPVersion, Protocol},
@@ -12,6 +12,7 @@ use super::{
 };
 
 pub struct UdpProtocol {
+    pub stats: NetworkStats,
     sock: UdpSocket,
 }
 
@@ -32,17 +33,24 @@ impl UdpProtocol {
         // as TransportOptions impl ToSocketAddrs
         sock.connect(&trp_options.end_point)?;
         debug!("created UDP socket to {}", sock.peer_addr()?);
-        Ok(Self { sock })
+        Ok(Self {
+            stats: (0, 0),
+            sock,
+        })
     }
 }
 
 impl Transporter for UdpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        Ok(self.sock.send(buffer)?)
+        let sent = self.sock.send(buffer)?;
+        self.stats.0 = sent;
+        Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        Ok(self.sock.recv(buffer)?)
+        let received = self.sock.recv(buffer)?;
+        self.stats.1 = received;
+        Ok(received)
     }
 
     fn uses_leading_length(&self) -> bool {

@@ -3,7 +3,6 @@ use std::fmt;
 use log::{debug, trace};
 use serde::Serialize;
 
-use show::*;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
@@ -40,12 +39,16 @@ impl Query {
     // builder pattern for adding lots of options to a query
     //───────────────────────────────────────────────────────────────────────────────────
     pub fn build() -> Self {
-        let mut q = Self::default();
+        // let mut q = Self::default();
 
-        // default header
-        q.header = Header::default();
+        // // default header
+        // q.header = Header::default();
 
-        q
+        // q
+        Self {
+            header: Header::default(),
+            ..Default::default()
+        }
     }
 
     pub fn with_type(mut self, qt: &QType) -> Self {

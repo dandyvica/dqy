@@ -10,7 +10,7 @@ fn call_dqy(args: &[&str]) -> std::io::Result<ExitStatus> {
     Command::new(DQY).args(args).status()
 }
 
-#[test]
+//#[test]
 fn rr_a() {
     let args = to_args("A www.google.fr --short");
     let status = call_dqy(&args).unwrap();

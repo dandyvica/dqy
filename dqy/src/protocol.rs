@@ -16,8 +16,10 @@ use dns::rfc::{
 };
 
 use args::{args::CliOptions, options::EdnsOptions};
-use show::DisplayOptions;
+use show::Show;
 use transport::{protocol::Protocol, tcp::TcpProtocol, Transporter};
+
+use crate::Info;
 
 //a unit strutc with gathers all high level functions
 pub(crate) struct DnsProtocol;
@@ -114,8 +116,8 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn send_query<'a, T: Transporter>(
-        options: &'a CliOptions,
+    fn send_query<T: Transporter>(
+        options: &CliOptions,
         qt: &QType,
         trp: &mut T,
     ) -> error::Result<Query> {
@@ -135,10 +137,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // receive response from resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn receive_response<'a, T: Transporter>(
-        trp: &mut T,
-        buffer: &'a mut [u8],
-    ) -> error::Result<Response> {
+    fn receive_response<T: Transporter>(trp: &mut T, buffer: &mut [u8]) -> error::Result<Response> {
         let mut response = Response::default();
         let _ = response.recv(trp, buffer)?;
 
@@ -148,8 +147,8 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // This sends and receive queries using a transport
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) fn send_receive<'a, T: Transporter>(
-        options: &'a CliOptions,
+    pub(crate) fn send_receive<T: Transporter>(
+        options: &CliOptions,
         trp: &mut T,
         chuck_size: usize,
     ) -> error::Result<MessageList> {
@@ -196,28 +195,31 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // check if response corresponds to what the client sent
     //───────────────────────────────────────────────────────────────────────────────────
-    fn display(display_options: &DisplayOptions, msg: &Message) {
+    pub(crate) fn display(
+        display_options: &show::DisplayOptions,
+        info: &Info,
+        messages: &MessageList,
+    ) {
         // JSON
         if display_options.json_pretty {
             let j = serde_json::json!({
-                "query": msg.query,
-                "response": msg.response
+                "messages": messages,
+                "info": info
             });
-
             println!("{}", serde_json::to_string_pretty(&j).unwrap());
         } else if display_options.json {
-            println!(
-                "{}",
-                serde_json::json!({
-                    "query": msg.query,
-                    "response": msg.response
-                })
-            );
+            let j = serde_json::json!({
+                "messages": messages,
+                "info": info
+            });
+            println!("{}", serde_json::to_string(&j).unwrap());
         } else {
-            if display_options.question {
-                println!("{}", msg.query);
+            // if display_options.question {
+            //     println!("{:?}", msg_list.query);
+            // }
+            for msg in messages.iter() {
+                msg.response().show(display_options);
             }
-            println!("{}", msg.response);
         }
     }
 }

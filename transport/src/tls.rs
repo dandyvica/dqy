@@ -9,11 +9,12 @@ use error::{Error, Result};
 use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
-use crate::{get_tcpstream_ok, TransportOptions};
+use crate::{get_tcpstream_ok, NetworkStats, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
 pub struct TlsProtocol {
+    pub stats: NetworkStats,
     tls_stream: StreamOwned<ClientConnection, TcpStream>,
 }
 
@@ -42,7 +43,10 @@ impl TlsProtocol {
 
         let tls_stream = StreamOwned::new(conn, stream);
 
-        Ok(Self { tls_stream })
+        Ok(Self {
+            stats: (0, 0),
+            tls_stream,
+        })
     }
 
     fn root_store() -> RootCertStore {
@@ -62,13 +66,14 @@ impl TlsProtocol {
 impl Transporter for TlsProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.tls_stream.write(buffer)?;
+        self.stats.0 = sent;
         Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        super::tcp_read(&mut self.tls_stream, buffer)
-
-        //Ok(self.tls_stream.read(buffer)?)
+        let received = super::tcp_read(&mut self.tls_stream, buffer)?;
+        self.stats.1 = received;
+        Ok(received)
     }
 
     fn uses_leading_length(&self) -> bool {

@@ -2,15 +2,13 @@
 use std::{net::SocketAddr, process::ExitCode, time::Instant};
 
 use log::debug;
-
-// my DNS library
-use dns::rfc::message::MessageList;
+use serde::Serialize;
 
 use args::args::CliOptions;
 use error::Error;
-use show::Show;
 use transport::{
-    https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol, Transporter
+    https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol,
+    Transporter,
 };
 
 // mod trace;
@@ -19,8 +17,23 @@ use transport::{
 mod protocol;
 use protocol::DnsProtocol;
 
+mod lua;
+use lua::LuaDisplay;
+
 // the initial length of the Vec buffer
 const BUFFER_CHUNK: usize = 4096;
+
+//───────────────────────────────────────────────────────────────────────────────────
+// Gather some information which might be useful for the user
+//───────────────────────────────────────────────────────────────────────────────────
+#[derive(Debug, Default, Serialize)]
+struct Info {
+    endpoint: String,
+    elapsed: u128,
+    mode: String,
+    bytes_sent: usize,
+    bytes_received: usize,
+}
 
 // use this trick to be able to display error
 fn main() -> ExitCode {
@@ -64,12 +77,17 @@ fn main() -> ExitCode {
                 }
                 return ExitCode::from(8);
             }
+            Error::Lua(err) => {
+                eprintln!("Error calling Lua script (details: {:?})", err);
+                return ExitCode::from(9);
+            }
         }
     }
 
     ExitCode::SUCCESS
 }
 
+#[allow(unused_assignments)]
 fn run() -> error::Result<()> {
     let now = Instant::now();
 
@@ -78,40 +96,12 @@ fn run() -> error::Result<()> {
     let options = CliOptions::options(&args)?;
     debug!("{:#?}", options);
 
+    // this will give user some information on how the protocol ran
+    let mut info = Info::default();
+
     // trace test
     // if options.display.trace {
     //     println!("random={}", get_random(&IPVersion::V4));
-    // }
-
-    // let mut trp = transport(
-    //     &options.transport.transport_mode,
-    //     &options.transport.ip_version,
-    //     options.transport.timeout,
-    //     options.protocol.resolvers.as_slice(),
-    // )?;
-    // foo(&options, &mut trp);
-
-    // depending on mode, different processing
-    // match options.transport.transport_mode {
-    //     Protocol::Udp => {
-    //         let mut udp_transport = UdpProtocol::new(&options.transport)?;
-    //         DnsProtocol::send_receive(&options, &mut udp_transport)?;
-    //     }
-    //     Protocol::Tcp => {
-    //         let mut tcp_transport = TcpProtocol::new(&options.transport)?;
-    //         DnsProtocol::send_receive(&options, &mut tcp_transport)?;
-    //     }
-    //     Protocol::DoT => {
-    //         // we need to initialize the TLS connexion using TCP stream and TLS features
-    //         let mut tls_transport = TlsProtocol::new(&options.transport)?;
-
-    //         // we need to initialize the TLS connexion using TCP stream and TLS features
-    //         DnsProtocol::send_receive(&options, &mut tls_transport)?;
-    //     }
-    //     Protocol::DoH => {
-    //         let mut https_transport = HttpsProtocol::new(&options.transport)?;
-    //         DnsProtocol::send_receive(&options, &mut https_transport)?;
-    //     }
     // }
 
     // we'll keep the peer address where the transport is connected
@@ -119,57 +109,72 @@ fn run() -> error::Result<()> {
 
     let messages = match options.transport.transport_mode {
         Protocol::Udp => {
-            let mut udp_transport = UdpProtocol::new(&options.transport)?;
-            peer = udp_transport.peer().ok();
-            DnsProtocol::send_receive(&options, &mut udp_transport, BUFFER_CHUNK)?
+            let mut transport = UdpProtocol::new(&options.transport)?;
+            peer = transport.peer().ok();
+            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+            info.bytes_sent = transport.stats.0;
+            info.bytes_received = transport.stats.1;
+
+            messages
         }
         Protocol::Tcp => {
-            let mut tcp_transport = TcpProtocol::new(&options.transport)?;
-            peer = tcp_transport.peer().ok();            
-            DnsProtocol::send_receive(&options, &mut tcp_transport, BUFFER_CHUNK)?
+            let mut transport = TcpProtocol::new(&options.transport)?;
+            peer = transport.peer().ok();
+            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+            info.bytes_sent = transport.stats.0;
+            info.bytes_received = transport.stats.1;
+
+            messages
         }
         Protocol::DoT => {
-            // we need to initialize the TLS connexion using TCP stream and TLS features
-            let mut tls_transport = TlsProtocol::new(&options.transport)?;
-            peer = tls_transport.peer().ok();            
-            DnsProtocol::send_receive(&options, &mut tls_transport, BUFFER_CHUNK)?
+            let mut transport = TlsProtocol::new(&options.transport)?;
+            peer = transport.peer().ok();
+            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+            info.bytes_sent = transport.stats.0;
+            info.bytes_received = transport.stats.1;
+
+            messages
         }
         Protocol::DoH => {
-            let mut https_transport = HttpsProtocol::new(&options.transport)?;
-            let messages = DnsProtocol::send_receive(&options, &mut https_transport, BUFFER_CHUNK)?;
-            peer = https_transport.peer().ok();   
+            let mut transport = HttpsProtocol::new(&options.transport)?;
+            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+            peer = transport.peer().ok();
+
+            info.bytes_sent = transport.stats.0;
+            info.bytes_received = transport.stats.1;
 
             messages
         }
     };
 
-    let elapsed = now.elapsed();
-    if options.display.stats {
-        eprintln!(
-            "stats ==> endpoint:{:?}, transport:{:?}, elapsed:{} ms",
-            peer.unwrap(),
-            options.transport.transport_mode,
-            elapsed.as_millis()
-        );
-    }
+    //───────────────────────────────────────────────────────────────────────────────────
+    // gather info
+    //───────────────────────────────────────────────────────────────────────────────────
+    // endpoint could be None
+    info.endpoint = if let Some(addr) = peer {
+        addr.to_string()
+    } else {
+        String::new()
+    };
 
-    display(&options.display, &messages);
+    // elapsed as milis will be hopefully enoough
+    let elapsed = now.elapsed();
+    info.elapsed = elapsed.as_millis();
+
+    // mode
+    info.mode = options.transport.transport_mode.to_string();
+
+    //───────────────────────────────────────────────────────────────────────────────────
+    // final display to the user: either Lua code or Json or else
+    //───────────────────────────────────────────────────────────────────────────────────
+    if let Some(lua_code) = options.display.lua_code {
+        LuaDisplay::call_lua(messages, info, &lua_code)?
+    } else {
+        DnsProtocol::display(&options.display, &info, &messages);
+    }
 
     Ok(())
-}
-
-fn display(display_options: &show::DisplayOptions, messages: &MessageList) {
-    // JSON
-    if display_options.json_pretty {
-        println!("{}", serde_json::to_string_pretty(messages).unwrap());
-    } else if display_options.json {
-        println!("{}", serde_json::to_string(messages).unwrap());
-    } else {
-        // if display_options.question {
-        //     println!("{:?}", msg_list.query);
-        // }
-        for msg in messages.iter() {
-            msg.response().show(display_options);
-        }
-    }
 }

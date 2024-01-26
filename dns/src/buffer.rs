@@ -17,13 +17,13 @@ impl Buffer {
     }
 
     // when printing out some RRs, it's easier to use this
-    pub fn to_string(&self) -> String {
-        String::from_utf8_lossy(&self.0).to_string()
-    }
+    // pub fn to_string(&self) -> String {
+    //     String::from_utf8_lossy(&self.0).to_string()
+    // }
 
     // some RRs need to convert the raw data into b16 or b64 hexa strings
     pub fn as_b64(&self) -> String {
-        general_purpose::STANDARD.encode(&self.as_ref())
+        general_purpose::STANDARD.encode(self.as_ref())
     }
 
     // some RRs need to convert the raw data into b16 or b64 hexa strings
@@ -56,7 +56,7 @@ impl fmt::Debug for Buffer {
 
 impl fmt::Display for Buffer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = String::from_utf8_lossy(&self.0.as_ref()).to_string();
+        let s = String::from_utf8_lossy(self.0.as_ref()).to_string();
         write!(f, "{}", s)
     }
 }
@@ -106,7 +106,7 @@ impl Serialize for Buffer {
     }
 }
 
-pub(crate) fn serialize_buffer<'a, S>(owner: &Buffer, serializer: S) -> Result<S::Ok, S::Error>
+pub(crate) fn serialize_buffer<S>(owner: &Buffer, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

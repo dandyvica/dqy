@@ -12,11 +12,13 @@ env_logger = "0.10.1"
 error = { path = "../error" }
 lazy_static = "1.4.0"
 log = "0.4.20"
+mlua = { version = "0.9.4", features = [ "lua54", "serialize" ] }
 rand = "0.8.5"
-transport = { path = "../transport" }
-show = { path = "../show" }
-serde_json = "1.0.111"
 serde = "1.0.195"
+serde_json = "1.0.111"
+show = { path = "../show" }
+transport = { path = "../transport" }
+
 
 
 

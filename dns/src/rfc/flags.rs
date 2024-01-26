@@ -49,7 +49,7 @@ pub struct Flags {
                                             //6-15            Reserved for future use.
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Serialize)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct BitFlags {
     pub authorative_answer: bool, // Authoritative Answer - this bit is valid in responses,
     //and specifies that the responding name server is an

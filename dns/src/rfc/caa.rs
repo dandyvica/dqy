@@ -45,8 +45,8 @@ impl fmt::Display for CAA {
             f,
             "{} {} \"{}\"",
             self.flags,
-            self.tag_key.to_string(),
-            self.tag_value.to_string()
+            self.tag_key,
+            self.tag_value
         )
     }
 }
