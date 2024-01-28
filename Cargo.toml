@@ -27,6 +27,7 @@ license = "MIT"
 autotests = false
 edition = "2021"
 rust-version = "1.75"
+doctest = false
 
 [workspace.dependencies]
 bytes = "1.5.0"

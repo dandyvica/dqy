@@ -1,5 +1,5 @@
 //! A DNS resource query tool
-use std::{net::SocketAddr, process::ExitCode, time::Instant};
+use std::{fmt, net::SocketAddr, process::ExitCode, time::Instant};
 
 use log::debug;
 use serde::Serialize;
@@ -33,6 +33,14 @@ struct Info {
     mode: String,
     bytes_sent: usize,
     bytes_received: usize,
+}
+
+impl fmt::Display for Info {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\nendpoint: {} ({})\n", self.endpoint, self.mode)?;
+        write!(f, "elapsed: {} ms\n", self.elapsed)?;
+        write!(f, "sent:{}, received:{} bytes", self.bytes_sent, self.bytes_received)
+    }
 }
 
 // use this trick to be able to display error

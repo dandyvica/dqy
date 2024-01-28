@@ -101,14 +101,21 @@ impl CliOptions {
             .version("0.1")
             .author("Alain Viguier dandyvica@gmail.com")
             .about(
-                r#"A simple DNS query client
-        
-            Project home page: https://github.com/dandyvica/dqy
+                r#"A DNS query tool inspired by _dig_, _drill_ and _dog_.
+
+Project home page: https://github.com/dandyvica/dqy
         
             "#,
             )
-            .after_long_help("Examples:")
+            .after_long_help(r#"Examples:
+
+- dqy AAAA www.google.com
+- dqy A AAAA MX TXT www.example.com @1.1.1.1 --no-opt
+
+            "#)
+            .bin_name("dqy")
             .no_binary_name(true)
+            .override_usage("dqy [TYPES] [DOMAIN] [RESOLVER] [OPTIONS]")            
             .arg(
                 Arg::new("type")
                     .short('t')
@@ -150,14 +157,14 @@ impl CliOptions {
                     .action(ArgAction::Set)
                     .value_name("PTR")
             )
-            .arg(
-                Arg::new("server")
-                    .short('s')
-                    .long("server")
-                    .long_help("Server name to query.")
-                    .action(ArgAction::Set)
-                    .value_name("SERVER")
-            )
+            // .arg(
+            //     Arg::new("server")
+            //         .short('s')
+            //         .long("server")
+            //         .long_help("Server name to query.")
+            //         .action(ArgAction::Set)
+            //         .value_name("SERVER")
+            // )
             .arg(
                 Arg::new("trace")
                     .long("trace")
@@ -250,7 +257,7 @@ impl CliOptions {
                     .action(ArgAction::Set)
                     .num_args(1..=6)
                     .value_name("FLAGS")
-                    .value_parser(["aa", "ad", "cd", "ra", "rd", "tc"])
+                    .value_parser(["aa", "ad", "cd", "ra", "rd", "tc", "z"])
                     .help_heading("Transport options")
             )
             .arg(
@@ -260,7 +267,7 @@ impl CliOptions {
                     .action(ArgAction::Set)
                     .num_args(1..=6)
                     .value_name("FLAGS")
-                    .value_parser(["aa", "ad", "cd", "ra", "rd", "tc"])
+                    .value_parser(["aa", "ad", "cd", "ra", "rd", "tc", "z"])
                     .help_heading("Transport options")
             )
             //───────────────────────────────────────────────────────────────────────────────────
@@ -417,7 +424,7 @@ impl CliOptions {
                 Arg::new("verbose")
                     .short('v')
                     .long("verbose")
-                    .long_help("Verbose mode.")
+                    .long_help("Verbose mode, from info -v to trace -vvvvv.")
                     .action(ArgAction::Count)
                     .help_heading("Display options")
             )

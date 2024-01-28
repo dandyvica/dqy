@@ -214,11 +214,12 @@ impl DnsProtocol {
             });
             println!("{}", serde_json::to_string(&j).unwrap());
         } else {
-            // if display_options.question {
-            //     println!("{:?}", msg_list.query);
-            // }
             for msg in messages.iter() {
                 msg.response().show(display_options);
+            }
+
+            if display_options.stats {
+                println!("{}", info);
             }
         }
     }
