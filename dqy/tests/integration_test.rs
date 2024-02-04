@@ -1,6 +1,10 @@
 use std::process::{Command, ExitStatus};
 
-const DQY: &str = "/data/projects/rust/dqy/target/debug/dqy";
+#[cfg(target_family = "unix")]
+const DQY: &str = "../target/debug/dqy";
+
+#[cfg(target_family = "windows")]
+const DQY: &str = "..\\target\\debug\\dqy.exe";
 
 fn to_args(s: &str) -> Vec<&str> {
     s.split_whitespace().collect()
