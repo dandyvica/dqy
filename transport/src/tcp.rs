@@ -18,7 +18,7 @@ pub struct TcpProtocol {
 
 impl TcpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
-        let stream = get_tcpstream_ok(&trp_options.end_point, trp_options.timeout)?;
+        let stream = get_tcpstream_ok(&trp_options.end_point.addrs[..], trp_options.timeout)?;
 
         // now it's safe to unwrap
         //let tcp_stream = stream.unwrap();
@@ -53,6 +53,10 @@ impl Transporter for TcpProtocol {
 
     fn mode(&self) -> Protocol {
         Protocol::Tcp
+    }
+
+    fn local(&self) -> std::io::Result<SocketAddr> {
+        self.stream.local_addr()
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

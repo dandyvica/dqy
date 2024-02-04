@@ -19,7 +19,6 @@ use transport::{
 };
 
 use log::trace;
-use resolver::ResolverList;
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -78,6 +77,10 @@ impl CliOptions {
             if let Some(s) = arg.strip_prefix('@') {
                 server = s;
                 // options.protocol.server = s.to_string();
+                // if https:// is found in the server, it's DoH
+                if server.contains("https://") {
+                    options.transport.transport_mode = Protocol::DoH;
+                }
                 continue;
             }
 
@@ -97,11 +100,11 @@ impl CliOptions {
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
-        let matches = Command::new("DNS query tool")
-            .version("0.1")
+        let matches = Command::new("A DNS query tool")
+            .version("0.2.0")
             .author("Alain Viguier dandyvica@gmail.com")
             .about(
-                r#"A DNS query tool inspired by _dig_, _drill_ and _dog_.
+                r#"A DNS query tool inspired by dig, drill and dog.
 
 Project home page: https://github.com/dandyvica/dqy
         
@@ -115,7 +118,10 @@ Project home page: https://github.com/dandyvica/dqy
             "#)
             .bin_name("dqy")
             .no_binary_name(true)
-            .override_usage("dqy [TYPES] [DOMAIN] [RESOLVER] [OPTIONS]")            
+            .override_usage(r#"dqy [TYPES] [DOMAIN] [@RESOLVER] [OPTIONS]
+            
+Caveat: all options starting with a dash (-) should be placed after optional [TYPES] [DOMAIN] [@RESOLVER].
+            "#)
             .arg(
                 Arg::new("type")
                     .short('t')
@@ -157,18 +163,10 @@ Project home page: https://github.com/dandyvica/dqy
                     .action(ArgAction::Set)
                     .value_name("PTR")
             )
-            // .arg(
-            //     Arg::new("server")
-            //         .short('s')
-            //         .long("server")
-            //         .long_help("Server name to query.")
-            //         .action(ArgAction::Set)
-            //         .value_name("SERVER")
-            // )
             .arg(
                 Arg::new("trace")
                     .long("trace")
-                    .long_help("Iterative lookup from a random root server.")
+                    .long_help("Iterative lookup from a random root server (not yet implemented).")
                     .action(ArgAction::SetTrue)
             )
             //───────────────────────────────────────────────────────────────────────────────────
@@ -179,7 +177,7 @@ Project home page: https://github.com/dandyvica/dqy
                     .short('4')
                     .long("ip4")
                     .long_help("Sets IP version 4. Only send queries to ipv4 enabled nameservers.")
-                    .action(ArgAction::SetFalse)
+                    .action(ArgAction::SetTrue)
                     .value_name("IPV4")
                     .help_heading("Transport options")
             )
@@ -223,6 +221,16 @@ Project home page: https://github.com/dandyvica/dqy
                     .help_heading("Transport options")
             )
             .arg(
+                Arg::new("resolve-file")
+                    .short('r')
+                    .long("resolve-file")
+                    .long_help("Optional resolv.conf-like file from which the resolvers are taken.")
+                    .action(ArgAction::Set)
+                    .value_name("RESOLV.CONF")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Transport options")
+            )
+            .arg(
                 Arg::new("tcp")
                     .short('T')
                     .long("tcp")
@@ -236,7 +244,7 @@ Project home page: https://github.com/dandyvica/dqy
                     .long_help("Sets the timeout for network operations (in ms).")
                     .action(ArgAction::Set)
                     .value_parser(clap::value_parser!(u64))
-                    .default_value("5000")
+                    .default_value("3000")
                     .value_name("TIMEOUT")
                     .help_heading("Transport options")
             )
@@ -424,7 +432,7 @@ Project home page: https://github.com/dandyvica/dqy
                 Arg::new("verbose")
                     .short('v')
                     .long("verbose")
-                    .long_help("Verbose mode, from info -v to trace -vvvvv.")
+                    .long_help("Verbose mode, from info (-v) to trace (-vvvvv).")
                     .action(ArgAction::Count)
                     .help_heading("Display options")
             )
@@ -440,8 +448,11 @@ Project home page: https://github.com/dandyvica/dqy
         options.protocol.qclass = *matches.get_one::<QClass>("class").unwrap();
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // ip versions (V4 is by default)
+        // ip versions (Any is by default)
         //───────────────────────────────────────────────────────────────────────────────────
+        if matches.get_flag("4") {
+            options.transport.ip_version = IPVersion::V4;
+        }
         if matches.get_flag("6") {
             options.transport.ip_version = IPVersion::V6;
         }
@@ -498,23 +509,25 @@ Project home page: https://github.com/dandyvica/dqy
         //───────────────────────────────────────────────────────────────────────────────────
         // build the endpoint
         //───────────────────────────────────────────────────────────────────────────────────
-
-        // a server name or ip address is provided
-        if !server.is_empty() {
-            options.transport.end_point = EndPoint::from((server, options.transport.port));
-        }
-        // fetch OS resolvers
-        else {
-            let resolvers = ResolverList::new()?;
-            let ip_list = resolvers.to_ip_list();
-            options.transport.end_point = EndPoint::from((&ip_list[..], options.transport.port));
-
-            // TLS needs are server name or ip address
-            // in that case, get the first ip address from resolvers
-            if options.transport.transport_mode == Protocol::DoT {
-                let server = ip_list[0].to_string();
-                options.transport.end_point =
-                    EndPoint::from((server.as_str(), options.transport.port));
+        // resolver file is provided
+        if let Some(path) = matches.get_one::<PathBuf>("resolve-file") {
+            // end point is build from these
+            options.transport.end_point = EndPoint::try_from((path, options.transport.port))?;
+        } else {
+            // in case of https, dont resolve using ToSocketAddrs
+            if options.transport.transport_mode == Protocol::DoH {
+                options.transport.end_point = EndPoint {
+                    server: server.to_string(),
+                    ..Default::default()
+                };
+            }
+            // otherwise EndPoint::try_from() will call to_socket_addrs() method and resolve
+            else {
+                options.transport.end_point = EndPoint::try_from((server, options.transport.port))?;
+                options
+                    .transport
+                    .end_point
+                    .retain(&options.transport.ip_version);
             }
         }
 
@@ -703,7 +716,7 @@ mod tests {
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, ".");
-        assert_eq!(opts.transport.ip_version, IPVersion::V4);
+        assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
@@ -717,7 +730,7 @@ mod tests {
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
-        assert_eq!(opts.transport.ip_version, IPVersion::V4);
+        assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
@@ -731,7 +744,7 @@ mod tests {
         assert_eq!(opts.protocol.qclass, QClass::CH);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
-        assert_eq!(opts.transport.ip_version, IPVersion::V4);
+        assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
@@ -745,9 +758,9 @@ mod tests {
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
-        assert_eq!(opts.transport.ip_version, IPVersion::V4);
+        assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.end_point.server().unwrap(), &"1.1.1.1");
+        assert_eq!(&opts.transport.end_point.server, "1.1.1.1");
     }
 
     #[test]
@@ -762,10 +775,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(
-            &opts.transport.end_point.server().unwrap(),
-            &"2606:4700:4700::1111"
-        );
+        assert_eq!(&opts.transport.end_point.server, &"2606:4700:4700::1111");
     }
 
     #[test]
@@ -785,7 +795,7 @@ mod tests {
 
     #[test]
     fn with_ptr() {
-        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --tcp -x 1.2.3.4 --nolog");
+        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com -4 --tcp -x 1.2.3.4 --nolog");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 

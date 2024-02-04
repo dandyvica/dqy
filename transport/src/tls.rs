@@ -27,14 +27,19 @@ impl TlsProtocol {
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
         let config = Self::config(root_store);
 
-        let stream = get_tcpstream_ok(&trp_options.end_point, trp_options.timeout)?;
-        debug!("created TLS-TCP socket to {}", stream.peer_addr()?);
+        let stream = get_tcpstream_ok(&trp_options.end_point.addrs[..], trp_options.timeout)?;
+        debug!("DoT: created TLS-TCP socket to {}", stream.peer_addr()?);
+
+        // in case we use the host resolver, server name is empty. We need to fill it in
+        let server = if trp_options.end_point.server.is_empty() {
+            stream.peer_addr()?.ip().to_string()
+        } else {
+            trp_options.end_point.server.clone()
+        };
+        debug!("DoT: server is {}", server);
 
         // build ServerName type which is used by ClientConnection::new()
-        let server_name = trp_options
-            .end_point
-            .server()
-            .unwrap()
+        let server_name = server
             .to_string()
             .try_into()
             .map_err(|_e| Error::Tls(rustls::Error::EncryptError))?;
@@ -82,6 +87,10 @@ impl Transporter for TlsProtocol {
 
     fn mode(&self) -> Protocol {
         Protocol::DoT
+    }
+
+    fn local(&self) -> std::io::Result<SocketAddr> {
+        self.tls_stream.sock.local_addr()
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

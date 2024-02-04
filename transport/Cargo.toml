@@ -14,6 +14,7 @@ error = { path = "../error" }
 http.workspace = true
 log.workspace = true
 reqwest.workspace = true
+resolver.workspace = true
 rustls.workspace = true
 rustls-pki-types.workspace = true
 webpki-roots.workspace = true

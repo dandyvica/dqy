@@ -17,7 +17,6 @@ error = { path = "../error" }
 http.workspace = true
 idna = "0.4.0"
 log.workspace = true
-resolver.workspace = true
 show = { path = "../show" }
 transport = { path = "../transport" }
 

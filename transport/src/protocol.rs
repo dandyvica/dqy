@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug, Default, PartialEq)]
 pub enum IPVersion {
     #[default]
+    Any,
     V4,
     V6,
 }

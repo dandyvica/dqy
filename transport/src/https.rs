@@ -1,18 +1,18 @@
 // Transport for sending DNS messages
 
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::Bytes;
 use http::version::*;
 
 use reqwest::{
-    blocking::Client,
+    blocking::{Client, ClientBuilder},
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
 };
 
 use error::Result;
 
-use crate::{NetworkStats, TransportOptions};
+use crate::{protocol::IPVersion, NetworkStats, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
@@ -35,24 +35,19 @@ pub struct HttpsProtocol<'a> {
 
 impl<'a> HttpsProtocol<'a> {
     pub fn new(trp_options: &'a TransportOptions) -> Result<Self> {
-        let x = Client::builder()
-            // same headers for all requests
-            .default_headers(Self::construct_headers())
-            // HTTP/2 by default as recommended by RFC8484
-            // .http2_prior_knowledge()
-            .timeout(trp_options.timeout);
+        let cb = Self::client_builder(trp_options);
 
         let client = match trp_options.https_version {
-            Version::HTTP_11 => x.http1_only().build()?,
-            Version::HTTP_2 => x.http2_prior_knowledge().build()?,
+            Version::HTTP_11 => cb.http1_only().build()?,
+            Version::HTTP_2 => cb.http2_prior_knowledge().build()?,
             _ => unimplemented!(
                 "version {:?} of HTTP is not yet implemented",
                 trp_options.https_version
             ),
         };
 
-        debug_assert!(trp_options.end_point.server().is_some());
-        let server = trp_options.end_point.server().unwrap();
+        debug_assert!(!trp_options.end_point.server.is_empty());
+        let server = &trp_options.end_point.server;
 
         Ok(Self {
             server,
@@ -72,6 +67,20 @@ impl<'a> HttpsProtocol<'a> {
             HeaderValue::from_static("application/dns-message"),
         );
         headers
+    }
+
+    fn client_builder(trp_options: &'a TransportOptions) -> ClientBuilder {
+        // same headers for all requests
+        let cb = Client::builder()
+            .default_headers(Self::construct_headers())
+            .timeout(trp_options.timeout)
+            .connect_timeout(trp_options.timeout);
+
+        match trp_options.ip_version {
+            IPVersion::Any => cb,
+            IPVersion::V4 => cb.local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
+            IPVersion::V6 => cb.local_address(IpAddr::V6(Ipv6Addr::UNSPECIFIED)),
+        }
     }
 }
 
@@ -117,6 +126,10 @@ impl<'a> Transporter for HttpsProtocol<'a> {
 
     fn mode(&self) -> Protocol {
         Protocol::DoH
+    }
+
+    fn local(&self) -> std::io::Result<SocketAddr> {
+        Ok("0.0.0.0:0".parse().unwrap())
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {

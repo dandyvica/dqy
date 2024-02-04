@@ -119,7 +119,7 @@ impl Default for OptOrElse {
 impl fmt::Display for OptOrElse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OptOrElse::Regular(x) => write!(f, "{:<10} {:<10}", x.class, x.ttl),
+            OptOrElse::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
             OptOrElse::Opt(x) => write!(
                 f,
                 "{} {} {} {}",
@@ -185,12 +185,12 @@ impl fmt::Display for ResourceRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<28} {:<10} {:<10} {:<10}",
+            "{:<28} {:<10} {} {:<10}",
             self.name.to_string(),
             self.r#type.to_string(),
             // self.class.to_string(),
             // self.ttl.to_string(),
-            self.opt_or_else,
+            self.opt_or_else.to_string(),
             self.rd_length
         )?;
 

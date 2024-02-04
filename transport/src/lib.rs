@@ -107,6 +107,9 @@ pub trait Transporter {
         Ok(length)
     }
 
+    // return the local address used by the transport
+    fn local(&self) -> std::io::Result<SocketAddr>;
+
     // return the remote address used by the transport
     fn peer(&self) -> std::io::Result<SocketAddr>;
 }
