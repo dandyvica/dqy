@@ -1,6 +1,6 @@
 [![Actions](https://github.com/dandyvica/dqy/actions/workflows/rust.yml/badge.svg)](https://github.com/dandyvica/dqy/actions/workflows/rust.yml)
 
-Note: this is currently under development in my free time. Version is not even yet 0.1.0
+Note: this is currently under development in my free time.
 
 # dqy
 A DNS query tool inspired by _dig_, _drill_ and _dog_.
