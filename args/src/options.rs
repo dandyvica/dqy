@@ -35,7 +35,7 @@ pub struct QueryFlagsOptions {
 //───────────────────────────────────────────────────────────────────────────────────
 // EDNS options
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct EdnsOptions {
     // This option requests that DNSSEC records be sent by setting the DNSSEC OK (DO) bit in the OPT record in the
     // additional section of the query.
@@ -62,7 +62,7 @@ pub struct EdnsOptions {
 //───────────────────────────────────────────────────────────────────────────────────
 // Protocol options: linked to the DNS protocol itself
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DnsProtocolOptions {
     pub qtype: Vec<QType>,
 

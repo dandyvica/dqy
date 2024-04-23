@@ -1,6 +1,7 @@
 //! A DNS resource query tool
 use std::{fmt, net::SocketAddr, process::ExitCode, time::Instant};
 
+use dns::rfc::message::MessageList;
 use log::debug;
 use serde::Serialize;
 
@@ -8,7 +9,7 @@ use args::args::CliOptions;
 use error::Error;
 use transport::{
     https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol,
-    Transporter,
+    TransportOptions, Transporter,
 };
 
 // mod trace;
@@ -28,7 +29,7 @@ const BUFFER_CHUNK: usize = 4096;
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Default, Serialize)]
 struct Info {
-    peer: Option<SocketAddr>,
+    server: Option<SocketAddr>,
     elapsed: u128,
     mode: String,
     bytes_sent: usize,
@@ -37,7 +38,7 @@ struct Info {
 
 impl fmt::Display for Info {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(peer) = self.peer {
+        if let Some(peer) = self.server {
             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
         }
         write!(f, "elapsed: {} ms\n", self.elapsed)?;
@@ -115,13 +116,14 @@ fn run() -> error::Result<()> {
 
     // trace test
     // if options.display.trace {
-    //     println!("random={}", get_random(&IPVersion::V4));
+    //     let _ = trace(&options);
+    //     std::process::exit(0);
     // }
 
     let messages = match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
-            info.peer = transport.peer().ok();
+            info.server = transport.peer().ok();
             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
             info.bytes_sent = transport.stats.0;
@@ -131,7 +133,7 @@ fn run() -> error::Result<()> {
         }
         Protocol::Tcp => {
             let mut transport = TcpProtocol::new(&options.transport)?;
-            info.peer = transport.peer().ok();
+            info.server = transport.peer().ok();
             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
             info.bytes_sent = transport.stats.0;
@@ -141,7 +143,7 @@ fn run() -> error::Result<()> {
         }
         Protocol::DoT => {
             let mut transport = TlsProtocol::new(&options.transport)?;
-            info.peer = transport.peer().ok();
+            info.server = transport.peer().ok();
             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
             info.bytes_sent = transport.stats.0;
@@ -152,7 +154,7 @@ fn run() -> error::Result<()> {
         Protocol::DoH => {
             let mut transport = HttpsProtocol::new(&options.transport)?;
             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-            info.peer = transport.peer().ok();
+            info.server = transport.peer().ok();
 
             info.bytes_sent = transport.stats.0;
             info.bytes_received = transport.stats.1;
@@ -160,16 +162,6 @@ fn run() -> error::Result<()> {
             messages
         }
     };
-
-    //───────────────────────────────────────────────────────────────────────────────────
-    // gather info
-    //───────────────────────────────────────────────────────────────────────────────────
-    // endpoint could be None
-    // info.peer = if let Some(addr) = peer {
-    //     addr.to_string()
-    // } else {
-    //     String::new()
-    // };
 
     // elapsed as milis will be hopefully enoough
     let elapsed = now.elapsed();
@@ -189,3 +181,48 @@ fn run() -> error::Result<()> {
 
     Ok(())
 }
+
+// fn get_messages(options: &CliOptions, info: &mut Info) -> error::Result<MessageList> {
+//     match options.transport.transport_mode {
+//         Protocol::Udp => {
+//             let mut transport = UdpProtocol::new(&options.transport)?;
+//             info.peer = transport.peer().ok();
+//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+//             info.bytes_sent = transport.stats.0;
+//             info.bytes_received = transport.stats.1;
+
+//             Ok(messages)
+//         }
+//         Protocol::Tcp => {
+//             let mut transport = TcpProtocol::new(&options.transport)?;
+//             info.peer = transport.peer().ok();
+//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+//             info.bytes_sent = transport.stats.0;
+//             info.bytes_received = transport.stats.1;
+
+//             Ok(messages)
+//         }
+//         Protocol::DoT => {
+//             let mut transport = TlsProtocol::new(&options.transport)?;
+//             info.peer = transport.peer().ok();
+//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+
+//             info.bytes_sent = transport.stats.0;
+//             info.bytes_received = transport.stats.1;
+
+//             Ok(messages)
+//         }
+//         Protocol::DoH => {
+//             let mut transport = HttpsProtocol::new(&options.transport)?;
+//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+//             info.peer = transport.peer().ok();
+
+//             info.bytes_sent = transport.stats.0;
+//             info.bytes_received = transport.stats.1;
+
+//             Ok(messages)
+//         }
+//     }
+// }

@@ -5,7 +5,6 @@ authors.workspace = true
 description.workspace = true
 documentation.workspace = true
 edition.workspace = true
-doctest.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

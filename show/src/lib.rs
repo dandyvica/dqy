@@ -1,7 +1,7 @@
 //───────────────────────────────────────────────────────────────────────────────────
 // Display options
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DisplayOptions {
     // print out stats like elasped time etc
     pub stats: bool,

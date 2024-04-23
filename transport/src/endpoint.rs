@@ -1,5 +1,5 @@
 use std::{
-    net::{SocketAddr, ToSocketAddrs},
+    net::{IpAddr, SocketAddr, ToSocketAddrs},
     path::PathBuf,
 };
 
@@ -7,7 +7,7 @@ use resolver::ResolverList;
 
 use crate::protocol::IPVersion;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct EndPoint {
     pub server: String,
     pub addrs: Vec<SocketAddr>,
@@ -68,5 +68,18 @@ impl TryFrom<(&str, u16)> for EndPoint {
                 addrs: addrs.collect(),
             })
         }
+    }
+}
+
+impl TryFrom<(&IpAddr, u16)> for EndPoint {
+    type Error = error::Error;
+
+    fn try_from(value: (&IpAddr, u16)) -> Result<Self, Self::Error> {
+        let sockaddr = SocketAddr::from((*value.0, value.1));
+
+        Ok(Self {
+            server: String::new(),
+            addrs: vec![sockaddr],
+        })
     }
 }

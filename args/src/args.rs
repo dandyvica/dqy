@@ -9,6 +9,7 @@ use crate::options::{DnsProtocolOptions, EdnsOptions};
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
+use rustc_version_runtime::version;
 
 use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
 use show;
@@ -33,7 +34,7 @@ macro_rules! set_unset_flag {
 //───────────────────────────────────────────────────────────────────────────────────
 // This structure holds the command line arguments.
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct CliOptions {
     // DNS protocol options
     pub protocol: DnsProtocolOptions,
@@ -97,19 +98,26 @@ impl CliOptions {
             }
         }
 
+        let rustc_version = format!("compiled with rustc v{}", version());
+        let about = format!(
+            r#"
+A DNS query tool inspired by dig, drill and dog.
+Compiled with rustc v{}
+
+Project home page: https://github.com/dandyvica/dqy
+                
+"#,
+            version()
+        );
+
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
         let matches = Command::new("A DNS query tool")
             .version("0.2.0")
             .author("Alain Viguier dandyvica@gmail.com")
-            .about(
-                r#"A DNS query tool inspired by dig, drill and dog.
-
-Project home page: https://github.com/dandyvica/dqy
-        
-            "#,
-            )
+            .about(about)
+            .after_help(rustc_version)
             .after_long_help(r#"Examples:
 
 - dqy AAAA www.google.com

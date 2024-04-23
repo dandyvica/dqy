@@ -1,0 +1,17 @@
+
+FROM arm64v8/ubuntu
+
+RUN <<EOF
+apt-get update
+apt-get install -y git
+apt-get install -y curl
+apt-get install -y gcc
+apt-get install -y pkg-config
+apt-get install -y lua
+apt-get install -y lua5.4-dev
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+. /root/.cargo/env
+git clone https://github.com/dandyvica/dqy
+cd dqy
+cargo build --release
+EOF

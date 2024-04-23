@@ -1,0 +1,17 @@
+
+FROM arm64v8/alpine
+
+RUN <<EOF
+apk add git
+apk add curl
+apk add gcc
+apk add pkg-config
+apk add lua
+apk add lua5.4-dev
+apk add musl-dev
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+git clone https://github.com/dandyvica/dqy
+cd dqy
+cargo build --release
+EOF

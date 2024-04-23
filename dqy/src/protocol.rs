@@ -163,7 +163,7 @@ impl DnsProtocol {
             let response = Self::receive_response(trp, &mut buffer)?;
 
             // check for the truncation (TC) header flag. If set and UDP, resend using TCP
-            if response.tc() && trp.mode() == Protocol::Udp {
+            if response.is_truncated() && trp.mode() == Protocol::Udp {
                 info!("query for {} caused truncation, resending using TCP", qtype);
                 buffer.clear();
 

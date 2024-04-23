@@ -40,8 +40,13 @@ impl Response {
     }
 
     #[inline]
-    pub fn tc(&self) -> bool {
-        self.header.flags.bitflags.truncation
+    pub fn is_truncated(&self) -> bool {
+        self.header.flags.bitflags.truncation == true
+    }
+
+    #[inline]
+    pub fn is_authorative(&self) -> bool {
+        self.header.flags.bitflags.authorative_answer == true
     }
 
     // Receive message for DNS resolver

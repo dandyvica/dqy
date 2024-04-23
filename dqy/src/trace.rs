@@ -2,6 +2,7 @@ use args::args::CliOptions;
 use dns::rfc::qtype::QType;
 
 use transport::{
+    endpoint::EndPoint,
     protocol::{IPVersion, Protocol},
     udp::UdpProtocol,
     Transporter,
@@ -19,7 +20,9 @@ use std::{
     str::FromStr,
 };
 
-use crate::{build_query, receive_response, send_query};
+use crate::{get_messages, protocol::DnsProtocol, Info};
+
+// use crate::{build_query, receive_response, send_query};
 
 lazy_static! {
     // defined here: https://www.iana.org/domains/root/servers
@@ -125,7 +128,7 @@ lazy_static! {
 //───────────────────────────────────────────────────────────────────────────────────
 // return a random root server ip address
 //───────────────────────────────────────────────────────────────────────────────────
-fn get_random(version: &IPVersion) -> IpAddr {
+fn get_random_root(version: &IPVersion) -> IpAddr {
     let mut rng = rand::thread_rng();
     let root = ROOT_SERVERS.keys().into_iter().choose(&mut rng).unwrap();
     info!("tracing: chosen root server: {}", root);
@@ -140,46 +143,6 @@ fn get_random(version: &IPVersion) -> IpAddr {
 //───────────────────────────────────────────────────────────────────────────────────
 // send query to ip address
 //───────────────────────────────────────────────────────────────────────────────────
-// fn send_query_to_ip(options: &CliOptions, qt: &QType, ipaddr: IpAddr) -> DNSResult<()> {
-//     // build query
-//     let query = build_query(options, qt)?;
-
-//     // when need a SocketAddr to use it with any transport
-//     let sockaddr = SocketAddr::from((ipaddr, options.transport.port));
-
-//     // send query according to transport
-//     match options.transport.transport_mode {
-//         TransportMode::Udp => {
-//             let mut udp_transport = UdpTransport::new(
-//                 sockaddr,
-//                 &options.transport.ip_version,
-//                 options.transport.timeout,
-//             )?;
-//             send_receive_query(&options, &mut udp_transport)?;
-//         }
-//         TransportMode::Tcp => {
-//             let mut tcp_transport = TcpTransport::new(
-//                 options.protocol.resolvers.as_slice(),
-//                 options.transport.timeout,
-//             )?;
-//             send_receive_query(&options, &mut tcp_transport)?;
-//         }
-//         TransportMode::DoT => {
-//             // we need to initialize the TLS connexion using TCP stream and TLS features
-//             let mut tls =
-//                 TlsTransport::init_tls(&options.protocol.server, 853, options.transport.timeout)?;
-//             let mut tls_transport = TlsTransport::new(&mut tls, options.transport.timeout)?;
-//             // we need to initialize the TLS connexion using TCP stream and TLS features
-//             send_receive_query(&options, &mut tls_transport)?;
-//         }
-//         TransportMode::DoH => {
-//             let mut https_transport =
-//                 HttpsTransport::new(&options.protocol.server, options.transport.timeout)?;
-//             send_receive_query(&options, &mut https_transport)?;
-//         }
-//     }
-//     Ok(())
-// }
 
 //───────────────────────────────────────────────────────────────────────────────────
 // trace implementation
@@ -188,24 +151,45 @@ fn get_random(version: &IPVersion) -> IpAddr {
 //
 // ex: dig +trace www.google.co.uk.
 //
-// step1: chose a random root server
-// step2: get its ip address (v4 or v6 depending on the cli options)
-// setp3: get ip address of a random NS server: dig +norecurse @192.5.5.241 www.google.co.uk
+// step 1: chose a random root server
+// step 2: get its ip address (v4 or v6 depending on the cli options)
+// setp 3: get ip address of a random NS server: dig +norecurse @192.5.5.241 www.google.co.uk
 //───────────────────────────────────────────────────────────────────────────────────
-fn trace<T: Transporter>(options: &mut CliOptions, trp: &mut T) -> error::Result<()> {
-    let mut buffer = [0u8; 4096];
+pub fn trace(opts: &CliOptions) -> error::Result<()> {
+    let mut options = (*opts).clone();
 
-    // set flag for no recursion desired to ge referral servers (no recursion)
+    let port = opts.transport.port;
+    let mut info = Info::default();
+
+    // we only allow just one QType to query
+    debug_assert!(options.protocol.qtype.len() == 1);
+
+    // need to save the asked QType because the first DNS message sent is NS
+    let qt = options.protocol.qtype[0];
+
+    // set flag for no recursion desired to get referral servers (no recursion)
     options.flags.recursion_desired = false;
 
-    //───────────────────────────────────────────────────────────────────────────────────
-    // step 1: get the ip address of a random root server
-    //───────────────────────────────────────────────────────────────────────────────────
-    let root_addr = get_random(&options.transport.ip_version);
+    // we'll stop whenever an authorative answer is found
+    let mut authorative = true;
 
-    //───────────────────────────────────────────────────────────────────────────────────
-    // step 2: get the NS address of a random name server for the considered domain
-    //───────────────────────────────────────────────────────────────────────────────────
+    while authorative {
+        //───────────────────────────────────────────────────────────────────────────────────
+        // step 1: get the ip address of a random root server
+        //───────────────────────────────────────────────────────────────────────────────────
+        options.protocol.qtype = vec![QType::NS];
+        options.protocol.domain = ".".to_string();
+        let messages = get_messages(&options, &mut info)?;
+        DnsProtocol::display(&options.display, &info, &messages);
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // step 2: get the NS address of a random name server for the considered domain
+        //───────────────────────────────────────────────────────────────────────────────────
+        // options.transport.end_point = EndPoint::try_from((&root_addr, port))?;
+        // let messages = get_messages(&options, &mut info)?;
+
+        authorative = false;
+    }
 
     Ok(())
 }

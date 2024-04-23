@@ -1,7 +1,4 @@
 [workspace]
-name = "dqy"
-version = "0.2.0"
-edition = "2021"
 members = [ 
     "args", 
     "dns",
@@ -12,8 +9,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-name = "dqy"
-version = "0.1.0"  #:version
+version = "0.2.0"  #:version
 authors = ["Alain Viguier <dandyvica@gmail.com>"]
 description = """
 dqy is a DNS query tool inspired by dig, drill and dog.
@@ -24,10 +20,8 @@ repository = "https://github.com/dandyvica/dqy"
 keywords = ["dns"]
 categories = ["command-line-utilities"]
 license = "MIT"
-autotests = false
 edition = "2021"
 rust-version = "1.75"
-doctest = false
 
 [workspace.dependencies]
 bytes = "1.5.0"

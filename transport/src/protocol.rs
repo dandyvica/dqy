@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum IPVersion {
     #[default]
     Any,
@@ -8,7 +8,7 @@ pub enum IPVersion {
     V6,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum Protocol {
     #[default]
     Udp,
