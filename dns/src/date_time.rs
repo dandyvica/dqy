@@ -2,17 +2,17 @@
 
 use std::fmt;
 
-use chrono::NaiveDateTime;
+use chrono::DateTime;
 
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 #[derive(Debug, Default, PartialEq, FromNetwork)]
-pub struct DateTime(u32);
+pub struct DnsDateTime(u32);
 
-impl fmt::Display for DateTime {
+impl fmt::Display for DnsDateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let date_time = NaiveDateTime::from_timestamp_opt(self.0 as i64, 0)
+        let date_time = DateTime::from_timestamp(self.0 as i64, 0)
             .unwrap()
             .format("%Y%m%d%H%M%S");
         write!(f, "{}", date_time)?;
@@ -23,7 +23,7 @@ impl fmt::Display for DateTime {
 
 // Custom serialization
 use serde::{Serialize, Serializer};
-impl Serialize for DateTime {
+impl Serialize for DnsDateTime {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

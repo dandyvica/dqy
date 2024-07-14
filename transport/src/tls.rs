@@ -9,14 +9,10 @@ use error::{Error, Result};
 use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
-use crate::{get_tcpstream_ok, NetworkStats, TransportOptions};
-
 use super::{protocol::Protocol, Transporter};
+use crate::{get_tcpstream_ok, TransportOptions, TransportProtocol};
 
-pub struct TlsProtocol {
-    pub stats: NetworkStats,
-    tls_stream: StreamOwned<ClientConnection, TcpStream>,
-}
+pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
 impl TlsProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
@@ -50,7 +46,7 @@ impl TlsProtocol {
 
         Ok(Self {
             stats: (0, 0),
-            tls_stream,
+            handle: tls_stream,
         })
     }
 
@@ -70,13 +66,13 @@ impl TlsProtocol {
 
 impl Transporter for TlsProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.tls_stream.write(buffer)?;
+        let sent = self.handle.write(buffer)?;
         self.stats.0 = sent;
         Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = super::tcp_read(&mut self.tls_stream, buffer)?;
+        let received = super::tcp_read(&mut self.handle, buffer)?;
         self.stats.1 = received;
         Ok(received)
     }
@@ -90,10 +86,10 @@ impl Transporter for TlsProtocol {
     }
 
     fn local(&self) -> std::io::Result<SocketAddr> {
-        self.tls_stream.sock.local_addr()
+        self.handle.sock.local_addr()
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.tls_stream.sock.peer_addr()
+        self.handle.sock.peer_addr()
     }
 }

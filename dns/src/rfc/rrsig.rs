@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::{buffer::Buffer, date_time::DateTime, new_rd_length};
+use crate::{buffer::Buffer, date_time::DnsDateTime, new_rd_length};
 
 use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 
@@ -41,8 +41,8 @@ pub struct RRSIG {
     pub algorithm: Algorithm,
     pub labels: u8,
     pub ttl: u32,
-    pub sign_expiration: DateTime,
-    pub sign_inception: DateTime,
+    pub sign_expiration: DnsDateTime,
+    pub sign_inception: DnsDateTime,
     pub key_tag: u16,
 
     // will be deserialized locally

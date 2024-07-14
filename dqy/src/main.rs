@@ -161,6 +161,9 @@ fn run() -> error::Result<()> {
 
             messages
         }
+        Protocol::DoQ => {
+            unimplemented!("DoQ is not yet implemented")
+        }
     };
 
     // elapsed as milis will be hopefully enoough

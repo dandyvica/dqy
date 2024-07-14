@@ -32,7 +32,7 @@ log = "0.4.20"
 mlua = { version = "0.9.4", features = [ "lua54", "serialize" ] }
 reqwest = { version = "0.11.23", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
 resolver = { git = "https://github.com/dandyvica/resolver.git" }
-rustls = "0.22.2"
+rustls = "0.23.11"
 rustls-pki-types = "1.1.0"
 serde = { version = "1.0.195", features = [ "derive" ] }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }

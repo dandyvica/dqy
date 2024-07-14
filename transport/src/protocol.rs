@@ -15,6 +15,7 @@ pub enum Protocol {
     Tcp,
     DoH,
     DoT,
+    DoQ,
 }
 
 impl Protocol {
@@ -25,6 +26,7 @@ impl Protocol {
             Protocol::Tcp => 53,
             Protocol::DoT => 853,
             Protocol::DoH => 443,
+            Protocol::DoQ => 853,
         }
     }
 
@@ -41,6 +43,7 @@ impl fmt::Display for Protocol {
             Protocol::Tcp => write!(f, "Tcp"),
             Protocol::DoT => write!(f, "DoT"),
             Protocol::DoH => write!(f, "DoH"),
+            Protocol::DoQ => write!(f, "DoQ"),
         }
     }
 }

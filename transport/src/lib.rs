@@ -29,6 +29,13 @@ pub mod udp;
 
 type NetworkStats = (usize, usize);
 
+pub struct TransportProtocol<T> {
+    pub stats: NetworkStats,
+
+    //handle is either a socket or a stream
+    handle: T,
+}
+
 #[derive(Debug, Default, Clone)]
 //───────────────────────────────────────────────────────────────────────────────────
 // Transport options
@@ -62,6 +69,9 @@ pub struct TransportOptions {
     // true if HTTPS/DOH
     pub https: bool,
     pub doh: bool,
+
+    // true if DNS over Quic
+    pub doq: bool,
 
     // http version
     pub https_version: Version,
