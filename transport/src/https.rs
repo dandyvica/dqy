@@ -12,7 +12,7 @@ use reqwest::{
 
 use error::Result;
 
-use crate::{protocol::IPVersion, NetworkStats, TransportOptions};
+use crate::{protocol::IPVersion, NetworkStat, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
@@ -30,7 +30,7 @@ pub struct HttpsProtocol<'a> {
     peer: Option<SocketAddr>,
 
     // bytes sent & received
-    pub stats: NetworkStats,
+    pub stats: NetworkStat,
 }
 
 impl<'a> HttpsProtocol<'a> {
@@ -46,8 +46,8 @@ impl<'a> HttpsProtocol<'a> {
             ),
         };
 
-        debug_assert!(!trp_options.end_point.server.is_empty());
-        let server = &trp_options.end_point.server;
+        debug_assert!(!trp_options.endpoint.server.is_empty());
+        let server = &trp_options.endpoint.server;
 
         Ok(Self {
             server,
@@ -136,5 +136,9 @@ impl<'a> Transporter for HttpsProtocol<'a> {
         self.peer.ok_or(std::io::Error::other(
             "unable to get remote peer from HTTPS response",
         ))
+    }
+
+    fn netstat(&self) -> NetworkStat {
+        self.stats
     }
 }

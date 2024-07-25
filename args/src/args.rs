@@ -1,5 +1,4 @@
 //! Manage command line arguments here.
-use std::fs;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -520,21 +519,21 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // resolver file is provided
         if let Some(path) = matches.get_one::<PathBuf>("resolve-file") {
             // end point is build from these
-            options.transport.end_point = EndPoint::try_from((path, options.transport.port))?;
+            options.transport.endpoint = EndPoint::try_from((path, options.transport.port))?;
         } else {
             // in case of https, dont resolve using ToSocketAddrs
             if options.transport.transport_mode == Protocol::DoH {
-                options.transport.end_point = EndPoint {
+                options.transport.endpoint = EndPoint {
                     server: server.to_string(),
                     ..Default::default()
                 };
             }
             // otherwise EndPoint::try_from() will call to_socket_addrs() method and resolve
             else {
-                options.transport.end_point = EndPoint::try_from((server, options.transport.port))?;
+                options.transport.endpoint = EndPoint::try_from((server, options.transport.port))?;
                 options
                     .transport
-                    .end_point
+                    .endpoint
                     .retain(&options.transport.ip_version);
             }
         }
@@ -662,9 +661,11 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.trace = matches.get_flag("trace");
 
         // open Lua script to load code
+        #[cfg(not(feature = "nolua"))]
         if let Some(path) = matches.get_one::<PathBuf>("lua") {
             // open Lua script and load code
-            let code = fs::read_to_string(path)?;
+            let code = std::fs::read_to_string(path)?;
+            trace!("using Lua code from {}", path.display());
             options.display.lua_code = Some(code);
         }
 
@@ -768,7 +769,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.end_point.server, "1.1.1.1");
+        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1");
     }
 
     #[test]
@@ -783,7 +784,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.end_point.server, &"2606:4700:4700::1111");
+        assert_eq!(&opts.transport.endpoint.server, &"2606:4700:4700::1111");
     }
 
     #[test]

@@ -2,6 +2,7 @@ use std::{fmt, io::Cursor};
 
 use log::{debug, trace};
 
+use rustls_pki_types::IpAddr;
 use show::Show;
 use type2network::FromNetworkOrder;
 
@@ -10,7 +11,7 @@ use serde::Serialize;
 use crate::rfc::response_code::ResponseCode;
 use transport::Transporter;
 
-use super::{header::Header, question::Question, rrset::RRSet};
+use super::{header::Header, qtype::QType, question::Question, rrset::RRSet};
 
 #[derive(Debug, Default, Serialize)]
 pub struct Response {
@@ -72,6 +73,26 @@ impl Response {
         trace!("response authority: {:?}", self.authority);
 
         Ok(received)
+    }
+
+    // return the ip address of a NS server found in the additional section
+    // corresponding to a named server in the answer section
+    // This is used for tracing resolution
+    pub fn ns_ip_address(&self) -> Option<IpAddr> {
+        // answer might be empty (?)
+        if let Some(ans) = &self.answer {
+            // filter only NS records
+            let ns_records: Vec<_> = ans
+                .iter()
+                .filter(|r| r.r#type == QType::NS)
+                .map(|r| &r.name)
+                .collect();
+
+            // find ip address of any domain name found as a NS record
+            if let Some(add) = &self.additional {}
+        }
+
+        None
     }
 }
 

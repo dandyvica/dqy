@@ -7,8 +7,8 @@ use serde::Serialize;
 
 // A resource record
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, FromNetwork, Serialize)]
-pub(super) struct A(Ipv4Addr);
+#[derive(Debug, PartialEq, FromNetwork, Serialize)]
+pub(super) struct A(pub Ipv4Addr);
 
 impl Default for A {
     fn default() -> Self {

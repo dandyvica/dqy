@@ -26,6 +26,7 @@ pub struct DisplayOptions {
     pub no_authorative: bool,
 
     // Lua code if specified
+    #[cfg(not(feature = "nolua"))]
     pub lua_code: Option<String>,
 }
 

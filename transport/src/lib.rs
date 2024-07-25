@@ -27,13 +27,20 @@ pub mod tcp;
 pub mod tls;
 pub mod udp;
 
-type NetworkStats = (usize, usize);
+// number of bytes sent and received for DNS operations
+type NetworkStat = (usize, usize);
 
 pub struct TransportProtocol<T> {
-    pub stats: NetworkStats,
+    pub netstat: NetworkStat,
 
     //handle is either a socket or a stream
     handle: T,
+}
+
+impl<T> TransportProtocol<T> {
+    pub fn stats(&self) -> NetworkStat {
+        self.netstat
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -51,7 +58,7 @@ pub struct TransportOptions {
     pub timeout: Duration,
 
     // resolver
-    pub end_point: EndPoint,
+    pub endpoint: EndPoint,
 
     // if true, elasped time and some stats are printed out
     pub stats: bool,
@@ -126,6 +133,9 @@ pub trait Transporter {
 
     // return the remote address used by the transport
     fn peer(&self) -> std::io::Result<SocketAddr>;
+
+    // return the network stats in the underlying structure
+    fn netstat(&self) -> NetworkStat;
 }
 
 // calls F depending on transport to be used

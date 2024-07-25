@@ -8,7 +8,7 @@ use serde::Serialize;
 use super::domain::DomainName;
 
 // SOA RR
-#[derive(Debug, Default, FromNetwork, Serialize)]
+#[derive(Debug, Default, PartialEq, FromNetwork, Serialize)]
 pub struct SOA {
     pub mname: DomainName, // The <domain-name> of the name server that was the
     // original or primary source of data for this zone.

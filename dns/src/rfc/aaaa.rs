@@ -6,8 +6,8 @@ use type2network_derive::FromNetwork;
 
 // AAAA resource record
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, FromNetwork, Serialize)]
-pub struct AAAA(Ipv6Addr);
+#[derive(Debug, PartialEq, FromNetwork, Serialize)]
+pub struct AAAA(pub Ipv6Addr);
 
 impl Default for AAAA {
     fn default() -> Self {

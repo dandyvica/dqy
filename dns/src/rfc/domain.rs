@@ -302,11 +302,11 @@ impl ToNetworkOrder for DomainName {
 
 impl<'a> FromNetworkOrder<'a> for DomainName {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> Result<()> {
-        //dbg!("============================");
+        // dbg!("============================");
 
         // loop through the vector
         let start_position = buffer.position() as usize;
-        //dbg!(start_position);
+        // dbg!(start_position);
 
         // get a reference on inner data
         let inner_ref = buffer.get_ref();

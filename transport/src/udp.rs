@@ -4,7 +4,7 @@ use log::debug;
 
 use error::Result;
 
-use crate::{TransportOptions, TransportProtocol};
+use crate::{NetworkStat, TransportOptions, TransportProtocol};
 
 use super::{
     protocol::{IPVersion, Protocol},
@@ -32,10 +32,10 @@ impl UdpProtocol {
 
         // connect() will chose any socket address which is succesful
         // as TransportOptions impl ToSocketAddrs
-        sock.connect(&trp_options.end_point.addrs[..])?;
+        sock.connect(&trp_options.endpoint.addrs[..])?;
         debug!("created UDP socket to {}", sock.peer_addr()?);
         Ok(Self {
-            stats: (0, 0),
+            netstat: (0, 0),
             handle: sock,
         })
     }
@@ -57,13 +57,13 @@ impl UdpProtocol {
 impl Transporter for UdpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.send(buffer)?;
-        self.stats.0 = sent;
+        self.netstat.0 = sent;
         Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
         let received = self.handle.recv(buffer)?;
-        self.stats.1 = received;
+        self.netstat.1 = received;
         Ok(received)
     }
 
@@ -81,5 +81,9 @@ impl Transporter for UdpProtocol {
 
     fn peer(&self) -> std::io::Result<SocketAddr> {
         self.handle.peer_addr()
+    }
+
+    fn netstat(&self) -> NetworkStat {
+        self.stats()
     }
 }

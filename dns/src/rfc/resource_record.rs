@@ -1,6 +1,7 @@
-use std::{fmt, io::Cursor};
+use std::{fmt, io::Cursor, net::IpAddr};
 
 use show::Show;
+use transport::protocol::IPVersion;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -161,10 +162,10 @@ pub(super) struct ResourceRecord {
     pub r#type: QType,    // two octets containing one of the RR TYPE codes.
 
     // pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
-    // pub ttl: EitherOr<u32, OptTTL>, //   a bit = 32 signed (actually unsigned) integer that specifies the time interval
+    // pub ttl: EitherOr<u32, OptTTL>,
     #[serde(flatten)]
     pub opt_or_else: OptOrElse,
-
+    // a bit = 32 signed (actually unsigned) integer that specifies the time interval
     // that the resource record may be cached before the source
     // of the information should again be consulted. Zero
     // values are interpreted to mean that the RR can only be
@@ -179,6 +180,27 @@ pub(super) struct ResourceRecord {
     //  a variable length string of octets that describes the
     //  resource.  The format of this information varies
     //  according to the TYPE and CLASS of the resource record.
+}
+
+impl ResourceRecord {
+    // in case of A or AAAA addresses, returns the ip address in the RData
+    pub fn ip_address(&self, ip_version: IPVersion) -> Option<IpAddr> {
+        match ip_version {
+            IPVersion::V4 => {
+                if let RData::A(ip4) = &self.r_data {
+                    return Some(IpAddr::from(ip4.0));
+                }
+            }
+            IPVersion::V6 => {
+                if let RData::AAAA(ip6) = &self.r_data {
+                    return Some(IpAddr::from(ip6.0));
+                }
+            }
+            _ => return None,
+        }
+
+        None
+    }
 }
 
 impl fmt::Display for ResourceRecord {
@@ -241,32 +263,6 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
             get_rr!(buffer, RegularClassTtl, OptOrElse::Regular)
         };
 
-        // // class is either a Qclass or in case of OPT the payload value
-        // self.class = {
-        //     let mut cl = 0u16;
-        //     cl.deserialize_from(buffer)?;
-
-        //     match self.r#type {
-        //         QType::OPT => EitherOr::new_right(cl),
-        //         _ => {
-        //             let qc = QClass::try_from(cl).unwrap();
-        //             EitherOr::new_left(qc)
-        //         }
-        //     }
-        // };
-
-        // // TTL is the same
-        // self.ttl = if self.r#type == QType::OPT {
-        //     let mut ext = OptTTL::default();
-        //     ext.deserialize_from(buffer)?;
-        //     EitherOr::new_right(ext)
-        // } else {
-        //     let mut ttl = 0u32;
-        //     ttl.deserialize_from(buffer)?;
-        //     EitherOr::new_left(ttl)
-        // };
-
-        // self.ttl.deserialize_from(buffer)?;
         self.rd_length.deserialize_from(buffer)?;
 
         debug!(
@@ -362,5 +358,104 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::{Ipv4Addr, Ipv6Addr};
+    use std::str::FromStr;
+
+    use crate::rfc::a::A;
+    use crate::rfc::soa::SOA;
+    use crate::rfc::{
+        aaaa::AAAA,
+        domain::DomainName,
+        qclass::QClass,
+        qtype::QType,
+        rdata::RData,
+        resource_record::{OptOrElse, RegularClassTtl},
+    };
+
+    use transport::protocol::IPVersion;
+    use type2network::FromNetworkOrder;
+
+    use super::ResourceRecord;
+
+    #[test]
+    fn a_record() {
+        let data = b"\x03\x77\x77\x77\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f\x6d\x00\x00\x01\x00\x01\x00\x00\x00\xbe\x00\x04\x8e\xfa\xb3\x44";
+        let mut buffer = std::io::Cursor::new(&data[..]);
+
+        let mut rr = ResourceRecord::default();
+        rr.deserialize_from(&mut buffer).unwrap();
+
+        let ip = rr.ip_address(IPVersion::V4).unwrap();
+        assert_eq!(ip, Ipv4Addr::from_str("142.250.179.68").unwrap());
+        assert!(rr.ip_address(IPVersion::Any).is_none());
+
+        assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
+        assert_eq!(rr.r#type, QType::A);
+        assert!(
+            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 190 })
+        );
+        assert_eq!(rr.rd_length, 4);
+        assert!(
+            matches!(rr.r_data, RData::A(a) if a == A(Ipv4Addr::from_str("142.250.179.68").unwrap()))
+        );
+    }
+
+    #[test]
+    fn aaaa_record() {
+        let data = b"\x03\x77\x77\x77\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f\x6d\x00\x00\x1c\x00\x01\x00\x00\x00\xfd\x00\x10\x2a\x00\x14\x50\x40\x07\x08\x18\x00\x00\x00\x00\x00\x00\x20\x04";
+        let mut buffer = std::io::Cursor::new(&data[..]);
+
+        let mut rr = ResourceRecord::default();
+        rr.deserialize_from(&mut buffer).unwrap();
+
+        let ip = rr.ip_address(IPVersion::V6).unwrap();
+        assert_eq!(ip, Ipv6Addr::from_str("2a00:1450:4007:818::2004").unwrap());
+        assert!(rr.ip_address(IPVersion::Any).is_none());
+
+        assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
+        assert_eq!(rr.r#type, QType::AAAA);
+        assert!(
+            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 253 })
+        );
+        assert_eq!(rr.rd_length, 16);
+        assert!(
+            matches!(rr.r_data, RData::AAAA(aaaa) if aaaa == AAAA(Ipv6Addr::from_str("2a00:1450:4007:818::2004").unwrap()))
+        );
+    }
+
+    #[test]
+    fn soa_record() {
+        let data = b"\x03\x77\x77\x77\x06\x67\x6f\x6f\x67\x6c\x65\x03\x63\x6f\x6d\x00\x00\x06\x00\x01\x00\x00\x00\x17\x00\x26\x03\x6e\x73\x31\xc0\x10\x09\x64\x6e\x73\x2d\x61\x64\x6d\x69\x6e\xc0\x10\x27\x12\x10\xb8\x00\x00\x03\x84\x00\x00\x03\x84\x00\x00\x07\x08\x00\x00\x00\x3c";
+        let mut buffer = std::io::Cursor::new(&data[..]);
+
+        let mut rr = ResourceRecord::default();
+        rr.deserialize_from(&mut buffer).unwrap();
+
+        let ip = rr.ip_address(IPVersion::V6);
+        assert!(rr.ip_address(IPVersion::Any).is_none());
+        let ip = rr.ip_address(IPVersion::V4);
+        assert!(rr.ip_address(IPVersion::Any).is_none());
+
+        assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
+        assert_eq!(rr.r#type, QType::SOA);
+        assert!(
+            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 23 })
+        );
+        assert_eq!(rr.rd_length, 38);
+        if let RData::SOA(soa) = rr.r_data {
+            // due to compression, don't test domain names
+            // assert_eq!(soa.rname, DomainName::try_from("ns1.google.").unwrap());
+            // assert_eq!(soa.rname, DomainName::try_from("dns-admin.").unwrap());
+            assert_eq!(soa.serial, 655495352);            
+            assert_eq!(soa.refresh, 900);
+            assert_eq!(soa.retry, 900);
+            assert_eq!(soa.expire, 1800);
+            assert_eq!(soa.minimum, 60);
+        }
     }
 }

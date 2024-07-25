@@ -12,13 +12,15 @@ use transport::{
     TransportOptions, Transporter,
 };
 
-// mod trace;
-// use trace::*;
+mod trace;
+use trace::*;
 
 mod protocol;
 use protocol::DnsProtocol;
 
+#[cfg(not(feature = "nolua"))]
 mod lua;
+#[cfg(not(feature = "nolua"))]
 use lua::LuaDisplay;
 
 // the initial length of the Vec buffer
@@ -47,6 +49,47 @@ impl fmt::Display for Info {
             "sent:{}, received:{} bytes",
             self.bytes_sent, self.bytes_received
         )
+    }
+}
+
+// get list of messages depending on transport
+fn get_messages_using_transport<T: Transporter>(
+    info: &mut Info,
+    transport: &mut T,
+    options: &CliOptions,
+) -> error::Result<MessageList> {
+    info.server = transport.peer().ok();
+    let messages = DnsProtocol::send_receive(&options, transport, BUFFER_CHUNK)?;
+
+    let stats = transport.netstat();
+
+    info.bytes_sent = stats.0;
+    info.bytes_received = stats.1;
+
+    Ok(messages)
+}
+
+pub fn get_messages(info: &mut Info, options: &CliOptions) -> error::Result<MessageList> {
+    match options.transport.transport_mode {
+        Protocol::Udp => {
+            let mut transport = UdpProtocol::new(&options.transport)?;
+            get_messages_using_transport(info, &mut transport, &options)
+        }
+        Protocol::Tcp => {
+            let mut transport = TcpProtocol::new(&options.transport)?;
+            get_messages_using_transport(info, &mut transport, &options)
+        }
+        Protocol::DoT => {
+            let mut transport = TlsProtocol::new(&options.transport)?;
+            get_messages_using_transport(info, &mut transport, &options)
+        }
+        Protocol::DoH => {
+            let mut transport = HttpsProtocol::new(&options.transport)?;
+            get_messages_using_transport(info, &mut transport, &options)
+        }
+        Protocol::DoQ => {
+            unimplemented!("DoQ is not yet implemented")
+        }
     }
 }
 
@@ -115,58 +158,62 @@ fn run() -> error::Result<()> {
     let mut info = Info::default();
 
     // trace test
-    // if options.display.trace {
-    //     let _ = trace(&options);
-    //     std::process::exit(0);
-    // }
+    if options.display.trace {
+        let _ = trace_resolution(&options);
+        std::process::exit(0);
+    }
 
     let messages = match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
-            info.server = transport.peer().ok();
-            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+            get_messages_using_transport(&mut info, &mut transport, &options)?
+            // info.server = transport.peer().ok();
+            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
-            info.bytes_sent = transport.stats.0;
-            info.bytes_received = transport.stats.1;
+            // info.bytes_sent = transport.netstat.0;
+            // info.bytes_received = transport.netstat.1;
 
-            messages
+            // messages
         }
         Protocol::Tcp => {
             let mut transport = TcpProtocol::new(&options.transport)?;
-            info.server = transport.peer().ok();
-            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+            get_messages_using_transport(&mut info, &mut transport, &options)?
+            // info.server = transport.peer().ok();
+            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
-            info.bytes_sent = transport.stats.0;
-            info.bytes_received = transport.stats.1;
+            // info.bytes_sent = transport.netstat.0;
+            // info.bytes_received = transport.netstat.1;
 
-            messages
+            // messages
         }
         Protocol::DoT => {
             let mut transport = TlsProtocol::new(&options.transport)?;
-            info.server = transport.peer().ok();
-            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+            get_messages_using_transport(&mut info, &mut transport, &options)?
+            // info.server = transport.peer().ok();
+            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
 
-            info.bytes_sent = transport.stats.0;
-            info.bytes_received = transport.stats.1;
+            // info.bytes_sent = transport.netstat.0;
+            // info.bytes_received = transport.netstat.1;
 
-            messages
+            // messages
         }
         Protocol::DoH => {
             let mut transport = HttpsProtocol::new(&options.transport)?;
-            let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-            info.server = transport.peer().ok();
+            get_messages_using_transport(&mut info, &mut transport, &options)?
+            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+            // info.server = transport.peer().ok();
 
-            info.bytes_sent = transport.stats.0;
-            info.bytes_received = transport.stats.1;
+            // info.bytes_sent = transport.stats.0;
+            // info.bytes_received = transport.stats.1;
 
-            messages
+            // messages
         }
         Protocol::DoQ => {
             unimplemented!("DoQ is not yet implemented")
         }
     };
 
-    // elapsed as milis will be hopefully enoough
+    // elapsed as millis will be hopefully enough
     let elapsed = now.elapsed();
     info.elapsed = elapsed.as_millis();
 
@@ -176,56 +223,12 @@ fn run() -> error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // final display to the user: either Lua code or Json or else
     //───────────────────────────────────────────────────────────────────────────────────
+    #[cfg(not(feature = "nolua"))]
     if let Some(lua_code) = options.display.lua_code {
-        LuaDisplay::call_lua(messages, info, &lua_code)?
-    } else {
-        DnsProtocol::display(&options.display, &info, &messages);
+        LuaDisplay::call_lua(messages, info, &lua_code)?;
+        return Ok(());
     }
 
+    DnsProtocol::display(&options.display, &info, &messages);
     Ok(())
 }
-
-// fn get_messages(options: &CliOptions, info: &mut Info) -> error::Result<MessageList> {
-//     match options.transport.transport_mode {
-//         Protocol::Udp => {
-//             let mut transport = UdpProtocol::new(&options.transport)?;
-//             info.peer = transport.peer().ok();
-//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-
-//             info.bytes_sent = transport.stats.0;
-//             info.bytes_received = transport.stats.1;
-
-//             Ok(messages)
-//         }
-//         Protocol::Tcp => {
-//             let mut transport = TcpProtocol::new(&options.transport)?;
-//             info.peer = transport.peer().ok();
-//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-
-//             info.bytes_sent = transport.stats.0;
-//             info.bytes_received = transport.stats.1;
-
-//             Ok(messages)
-//         }
-//         Protocol::DoT => {
-//             let mut transport = TlsProtocol::new(&options.transport)?;
-//             info.peer = transport.peer().ok();
-//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-
-//             info.bytes_sent = transport.stats.0;
-//             info.bytes_received = transport.stats.1;
-
-//             Ok(messages)
-//         }
-//         Protocol::DoH => {
-//             let mut transport = HttpsProtocol::new(&options.transport)?;
-//             let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-//             info.peer = transport.peer().ok();
-
-//             info.bytes_sent = transport.stats.0;
-//             info.bytes_received = transport.stats.1;
-
-//             Ok(messages)
-//         }
-//     }
-// }

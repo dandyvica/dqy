@@ -11,7 +11,7 @@ use transport::{
 // for the --trace optionflags
 #[macro_use]
 use lazy_static::lazy_static;
-use log::{info, trace};
+use log::{debug, info, trace};
 use rand::seq::IteratorRandom;
 
 use std::{
@@ -20,7 +20,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{get_messages, protocol::DnsProtocol, Info};
+use crate::{get_messages, get_messages_using_transport, protocol::DnsProtocol, Info};
 
 // use crate::{build_query, receive_response, send_query};
 
@@ -131,7 +131,6 @@ lazy_static! {
 fn get_random_root(version: &IPVersion) -> IpAddr {
     let mut rng = rand::thread_rng();
     let root = ROOT_SERVERS.keys().into_iter().choose(&mut rng).unwrap();
-    info!("tracing: chosen root server: {}", root);
 
     if version == &IPVersion::V4 {
         IpAddr::from(ROOT_SERVERS[root].0)
@@ -155,17 +154,18 @@ fn get_random_root(version: &IPVersion) -> IpAddr {
 // step 2: get its ip address (v4 or v6 depending on the cli options)
 // setp 3: get ip address of a random NS server: dig +norecurse @192.5.5.241 www.google.co.uk
 //───────────────────────────────────────────────────────────────────────────────────
-pub fn trace(opts: &CliOptions) -> error::Result<()> {
+pub fn trace_resolution(opts: &CliOptions) -> error::Result<()> {
     let mut options = (*opts).clone();
-
-    let port = opts.transport.port;
     let mut info = Info::default();
 
+    // shortcuts
+    let port = opts.transport.port;
+    let qt = options.protocol.qtype[0];
+
     // we only allow just one QType to query
-    debug_assert!(options.protocol.qtype.len() == 1);
+    //debug_assert!(options.protocol.qtype.len() == 1);
 
     // need to save the asked QType because the first DNS message sent is NS
-    let qt = options.protocol.qtype[0];
 
     // set flag for no recursion desired to get referral servers (no recursion)
     options.flags.recursion_desired = false;
@@ -173,23 +173,34 @@ pub fn trace(opts: &CliOptions) -> error::Result<()> {
     // we'll stop whenever an authorative answer is found
     let mut authorative = true;
 
-    while authorative {
-        //───────────────────────────────────────────────────────────────────────────────────
-        // step 1: get the ip address of a random root server
-        //───────────────────────────────────────────────────────────────────────────────────
-        options.protocol.qtype = vec![QType::NS];
-        options.protocol.domain = ".".to_string();
-        let messages = get_messages(&options, &mut info)?;
-        DnsProtocol::display(&options.display, &info, &messages);
+    //───────────────────────────────────────────────────────────────────────────────────
+    // step 1: get the ip address of a random root server
+    //───────────────────────────────────────────────────────────────────────────────────
+    let random_root_server = get_random_root(&options.transport.ip_version);
+    info!("choosen random root server: {}", random_root_server);
+    let endpoint = EndPoint::try_from((&random_root_server, port))?;
+    options.transport.endpoint = endpoint;
 
-        //───────────────────────────────────────────────────────────────────────────────────
-        // step 2: get the NS address of a random name server for the considered domain
-        //───────────────────────────────────────────────────────────────────────────────────
-        // options.transport.end_point = EndPoint::try_from((&root_addr, port))?;
-        // let messages = get_messages(&options, &mut info)?;
+    // while authorative {
+    //     //───────────────────────────────────────────────────────────────────────────────────
+    //     // step 1: get the ip address of a random root server
+    //     //───────────────────────────────────────────────────────────────────────────────────
+    //     let
 
-        authorative = false;
-    }
+    //     options.protocol.qtype = vec![QType::NS];
+    //     options.protocol.domain = ".".to_string();
+
+    //     //───────────────────────────────────────────────────────────────────────────────────
+    //     // step 2: get the NS address of a random name server for the considered domain
+    //     //───────────────────────────────────────────────────────────────────────────────────
+    //     // options.transport.end_point = EndPoint::try_from((&root_addr, port))?;
+    //     // let messages = get_messages(&options, &mut info)?;
+
+    //     authorative = false;
+    // }
+
+    let messages = get_messages(&mut info, &options)?;
+    DnsProtocol::display(&options.display, &info, &messages);
 
     Ok(())
 }

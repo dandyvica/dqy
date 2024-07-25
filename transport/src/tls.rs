@@ -10,7 +10,7 @@ use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
 use super::{protocol::Protocol, Transporter};
-use crate::{get_tcpstream_ok, TransportOptions, TransportProtocol};
+use crate::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
@@ -23,14 +23,14 @@ impl TlsProtocol {
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
         let config = Self::config(root_store);
 
-        let stream = get_tcpstream_ok(&trp_options.end_point.addrs[..], trp_options.timeout)?;
+        let stream = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
         debug!("DoT: created TLS-TCP socket to {}", stream.peer_addr()?);
 
         // in case we use the host resolver, server name is empty. We need to fill it in
-        let server = if trp_options.end_point.server.is_empty() {
+        let server = if trp_options.endpoint.server.is_empty() {
             stream.peer_addr()?.ip().to_string()
         } else {
-            trp_options.end_point.server.clone()
+            trp_options.endpoint.server.clone()
         };
         debug!("DoT: server is {}", server);
 
@@ -45,7 +45,7 @@ impl TlsProtocol {
         let tls_stream = StreamOwned::new(conn, stream);
 
         Ok(Self {
-            stats: (0, 0),
+            netstat: (0, 0),
             handle: tls_stream,
         })
     }
@@ -67,13 +67,13 @@ impl TlsProtocol {
 impl Transporter for TlsProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.write(buffer)?;
-        self.stats.0 = sent;
+        self.netstat.0 = sent;
         Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
         let received = super::tcp_read(&mut self.handle, buffer)?;
-        self.stats.1 = received;
+        self.netstat.1 = received;
         Ok(received)
     }
 
@@ -91,5 +91,9 @@ impl Transporter for TlsProtocol {
 
     fn peer(&self) -> std::io::Result<SocketAddr> {
         self.handle.sock.peer_addr()
+    }
+
+    fn netstat(&self) -> NetworkStat {
+        self.stats()
     }
 }

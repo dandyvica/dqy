@@ -1,4 +1,9 @@
+# used to compile Linux x64 musl
+# build image with: docker build -t dqy-alpine -f dockerfile.alpine .
+# run a container from image: docker run -d -it --name dqy-alpine-ctr dqy-alpine /bin/sh
+# compile dqy: 
 
+# build dqy from container: 
 FROM alpine
 
 RUN <<EOF
@@ -10,8 +15,7 @@ apk add lua
 apk add lua5.4-dev
 apk add musl-dev
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source "$HOME/.cargo/env"
 git clone https://github.com/dandyvica/dqy
-cd dqy
-cargo build --release
+echo "cd dqy && git pull && source ~/.cargo/env && cargo build --release" >compile.sh
+chmod +x compile.sh
 EOF
