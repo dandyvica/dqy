@@ -25,7 +25,7 @@ impl Default for MetaRR {
     }
 }
 
-#[derive(Default, ToNetwork, Serialize)]
+#[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct Query {
     #[serde(skip_serializing)]
     pub length: Option<u16>, // length in case of TCP/TLS transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
@@ -39,12 +39,6 @@ impl Query {
     // builder pattern for adding lots of options to a query
     //───────────────────────────────────────────────────────────────────────────────────
     pub fn build() -> Self {
-        // let mut q = Self::default();
-
-        // // default header
-        // q.header = Header::default();
-
-        // q
         Self {
             header: Header::default(),
             ..Default::default()
@@ -61,14 +55,13 @@ impl Query {
         self
     }
 
-    pub fn with_domain(mut self, domain: DomainName) -> Self {
-        self.question.qname = domain;
+    pub fn with_domain(mut self, domain: &DomainName) -> Self {
+        self.question.qname = domain.clone();
         self
     }
 
     pub fn with_flags(mut self, flags: &BitFlags) -> Self {
         self.header.flags.bitflags = flags.clone();
-
         self
     }
 
@@ -79,13 +72,12 @@ impl Query {
             self.additional = Some(vec![additional_rr]);
         }
         self.header.ar_count += 1;
-
         self
     }
 
     pub fn with_length(mut self) -> Self {
+        trace!("==============> inside with_length");
         self.length = Some(0u16);
-
         self
     }
 
@@ -94,11 +86,19 @@ impl Query {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;
+        trace!(
+            "buffer to send before TCP length addition: {:0X?}, uses_leading_length={}",
+            buffer,
+            trp.uses_leading_length()
+        );
 
         // if using TCP, we need to prepend the message sent with length of message
         if trp.uses_leading_length() {
             let bytes = (message_size - 2).to_be_bytes();
             buffer[..2].copy_from_slice(&bytes);
+
+            // not really necessary but to be aligned with what is sent
+            self.length = Some(message_size);
         };
         trace!("buffer to send: {:0X?}", buffer);
 
@@ -116,23 +116,23 @@ impl Query {
     }
 }
 
-impl fmt::Debug for Query {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "length:<{:?}> header:<{:?}> question:<{:?}>",
-            self.length, self.header, self.question
-        )?;
+// impl fmt::Debug for Query {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(
+//             f,
+//             "length:<{:?}> header:<{:?}> question:<{:?}>",
+//             self.length, self.header, self.question
+//         )?;
 
-        if let Some(add) = &self.additional {
-            for rr in add {
-                write!(f, "{:?}", rr)?;
-            }
-        }
+//         if let Some(add) = &self.additional {
+//             for rr in add {
+//                 write!(f, "{:?}", rr)?;
+//             }
+//         }
 
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

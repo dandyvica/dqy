@@ -184,14 +184,14 @@ pub(super) struct ResourceRecord {
 
 impl ResourceRecord {
     // in case of A or AAAA addresses, returns the ip address in the RData
-    pub fn ip_address(&self, ip_version: IPVersion) -> Option<IpAddr> {
-        match ip_version {
-            IPVersion::V4 => {
+    pub fn ip_address(&self, qtype: &QType) -> Option<IpAddr> {
+        match qtype {
+            QType::A => {
                 if let RData::A(ip4) = &self.r_data {
                     return Some(IpAddr::from(ip4.0));
                 }
             }
-            IPVersion::V6 => {
+            QType::AAAA => {
                 if let RData::AAAA(ip6) = &self.r_data {
                     return Some(IpAddr::from(ip6.0));
                 }
@@ -390,9 +390,9 @@ mod tests {
         let mut rr = ResourceRecord::default();
         rr.deserialize_from(&mut buffer).unwrap();
 
-        let ip = rr.ip_address(IPVersion::V4).unwrap();
+        let ip = rr.ip_address(&QType::A).unwrap();
         assert_eq!(ip, Ipv4Addr::from_str("142.250.179.68").unwrap());
-        assert!(rr.ip_address(IPVersion::Any).is_none());
+        assert!(rr.ip_address(&QType::SOA).is_none());
 
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::A);
@@ -413,9 +413,9 @@ mod tests {
         let mut rr = ResourceRecord::default();
         rr.deserialize_from(&mut buffer).unwrap();
 
-        let ip = rr.ip_address(IPVersion::V6).unwrap();
+        let ip = rr.ip_address(&QType::AAAA).unwrap();
+
         assert_eq!(ip, Ipv6Addr::from_str("2a00:1450:4007:818::2004").unwrap());
-        assert!(rr.ip_address(IPVersion::Any).is_none());
 
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::AAAA);
@@ -436,11 +436,6 @@ mod tests {
         let mut rr = ResourceRecord::default();
         rr.deserialize_from(&mut buffer).unwrap();
 
-        let ip = rr.ip_address(IPVersion::V6);
-        assert!(rr.ip_address(IPVersion::Any).is_none());
-        let ip = rr.ip_address(IPVersion::V4);
-        assert!(rr.ip_address(IPVersion::Any).is_none());
-
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::SOA);
         assert!(
@@ -451,7 +446,7 @@ mod tests {
             // due to compression, don't test domain names
             // assert_eq!(soa.rname, DomainName::try_from("ns1.google.").unwrap());
             // assert_eq!(soa.rname, DomainName::try_from("dns-admin.").unwrap());
-            assert_eq!(soa.serial, 655495352);            
+            assert_eq!(soa.serial, 655495352);
             assert_eq!(soa.refresh, 900);
             assert_eq!(soa.retry, 900);
             assert_eq!(soa.expire, 1800);

@@ -24,7 +24,7 @@ new_rd_length!(OPENPGPKEY);
 
 impl fmt::Display for OPENPGPKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.key.as_b64())
+        write!(f, "{}", self.key.to_b64())
     }
 }
 
@@ -35,7 +35,7 @@ impl Serialize for OPENPGPKEY {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.key.as_b64())
+        serializer.serialize_str(&self.key.to_b64())
     }
 }
 

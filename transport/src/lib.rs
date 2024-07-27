@@ -194,6 +194,7 @@ where
 {
     // in case of TCP, the first 2 bytes is lthe length of data coming
     // so read 2 first bytes
+
     let mut buf = [0u8; 2];
     stream.read_exact(&mut buf)?;
     let length = u16::from_be_bytes(buf) as usize;
@@ -206,6 +207,8 @@ where
 
     // now read exact length
     stream.read_exact(&mut buffer[..length])?;
+
+    trace!("inside tcp_read, buffer={:X?}", buffer);
 
     Ok(length)
 }

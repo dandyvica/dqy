@@ -1,7 +1,22 @@
 //! Manage command line arguments here.
 use std::net::SocketAddr;
 
-use dns::rfc::{qclass::QClass, qtype::QType};
+// my DNS library
+use dns::rfc::{
+    domain::DomainName,
+    opt::{
+        dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
+        nsid::NSID,
+        opt::OPT,
+        padding::Padding,
+    },
+    qclass::QClass,
+    qtype::QType,
+    query::{MetaRR, Query},
+};
+use log::trace;
+
+use crate::args::CliOptions;
 
 //────────────────────────────────────────────────────────────────────────────────────────────
 // List of flags to set or not
@@ -76,4 +91,103 @@ pub struct DnsProtocolOptions {
     pub domain: String,
     // server is the name passed after @
     //pub server: String,
+    pub domain_name: DomainName,
+}
+
+pub trait FromOptions<T> {
+    fn from_options(options: &CliOptions, other: T) -> Option<Self>
+    where
+        Self: Sized;
+}
+
+impl FromOptions<u16> for OPT {
+    //───────────────────────────────────────────────────────────────────────────────────
+    // build OPT RR from the cli options
+    //───────────────────────────────────────────────────────────────────────────────────
+    fn from_options(options: &CliOptions, bufsize: u16) -> Option<Self> {
+        let edns = &options.edns;
+
+        // --no-opt
+        if edns.no_opt {
+            return None;
+        }
+
+        let mut opt = OPT::new(bufsize);
+
+        //───────────────────────────────────────────────────────────────────────────────
+        // add OPT options according to cli options
+        //───────────────────────────────────────────────────────────────────────────────
+
+        // NSID
+        if edns.nsid {
+            opt.add_option(NSID::default());
+        }
+
+        // padding
+        if let Some(len) = edns.padding {
+            opt.add_option(Padding::new(len));
+        }
+
+        // DAU, DHU & N3U
+        if let Some(list) = &edns.dau {
+            opt.add_option(DAU::from(list.as_slice()));
+        }
+        if let Some(list) = &edns.dhu {
+            opt.add_option(DHU::from(list.as_slice()));
+        }
+        if let Some(list) = &edns.n3u {
+            opt.add_option(N3U::from(list.as_slice()));
+        }
+
+        // edns-key-tag
+        if let Some(list) = &edns.keytag {
+            opt.add_option(EdnsKeyTag::from(list.as_slice()));
+        }
+
+        // dnssec flag ?
+        if edns.dnssec {
+            opt.set_dnssec();
+        }
+
+        Some(opt)
+    }
+}
+
+impl FromOptions<&QType> for Query {
+    //───────────────────────────────────────────────────────────────────────────────────
+    // build query from the cli options
+    //───────────────────────────────────────────────────────────────────────────────────
+    fn from_options(options: &CliOptions, qt: &QType) -> Option<Query> {
+        //───────────────────────────────────────────────────────────────────────────────────
+        // build the OPT record to be added in the additional section
+        //───────────────────────────────────────────────────────────────────────────────────
+        let opt = OPT::from_options(&options, options.transport.bufsize);
+        trace!("OPT record: {:#?}", &opt);
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // build Query
+        //───────────────────────────────────────────────────────────────────────────────────
+        let mut query = Query::build()
+            .with_type(qt)
+            .with_class(&options.protocol.qclass)
+            .with_domain(&options.protocol.domain_name)
+            .with_flags(&options.flags);
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Reserve length if TCP or TLS
+        //───────────────────────────────────────────────────────────────────────────────────
+        if options.transport.transport_mode.uses_leading_length() {
+            query = query.with_length();
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Add OPT if any
+        //───────────────────────────────────────────────────────────────────────────────────
+        if let Some(opt) = opt {
+            query = query.with_additional(MetaRR::OPT(opt));
+        }
+        trace!("Query record: {:#?}", &query);
+
+        Some(query)
+    }
 }

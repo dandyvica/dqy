@@ -9,7 +9,7 @@ use args::args::CliOptions;
 use error::Error;
 use transport::{
     https::HttpsProtocol, protocol::Protocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol,
-    TransportOptions, Transporter,
+    Transporter,
 };
 
 mod trace;
@@ -24,16 +24,23 @@ mod lua;
 use lua::LuaDisplay;
 
 // the initial length of the Vec buffer
-const BUFFER_CHUNK: usize = 4096;
+const BUFFER_SIZE: usize = 4096;
 
 //───────────────────────────────────────────────────────────────────────────────────
 // Gather some information which might be useful for the user
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Default, Serialize)]
-struct Info {
+pub struct Info {
+    //resolver reached
     server: Option<SocketAddr>,
+
+    // elapsed time in ms
     elapsed: u128,
+
+    // transport used (ex: Udp)
     mode: String,
+
+    // bytes sent and received during network operations
     bytes_sent: usize,
     bytes_received: usize,
 }
@@ -43,7 +50,7 @@ impl fmt::Display for Info {
         if let Some(peer) = self.server {
             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
         }
-        write!(f, "elapsed: {} ms\n", self.elapsed)?;
+        writeln!(f, "elapsed: {} ms", self.elapsed)?;
         write!(
             f,
             "sent:{}, received:{} bytes",
@@ -52,14 +59,16 @@ impl fmt::Display for Info {
     }
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
 // get list of messages depending on transport
+//───────────────────────────────────────────────────────────────────────────────────
 fn get_messages_using_transport<T: Transporter>(
     info: &mut Info,
     transport: &mut T,
     options: &CliOptions,
 ) -> error::Result<MessageList> {
     info.server = transport.peer().ok();
-    let messages = DnsProtocol::send_receive(&options, transport, BUFFER_CHUNK)?;
+    let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
 
     let stats = transport.netstat();
 
@@ -73,19 +82,19 @@ pub fn get_messages(info: &mut Info, options: &CliOptions) -> error::Result<Mess
     match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, &options)
+            get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::Tcp => {
             let mut transport = TcpProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, &options)
+            get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::DoT => {
             let mut transport = TlsProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, &options)
+            get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::DoH => {
             let mut transport = HttpsProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, &options)
+            get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::DoQ => {
             unimplemented!("DoQ is not yet implemented")
@@ -93,7 +102,9 @@ pub fn get_messages(info: &mut Info, options: &CliOptions) -> error::Result<Mess
     }
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
 // use this trick to be able to display error
+//───────────────────────────────────────────────────────────────────────────────────
 fn main() -> ExitCode {
     let res = run();
 
@@ -145,75 +156,41 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
+// core of processing
+//───────────────────────────────────────────────────────────────────────────────────
 #[allow(unused_assignments)]
 fn run() -> error::Result<()> {
     let now = Instant::now();
 
+    //───────────────────────────────────────────────────────────────────────────────────
     // get arguments
+    //───────────────────────────────────────────────────────────────────────────────────
     let args: Vec<String> = std::env::args().skip(1).collect();
     let options = CliOptions::options(&args)?;
     debug!("{:#?}", options);
 
+    //───────────────────────────────────────────────────────────────────────────────────
     // this will give user some information on how the protocol ran
+    //───────────────────────────────────────────────────────────────────────────────────
     let mut info = Info::default();
 
-    // trace test
+    //───────────────────────────────────────────────────────────────────────────────────
+    // trace if requested
+    //───────────────────────────────────────────────────────────────────────────────────
     if options.display.trace {
         let _ = trace_resolution(&options);
         std::process::exit(0);
     }
 
-    let messages = match options.transport.transport_mode {
-        Protocol::Udp => {
-            let mut transport = UdpProtocol::new(&options.transport)?;
-            get_messages_using_transport(&mut info, &mut transport, &options)?
-            // info.server = transport.peer().ok();
-            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
+    //───────────────────────────────────────────────────────────────────────────────────
+    // send queries and receive responses
+    //───────────────────────────────────────────────────────────────────────────────────
+    let messages = get_messages(&mut info, &options)?;
 
-            // info.bytes_sent = transport.netstat.0;
-            // info.bytes_received = transport.netstat.1;
-
-            // messages
-        }
-        Protocol::Tcp => {
-            let mut transport = TcpProtocol::new(&options.transport)?;
-            get_messages_using_transport(&mut info, &mut transport, &options)?
-            // info.server = transport.peer().ok();
-            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-
-            // info.bytes_sent = transport.netstat.0;
-            // info.bytes_received = transport.netstat.1;
-
-            // messages
-        }
-        Protocol::DoT => {
-            let mut transport = TlsProtocol::new(&options.transport)?;
-            get_messages_using_transport(&mut info, &mut transport, &options)?
-            // info.server = transport.peer().ok();
-            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-
-            // info.bytes_sent = transport.netstat.0;
-            // info.bytes_received = transport.netstat.1;
-
-            // messages
-        }
-        Protocol::DoH => {
-            let mut transport = HttpsProtocol::new(&options.transport)?;
-            get_messages_using_transport(&mut info, &mut transport, &options)?
-            // let messages = DnsProtocol::send_receive(&options, &mut transport, BUFFER_CHUNK)?;
-            // info.server = transport.peer().ok();
-
-            // info.bytes_sent = transport.stats.0;
-            // info.bytes_received = transport.stats.1;
-
-            // messages
-        }
-        Protocol::DoQ => {
-            unimplemented!("DoQ is not yet implemented")
-        }
-    };
-
+    //───────────────────────────────────────────────────────────────────────────────────
     // elapsed as millis will be hopefully enough
+    //───────────────────────────────────────────────────────────────────────────────────
     let elapsed = now.elapsed();
     info.elapsed = elapsed.as_millis();
 

@@ -16,7 +16,7 @@ use type2network_derive::ToNetwork;
 //---------------------------------------------------------------------------------------------
 
 // a label is part of a domain name
-#[derive(Debug, Default, Serialize, ToNetwork)]
+#[derive(Debug, Default, Clone, Serialize, ToNetwork)]
 struct Label(Vec<u8>);
 
 // Deref to ease methods calls on inner value
@@ -63,7 +63,7 @@ impl PartialEq for Label {
 //---------------------------------------------------------------------------------------------
 
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DomainName {
     // a domain name is a list of labels as defined in the RFC1035
     labels: Vec<Label>,

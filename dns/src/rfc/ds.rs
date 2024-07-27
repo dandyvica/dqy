@@ -57,7 +57,7 @@ impl Serialize for DS {
         seq.serialize_entry("key_tag", &self.key_tag)?;
         seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
         seq.serialize_entry("digest_type", &self.digest_type)?;
-        seq.serialize_entry("digest", &self.digest.as_b64())?;
+        seq.serialize_entry("digest", &self.digest.to_b64())?;
         seq.end()
     }
 }

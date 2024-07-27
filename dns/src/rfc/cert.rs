@@ -64,7 +64,7 @@ impl fmt::Display for CERT {
             self.certificate_type,
             self.key_tag,
             self.algorithm,
-            self.certificate.as_b64()
+            self.certificate.to_b64()
         )
     }
 }
@@ -78,7 +78,7 @@ impl Serialize for CERT {
         seq.serialize_entry("flags", &self.certificate_type.to_string())?;
         seq.serialize_entry("key_tag", &self.key_tag)?;
         seq.serialize_entry("algorithm", &self.algorithm)?;
-        seq.serialize_entry("certificate", &self.certificate.as_b64())?;
+        seq.serialize_entry("certificate", &self.certificate.to_b64())?;
         seq.end()
     }
 }

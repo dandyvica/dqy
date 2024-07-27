@@ -53,7 +53,7 @@ impl Serialize for NSEC3PARAM {
         seq.serialize_entry("algorithm", &self.algorithm)?;
         seq.serialize_entry("flags", &self.flags)?;
         seq.serialize_entry("iterations", &self.iterations)?;
-        seq.serialize_entry("salt", &self.salt.as_hex())?;
+        seq.serialize_entry("salt", &self.salt.to_hex())?;
         seq.end()
     }
 }

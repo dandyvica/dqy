@@ -85,14 +85,14 @@ impl OPT {
     //───────────────────────────────────────────────────────────────────────────────────
     // builder pattern for adding lots of options to OPT RR
     //───────────────────────────────────────────────────────────────────────────────────
-    pub fn build(bufsize: u16) -> Self {
-        Self::new(bufsize)
-    }
+    // pub fn build(bufsize: u16) -> Self {
+    //     Self::new(bufsize)
+    // }
 
-    pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
-        self.add_option(data);
-        self
-    }
+    // pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
+    //     self.add_option(data);
+    //     self
+    // }
 
     // #[allow(clippy::field_reassign_with_default)]
     // pub fn set_edns_nsid(&mut self) {

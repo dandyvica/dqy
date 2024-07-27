@@ -79,3 +79,9 @@ dqy +short wks wks.dns.netmeister.org.
 dqy +short x25 x25.dns.netmeister.org.
 dqy +short zonemd zonemd.dns.netmeister.org.
 dqy +short @f.root-servers.net hostname.bind chaos txt
+
+# added ANY, AXFR
+dqy @a.gtld-servers.net ANY com. --bufsize=512
+dqy @192.5.6.30 ANY com. --stats --bufsize=400 -vvvvv --no-opt
+dqy axfr @nsztm1.digi.ninja zonetransfer.me
+

@@ -59,8 +59,8 @@ impl fmt::Display for HIP {
             f,
             "{} {} {}",
             self.pk_algorithm,
-            self.hit.as_b16(),
-            self.public_key.as_b64()
+            self.hit.to_b16(),
+            self.public_key.to_b64()
         )
     }
 }
@@ -74,8 +74,8 @@ impl Serialize for HIP {
     {
         let mut seq = serializer.serialize_map(Some(3))?;
         seq.serialize_entry("pk_algorithm", &self.pk_algorithm)?;
-        seq.serialize_entry("hit", &self.hit.as_b16())?;
-        seq.serialize_entry("public_key", &self.public_key.as_b64())?;
+        seq.serialize_entry("hit", &self.hit.to_b16())?;
+        seq.serialize_entry("public_key", &self.public_key.to_b64())?;
         seq.end()
     }
 }

@@ -4,9 +4,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::options::{DnsProtocolOptions, EdnsOptions};
+// use options::{DnsProtocolOptions, EdnsOptions};
 
 use clap::{Arg, ArgAction, Command};
+use dns::rfc::domain::DomainName;
 use http::*;
 use rustc_version_runtime::version;
 
@@ -18,7 +19,9 @@ use transport::{
     TransportOptions,
 };
 
-use log::trace;
+use log::{debug, trace};
+
+use crate::options::{DnsProtocolOptions, EdnsOptions};
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -139,7 +142,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_delimiter(',')
                     .value_name("TYPE")
                     .value_parser(validate_qtypes)
-                    .default_value("A")
+                    .default_value("NS")
             )
             .arg(
                 Arg::new("class")
@@ -660,6 +663,17 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 
         options.display.trace = matches.get_flag("trace");
 
+        // finally convert domain as a string to a domain name
+        options.protocol.domain_name = DomainName::try_from(options.protocol.domain.as_str())?;
+
+        // for some types, use TCP instead of UDP right away
+        if options.protocol.qtype.contains(&QType::ANY)
+            || options.protocol.qtype.contains(&QType::AXFR)
+                && options.transport.transport_mode == Protocol::Udp
+        {
+            options.transport.transport_mode = Protocol::Tcp;
+        }
+
         // open Lua script to load code
         #[cfg(not(feature = "nolua"))]
         if let Some(path) = matches.get_one::<PathBuf>("lua") {
@@ -721,7 +735,7 @@ mod tests {
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
-        assert_eq!(opts.protocol.qtype, vec![QType::A]);
+        assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, ".");
@@ -735,7 +749,7 @@ mod tests {
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
-        assert_eq!(opts.protocol.qtype, vec![QType::A]);
+        assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
         assert_eq!(&opts.protocol.domain, "www.google.com");
