@@ -31,3 +31,14 @@ impl Serialize for DnsDateTime {
         serializer.serialize_str(&self.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn datetime() {
+        let dt = DnsDateTime(0);
+        assert_eq!(dt.to_string(), "19700101000000");
+    }
+}

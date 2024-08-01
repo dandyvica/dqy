@@ -127,6 +127,7 @@ mod tests {
         buf.0 = vec![0, 1, 2];
         to_network_test(&buf, 3, &[0, 1, 2]);
 
+        // from
         let b = vec![0x12, 0x34, 0x56, 0x78];
         let mut buffer = Cursor::new(b.as_slice());
         let mut buf = Buffer::with_capacity(2u16);
