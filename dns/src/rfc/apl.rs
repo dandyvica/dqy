@@ -30,7 +30,7 @@ pub(super) struct InnerAPL {
     prefix: u8,
     afdlength: u8,
 
-    #[deser(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = Buffer::with_capacity(length); ))]
+    #[from_network(with_code( let length = (self.afdlength << 1) >> 1; trace!("afdlength={}", length); self.afdpart = Buffer::with_capacity(length); ))]
     afdpart: Buffer,
 }
 
@@ -91,8 +91,8 @@ pub(super) struct APL {
 // auto-implement new
 new_rd_length!(APL);
 
-impl<'a> FromNetworkOrder<'a> for APL {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for APL {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         let mut inner_length = 0;
 
         while inner_length < self.rd_length {

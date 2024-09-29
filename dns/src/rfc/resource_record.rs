@@ -251,8 +251,8 @@ macro_rules! get_rr {
     }};
 }
 
-impl<'a> FromNetworkOrder<'a> for ResourceRecord {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for ResourceRecord {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         self.name.deserialize_from(buffer)?;
         self.r#type.deserialize_from(buffer)?;
 

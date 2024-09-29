@@ -71,8 +71,8 @@ impl ToNetworkOrder for Buffer {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for Buffer {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for Buffer {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         buffer.read_exact(self.0.as_mut_slice())?;
         Ok(())
     }
@@ -86,8 +86,8 @@ impl AsRef<[u8]> for Buffer {
 }
 
 // IntoIterator to benefit from already defined iterator on Vec
-impl<'a> IntoIterator for &'a Buffer {
-    type Item = &'a u8;
+impl<'fromnet> IntoIterator for &'fromnet Buffer {
+    type Item = &'fromnet u8;
     type IntoIter = std::slice::Iter<'a, u8>;
 
     fn into_iter(self) -> Self::IntoIter {

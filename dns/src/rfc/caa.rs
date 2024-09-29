@@ -23,16 +23,16 @@ use crate::{buffer::Buffer, new_rd_length};
 pub(super) struct CAA {
     // transmistted through RR deserialization
     #[serde(skip_serializing)]
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     flags: u8,
     tag_length: u8,
 
-    #[deser(with_code( self.tag_key = Buffer::with_capacity(self.tag_length); ))]
+    #[from_network(with_code( self.tag_key = Buffer::with_capacity(self.tag_length); ))]
     tag_key: Buffer,
 
-    #[deser(with_code( self.tag_value = Buffer::with_capacity(self.rd_length - self.tag_length as u16 - 2 ); ))]
+    #[from_network(with_code( self.tag_value = Buffer::with_capacity(self.rd_length - self.tag_length as u16 - 2 ); ))]
     tag_value: Buffer,
 }
 

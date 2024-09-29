@@ -19,7 +19,7 @@ use super::domain::DomainName;
 // Other Data:  octet-stream  undefined by this specification
 #[derive(Debug, Default, FromNetwork)]
 pub struct TKEY {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     algorithm: DomainName,
@@ -29,11 +29,11 @@ pub struct TKEY {
     error: u16,
 
     key_size: u16,
-    #[deser(with_code( self.key_data = Buffer::with_capacity(self.key_size); ))]
+    #[from_network(with_code( self.key_data = Buffer::with_capacity(self.key_size); ))]
     key_data: Buffer,
 
     other_size: u16,
-    #[deser(with_code( self.key_data = Buffer::with_capacity(self.other_size); ))]
+    #[from_network(with_code( self.key_data = Buffer::with_capacity(self.other_size); ))]
     other_data: Buffer,
 }
 

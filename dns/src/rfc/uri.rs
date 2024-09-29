@@ -18,13 +18,13 @@ use crate::{buffer::Buffer, new_rd_length};
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct URI {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     priority: u16,
     weight: u16,
 
-    #[deser(with_code( self.target = Buffer::with_capacity(self.rd_length - 4); ))]
+    #[from_network(with_code( self.target = Buffer::with_capacity(self.rd_length - 4); ))]
     target: Buffer,
 }
 

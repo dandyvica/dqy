@@ -36,8 +36,8 @@ impl Serialize for CharacterString {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for CharacterString {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for CharacterString {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         // copy text length
         self.length.deserialize_from(buffer)?;
         let current_position = buffer.position() as usize;

@@ -16,9 +16,9 @@ use crate::{protocol::IPVersion, NetworkStat, TransportOptions};
 
 use super::{protocol::Protocol, Transporter};
 
-pub struct HttpsProtocol<'a> {
+pub struct HttpsProtocol<'fromnet> {
     // URL endpoint
-    server: &'a str,
+    server: &'fromnet str,
 
     // reqwest client used to send DNS messages
     client: Client,
@@ -33,8 +33,8 @@ pub struct HttpsProtocol<'a> {
     pub stats: NetworkStat,
 }
 
-impl<'a> HttpsProtocol<'a> {
-    pub fn new(trp_options: &'a TransportOptions) -> Result<Self> {
+impl<'fromnet> HttpsProtocol<'fromnet> {
+    pub fn new(trp_options: &'fromnet TransportOptions) -> Result<Self> {
         let cb = Self::client_builder(trp_options);
 
         let client = match trp_options.https_version {
@@ -69,7 +69,7 @@ impl<'a> HttpsProtocol<'a> {
         headers
     }
 
-    fn client_builder(trp_options: &'a TransportOptions) -> ClientBuilder {
+    fn client_builder(trp_options: &'fromnet TransportOptions) -> ClientBuilder {
         // same headers for all requests
         let cb = Client::builder()
             .default_headers(Self::construct_headers())
@@ -84,7 +84,7 @@ impl<'a> HttpsProtocol<'a> {
     }
 }
 
-impl<'a> Transporter for HttpsProtocol<'a> {
+impl<'fromnet> Transporter for HttpsProtocol<'fromnet> {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         // need to copy bytes because body() prototype is: pub fn body<T: Into<Body>>(self, body: T) -> RequestBuilder
         // and From<Body> is not implemented for &[u8]. See here: https://docs.rs/reqwest/latest/reqwest/blocking/struct.Body.html

@@ -16,18 +16,18 @@ use serde::{Serialize, Serializer};
 
 // a label is part of a domain name
 #[derive(Debug, Default, Serialize)]
-struct Label<'a>(&'a [u8]);
+struct Label<'fromnet>(&'fromnet [u8]);
 
 // Deref to ease methods calls on inner value
-impl<'a> Deref for Label<'a> {
-    type Target = &'a [u8];
+impl<'fromnet> Deref for Label<'fromnet> {
+    type Target = &'fromnet [u8];
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a> fmt::Display for Label<'a> {
+impl<'fromnet> fmt::Display for Label<'fromnet> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for c in self.0 {
             if *c > 32 && *c < 128 {
@@ -45,7 +45,7 @@ impl<'a> fmt::Display for Label<'a> {
 // Name servers and resolvers must
 // compare labels in a case-insensitive manner (i.e., A=a), assuming ASCII
 // with zero parity.  Non-alphabetic codes must match exactly.
-impl<'a> PartialEq for Label<'a> {
+impl<'fromnet> PartialEq for Label<'fromnet> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -63,14 +63,14 @@ impl<'a> PartialEq for Label<'a> {
 
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default)]
-pub struct DomainName<'a> {
+pub struct DomainName<'fromnet> {
     // a domain name is a list of labels as defined in the RFC1035
-    labels: Vec<Label<'a>>,
+    labels: Vec<Label<'fromnet>>,
 }
 
 // a special serializer because the standard serialization isn't what is expected
 // for a domain name
-impl<'a> Serialize for DomainName<'a> {
+impl<'fromnet> Serialize for DomainName<'fromnet> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -82,7 +82,7 @@ impl<'a> Serialize for DomainName<'a> {
     }
 }
 
-impl<'a> DomainName<'a> {
+impl<'fromnet> DomainName<'fromnet> {
     // this identifies a compressed label
     // From RFC1035:
     //
@@ -211,7 +211,7 @@ impl<'a> DomainName<'a> {
     }
 }
 
-impl<'a> PartialEq for DomainName<'a> {
+impl<'fromnet> PartialEq for DomainName<'fromnet> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -221,7 +221,7 @@ impl<'a> PartialEq for DomainName<'a> {
     }
 }
 
-impl<'a> fmt::Display for DomainName<'a> {
+impl<'fromnet> fmt::Display for DomainName<'fromnet> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.labels.is_empty() {
             write!(f, ".")?;
@@ -235,14 +235,14 @@ impl<'a> fmt::Display for DomainName<'a> {
     }
 }
 
-// impl<'a> show::Show for DomainName<'a> {
+// impl<'fromnet> show::Show for DomainName<'fromnet> {
 //     fn show(&self, stype: ShowType) {
 
 //     }
 // }
 
 // Convert an array of u8 to a domain name
-// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'a> {
+// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'fromnet> {
 //     fn from(v: [u8; N]) -> Self {
 //         let s = std::str::from_utf8(slice)?;
 //         Ok(Label(s))
@@ -250,10 +250,10 @@ impl<'a> fmt::Display for DomainName<'a> {
 // }
 
 // Convert a str to a domain name
-impl<'a> TryFrom<&'a str> for DomainName<'a> {
+impl<'fromnet> TryFrom<&'fromnet str> for DomainName<'fromnet> {
     type Error = Error;
 
-    fn try_from(domain: &'a str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(domain: &'fromnet str) -> std::result::Result<Self, Self::Error> {
         if domain.is_empty() {
             return Err(err_internal!(EmptyDomainName));
         }
@@ -283,7 +283,7 @@ impl<'a> TryFrom<&'a str> for DomainName<'a> {
     }
 }
 
-impl<'a> ToNetworkOrder for DomainName<'a> {
+impl<'fromnet> ToNetworkOrder for DomainName<'fromnet> {
     fn serialize_to(&self, buffer: &mut Vec<u8>) -> Result<usize> {
         let mut length = 0usize;
 
@@ -299,8 +299,8 @@ impl<'a> ToNetworkOrder for DomainName<'a> {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for DomainName<'a> {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for DomainName<'fromnet> {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> Result<()> {
         //dbg!("============================");
 
         // loop through the vector

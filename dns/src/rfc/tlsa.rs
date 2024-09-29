@@ -17,14 +17,14 @@ use crate::{buffer::Buffer, new_rd_length};
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct TLSA {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     cert_usage: u8,
     selector: u8,
     matching_type: u8,
 
-    #[deser(with_code( self.data = Buffer::with_capacity(self.rd_length - 3); ))]
+    #[from_network(with_code( self.data = Buffer::with_capacity(self.rd_length - 3); ))]
     data: Buffer,
 }
 

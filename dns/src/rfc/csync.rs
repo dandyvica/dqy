@@ -22,13 +22,13 @@ use crate::new_rd_length;
 #[derive(Debug, Default, FromNetwork)]
 pub struct CSYNC {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     soa_serial: u32,
     flags: u16,
 
-    #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - 6); ))]
+    #[from_network(with_code( self.types = TypeBitMaps::new(self.rd_length - 6); ))]
     types: TypeBitMaps,
 }
 

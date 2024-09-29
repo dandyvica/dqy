@@ -32,7 +32,7 @@ use super::{nsec3param::NSEC3PARAM, type_bitmaps::TypeBitMaps};
 pub struct NSEC3 {
     // transmistted through RR deserialization
     #[serde(skip_serializing)]
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     #[serde(flatten)]
@@ -40,10 +40,10 @@ pub struct NSEC3 {
     hash_length: u8,
 
     #[serde(serialize_with = "serialize_buffer")]
-    #[deser(with_code( self.owner_name = Buffer::with_capacity(self.hash_length); ))]
+    #[from_network(with_code( self.owner_name = Buffer::with_capacity(self.hash_length); ))]
     owner_name: Buffer,
 
-    #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - (self.params.len() + 1 + self.hash_length as usize) as u16); ))]
+    #[from_network(with_code( self.types = TypeBitMaps::new(self.rd_length - (self.params.len() + 1 + self.hash_length as usize) as u16); ))]
     types: TypeBitMaps,
 }
 

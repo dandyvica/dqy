@@ -22,14 +22,14 @@ use super::algorithm::Algorithm;
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub struct DS {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     key_tag: u16,
     algorithm: Algorithm,
     digest_type: u8,
 
-    #[deser(with_code( self.digest = Buffer::with_capacity(self.rd_length - 4); ))]
+    #[from_network(with_code( self.digest = Buffer::with_capacity(self.rd_length - 4); ))]
     pub(super) digest: Buffer,
 }
 

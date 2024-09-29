@@ -12,10 +12,10 @@ use crate::{buffer::Buffer, new_rd_length};
 #[derive(Debug, Default, FromNetwork)]
 pub struct DHCID {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
-    #[deser(with_code( self.data = Buffer::with_capacity(self.rd_length); ))]
+    #[from_network(with_code( self.data = Buffer::with_capacity(self.rd_length); ))]
     data: Buffer,
 }
 

@@ -19,13 +19,13 @@ use crate::{buffer::Buffer, new_rd_length};
 #[derive(Debug, Default, FromNetwork)]
 pub struct SSHFP {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     algorithm: u8,
     fp_type: u8,
 
-    #[deser(with_code( self.fingerprint = Buffer::with_capacity(self.rd_length - 2); ))]
+    #[from_network(with_code( self.fingerprint = Buffer::with_capacity(self.rd_length - 2); ))]
     fingerprint: Buffer,
 }
 

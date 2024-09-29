@@ -20,7 +20,7 @@ use super::algorithm::DNSSECAlgorithmTypes;
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct DNSKEY {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     // Bit 7 of the Flags field is the Zone Key flag.  If bit 7 has value 1,
@@ -62,7 +62,7 @@ pub(super) struct DNSKEY {
     // The Public Key Field holds the public key material.  The format
     // depends on the algorithm of the key being stored and is described in
     // separate documents.
-    #[deser(with_code( self.key = Buffer::with_capacity(self.rd_length - 4); ))]
+    #[from_network(with_code( self.key = Buffer::with_capacity(self.rd_length - 4); ))]
     key: Buffer,
 }
 

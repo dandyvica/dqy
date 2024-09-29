@@ -34,7 +34,7 @@ use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
 pub struct RRSIG {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     pub type_covered: QType,
@@ -46,10 +46,10 @@ pub struct RRSIG {
     pub key_tag: u16,
 
     // will be deserialized locally
-    // #[deser(ignore)]
+    // #[from_network(ignore)]
     pub name: DomainName,
 
-    #[deser(with_code( self.signature = Buffer::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
+    #[from_network(with_code( self.signature = Buffer::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
     pub signature: Buffer,
 }
 

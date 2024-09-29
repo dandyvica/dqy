@@ -13,9 +13,9 @@ use super::domain::DomainName;
 // <owner> <ttl> <class> DNAME <target>
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct DNAME<'a>(DomainName<'a>);
+pub struct DNAME<'fromnet>(DomainName<'fromnet>);
 
-impl<'a> fmt::Display for DNAME<'a> {
+impl<'fromnet> fmt::Display for DNAME<'fromnet> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)?;
 

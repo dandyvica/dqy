@@ -30,9 +30,9 @@ mod tests {
         assert_eq!(buffer, v);
     }
 
-    pub(crate) fn from_network_test<'a, T>(def: Option<T>, val: &T, buf: &'a Vec<u8>)
+    pub(crate) fn from_network_test<'a, T>(def: Option<T>, val: &T, buf: &'fromnet Vec<u8>)
     where
-        T: FromNetworkOrder<'a> + Default + std::fmt::Debug + std::cmp::PartialEq,
+        T: FromNetworkOrder<'fromnet> + Default + std::fmt::Debug + std::cmp::PartialEq,
     {
         let mut buffer = std::io::Cursor::new(buf.as_slice());
         let mut v: T = if def.is_none() {

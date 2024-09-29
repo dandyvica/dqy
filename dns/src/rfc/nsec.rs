@@ -21,12 +21,12 @@ use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
 #[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct NSEC {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     domain: DomainName,
 
-    #[deser(with_code( self.types = TypeBitMaps::new(self.rd_length - self.domain.len() as u16); ))]
+    #[from_network(with_code( self.types = TypeBitMaps::new(self.rd_length - self.domain.len() as u16); ))]
     types: TypeBitMaps,
 }
 

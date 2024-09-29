@@ -42,14 +42,14 @@ pub enum CertificateTypeValues {
 #[derive(Debug, Default, FromNetwork)]
 pub struct CERT {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     certificate_type: CertificateTypeValues,
     key_tag: u16,
     algorithm: u8,
 
-    #[deser(with_code( self.certificate = Buffer::with_capacity(self.rd_length - 5); ))]
+    #[from_network(with_code( self.certificate = Buffer::with_capacity(self.rd_length - 5); ))]
     certificate: Buffer,
 }
 

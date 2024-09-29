@@ -21,7 +21,7 @@ pub struct NSEC3PARAM {
     iterations: u16,
     salt_length: u8,
 
-    #[deser(with_code( self.salt = Buffer::with_capacity(self.salt_length); ))]
+    #[from_network(with_code( self.salt = Buffer::with_capacity(self.salt_length); ))]
     salt: Buffer,
 }
 

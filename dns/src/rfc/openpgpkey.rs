@@ -12,10 +12,10 @@ use crate::{buffer::Buffer, new_rd_length};
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct OPENPGPKEY {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
-    #[deser(with_code( self.key = Buffer::with_capacity(self.rd_length); ))]
+    #[from_network(with_code( self.key = Buffer::with_capacity(self.rd_length); ))]
     key: Buffer,
 }
 

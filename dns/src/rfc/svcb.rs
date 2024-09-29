@@ -125,13 +125,13 @@ impl fmt::Display for SvcParam {
 #[derive(Debug, Default)]
 pub struct SVCB {
     // transmistted through RR deserialization
-    //#[deser(ignore)]
+    //#[from_network(ignore)]
     pub(super) rd_length: u16,
 
     svc_priority: u16,
     target_name: DomainName,
 
-    //#[deser(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
+    //#[from_network(with_code( self.svc_params = BufferMut::with_capacity(self.rd_length - 2 - self.target_name.len() as u16); ))]
     svc_params: Vec<SvcParam>,
 }
 
@@ -139,8 +139,8 @@ pub struct SVCB {
 new_rd_length!(SVCB);
 
 // implement FromNetwork because of the special SVCB format
-impl<'a> FromNetworkOrder<'a> for SVCB {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for SVCB {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         self.svc_priority.deserialize_from(buffer)?;
         self.target_name.deserialize_from(buffer)?;
 

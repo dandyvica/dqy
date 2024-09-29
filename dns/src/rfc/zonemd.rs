@@ -20,14 +20,14 @@ use crate::{buffer::Buffer, new_rd_length};
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 pub(super) struct ZONEMD {
-    #[deser(ignore)]
+    #[from_network(ignore)]
     rd_length: u16,
 
     serial: u32,
     scheme: u8,
     hash_algorithm: u8,
 
-    #[deser(with_code( self.digest = Buffer::with_capacity(self.rd_length - 6); ))]
+    #[from_network(with_code( self.digest = Buffer::with_capacity(self.rd_length - 6); ))]
     digest: Buffer,
 }
 

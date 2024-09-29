@@ -45,8 +45,8 @@ impl TypeBitMaps {
 //     }
 // }
 
-impl<'a> FromNetworkOrder<'a> for TypeBitMaps {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for TypeBitMaps {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         // read exactly the number of bytes of the whole type bit maps
         trace!("TypeBitMaps length {}", self.types_length);
         let mut buf = vec![0u8; self.types_length as usize];
@@ -87,7 +87,7 @@ impl Serialize for TypeBitMaps {
 //
 // formula: QType value = (bit number of bitmap in the window) + (window block ID)*256
 #[derive(Debug, Default)]
-struct Window<'a> {
+struct Window<'fromnet> {
     // Window Block #
     id: u8,
 
@@ -95,18 +95,18 @@ struct Window<'a> {
     length: u8,
 
     // Bitmap
-    data: &'a [u8],
+    data: &'fromnet [u8],
 }
 
 // we could have more than one window, 256 at most
 #[derive(Debug, Default)]
-struct WindowList<'a>(Vec<Window<'a>>);
+struct WindowList<'fromnet>(Vec<Window<'fromnet>>);
 
-impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
+impl<'fromnet> TryFrom<&'fromnet [u8]> for WindowList<'fromnet> {
     type Error = error::Error;
 
     #[allow(clippy::field_reassign_with_default)]
-    fn try_from(buf: &'a [u8]) -> Result<Self, Self::Error> {
+    fn try_from(buf: &'fromnet [u8]) -> Result<Self, Self::Error> {
         let mut v = Vec::new();
         let mut i = 0usize;
 
@@ -137,7 +137,7 @@ impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
     }
 }
 
-impl<'a> TryFrom<WindowList<'a>> for Vec<QType> {
+impl<'fromnet> TryFrom<WindowList<'fromnet>> for Vec<QType> {
     type Error = error::Error;
 
     fn try_from(list: WindowList) -> Result<Self, Self::Error> {

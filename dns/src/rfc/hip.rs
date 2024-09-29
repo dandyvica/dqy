@@ -33,20 +33,20 @@ use crate::{buffer::Buffer, new_rd_length};
 #[derive(Debug, Default, FromNetwork)]
 pub struct HIP {
     // transmistted through RR deserialization
-    #[deser(ignore)]
+    #[from_network(ignore)]
     pub(super) rd_length: u16,
 
     hit_length: u8,
     pk_algorithm: u8,
     pk_length: u16,
 
-    #[deser(with_code( self.hit = Buffer::with_capacity(self.hit_length); ))]
+    #[from_network(with_code( self.hit = Buffer::with_capacity(self.hit_length); ))]
     hit: Buffer,
 
-    #[deser(with_code( self.public_key = Buffer::with_capacity(self.pk_length); ))]
+    #[from_network(with_code( self.public_key = Buffer::with_capacity(self.pk_length); ))]
     public_key: Buffer,
 
-    #[deser(with_code( self.rendezvous_servers = Buffer::with_capacity(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
+    #[from_network(with_code( self.rendezvous_servers = Buffer::with_capacity(self.rd_length - 4 - self.hit_length as u16 - self.pk_length); ))]
     rendezvous_servers: Buffer,
 }
 

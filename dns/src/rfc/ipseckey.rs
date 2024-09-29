@@ -105,8 +105,8 @@ impl Serialize for IPSECKEY {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for IPSECKEY {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+impl<'fromnet> FromNetworkOrder<'fromnet> for IPSECKEY {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
         // deserialize "easy" fields
         self.precedence.deserialize_from(buffer)?;
         self.gateway_type.deserialize_from(buffer)?;
