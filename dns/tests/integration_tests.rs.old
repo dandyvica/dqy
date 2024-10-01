@@ -20,9 +20,9 @@ use dns::{
 };
 
 // helper struct to manage tests
-struct PCapData<'fromnet> {
-    buf_query: Cursor<&'fromnet [u8]>,
-    buf_resp: Cursor<&'fromnet [u8]>,
+struct PCapData<'a> {
+    buf_query: Cursor<&'a [u8]>,
+    buf_resp: Cursor<&'a [u8]>,
 }
 
 // to ease the data for tests, some captures are made using tcpdump and dig

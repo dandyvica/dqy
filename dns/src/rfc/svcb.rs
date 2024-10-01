@@ -67,6 +67,7 @@ use crate::{buffer::Buffer, new_rd_length};
 #[repr(u16)]
 #[allow(non_camel_case_types)]
 #[allow(clippy::unnecessary_cast)]
+#[from_network(TryFrom)]
 pub(super) enum SvcParamKeys {
     #[default]
     mandatory = 0_u16,
@@ -139,8 +140,8 @@ pub struct SVCB {
 new_rd_length!(SVCB);
 
 // implement FromNetwork because of the special SVCB format
-impl<'fromnet> FromNetworkOrder<'fromnet> for SVCB {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
+impl<'a> FromNetworkOrder<'a> for SVCB {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.svc_priority.deserialize_from(buffer)?;
         self.target_name.deserialize_from(buffer)?;
 

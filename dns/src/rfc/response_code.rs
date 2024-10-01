@@ -10,6 +10,7 @@ use type2network_derive::FromNetwork;
     Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork, Serialize,
 )]
 #[repr(u8)]
+#[from_network(TryFrom)]
 pub enum ResponseCode {
     #[default]
     NoError = 0, // No Error	[RFC1035]

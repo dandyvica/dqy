@@ -121,8 +121,8 @@ impl fmt::Display for Response {
     }
 }
 
-impl<'fromnet> FromNetworkOrder<'fromnet> for Response {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
+impl<'a> FromNetworkOrder<'a> for Response {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.header.deserialize_from(buffer)?;
         trace!("deserialized header: {}", self.header);
 

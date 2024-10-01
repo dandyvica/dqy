@@ -15,6 +15,7 @@ use crate::{buffer::Buffer, new_rd_length};
     Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
 )]
 #[repr(u16)]
+#[from_network(TryFrom)]
 pub enum CertificateTypeValues {
     #[default]
     PKIX = 1, //X.509 as per PKIX

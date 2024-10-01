@@ -9,6 +9,7 @@ use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
     Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
 )]
 #[repr(u8)]
+#[from_network(TryFrom)]
 #[allow(non_camel_case_types)]
 pub enum Algorithm {
     #[default]
@@ -39,6 +40,7 @@ pub enum Algorithm {
     Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
 )]
 #[repr(u8)]
+#[from_network(TryFrom)]
 #[allow(non_camel_case_types)]
 pub enum DNSSECAlgorithmTypes {
     #[default]

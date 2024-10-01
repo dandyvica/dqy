@@ -151,9 +151,9 @@ impl fmt::Display for OptOption {
     }
 }
 
-impl<'fromnet> FromNetworkOrder<'fromnet> for OptOption {
+impl<'a> FromNetworkOrder<'a> for OptOption {
     #[allow(clippy::field_reassign_with_default)]
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         self.code.deserialize_from(buffer)?;
         self.length.deserialize_from(buffer)?;
 
@@ -193,6 +193,7 @@ impl<'fromnet> FromNetworkOrder<'fromnet> for OptOption {
     Serialize,
 )]
 #[repr(u16)]
+#[from_network(TryFrom)]
 pub enum OptOptionCode {
     #[default]
     LLQ = 1, // Optional	[RFC8764]

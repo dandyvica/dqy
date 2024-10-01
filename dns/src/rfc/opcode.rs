@@ -11,6 +11,7 @@ use enum_from::{EnumDisplay, EnumTryFrom};
     Debug, Default, Clone, Copy, PartialEq, FromNetwork, EnumTryFrom, EnumDisplay, Serialize,
 )]
 #[repr(u8)]
+#[from_network(TryFrom)]
 pub enum OpCode {
     #[default]
     Query = 0, //[RFC1035]

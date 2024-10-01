@@ -91,8 +91,8 @@ pub(super) struct APL {
 // auto-implement new
 new_rd_length!(APL);
 
-impl<'fromnet> FromNetworkOrder<'fromnet> for APL {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> std::io::Result<()> {
+impl<'a> FromNetworkOrder<'a> for APL {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
         let mut inner_length = 0;
 
         while inner_length < self.rd_length {

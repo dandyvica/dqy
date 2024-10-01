@@ -20,6 +20,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
     Serialize,
 )]
 #[repr(u16)]
+#[from_network(TryFrom)]
 pub enum QClass {
     #[default]
     IN = 1, // the Internet

@@ -33,6 +33,7 @@ use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 // /                                                               /
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
+#[from_network(TryFrom)]
 pub struct RRSIG {
     #[from_network(ignore)]
     pub(super) rd_length: u16,

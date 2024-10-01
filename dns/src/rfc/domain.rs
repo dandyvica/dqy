@@ -236,14 +236,14 @@ impl fmt::Display for DomainName {
     }
 }
 
-// impl<'fromnet> show::Show for DomainName<'fromnet> {
+// impl<'a> show::Show for DomainName<'a> {
 //     fn show(&self, stype: ShowType) {
 
 //     }
 // }
 
 // Convert an array of u8 to a domain name
-// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'fromnet> {
+// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'a> {
 //     fn from(v: [u8; N]) -> Self {
 //         let s = std::str::from_utf8(slice)?;
 //         Ok(Label(s))
@@ -251,10 +251,10 @@ impl fmt::Display for DomainName {
 // }
 
 // Convert a str to a domain name
-impl<'fromnet> TryFrom<&'fromnet str> for DomainName {
+impl<'a> TryFrom<&'a str> for DomainName {
     type Error = Error;
 
-    fn try_from(domain: &'fromnet str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(domain: &'a str) -> std::result::Result<Self, Self::Error> {
         if domain.is_empty() {
             return Err(err_internal!(EmptyDomainName));
         }
@@ -300,8 +300,8 @@ impl ToNetworkOrder for DomainName {
     }
 }
 
-impl<'fromnet> FromNetworkOrder<'fromnet> for DomainName {
-    fn deserialize_from(&mut self, buffer: &mut Cursor<&'fromnet [u8]>) -> Result<()> {
+impl<'a> FromNetworkOrder<'a> for DomainName {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> Result<()> {
         // dbg!("============================");
 
         // loop through the vector

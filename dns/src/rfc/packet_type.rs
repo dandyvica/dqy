@@ -12,6 +12,7 @@ use enum_from::EnumTryFrom;
 /// both clearer and type oriented.
 #[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, FromNetwork, Serialize)]
 #[repr(u8)]
+#[from_network(TryFrom)]
 pub enum PacketType {
     #[default]
     Query = 0,

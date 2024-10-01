@@ -21,6 +21,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
     Serialize,
 )]
 #[repr(u16)]
+#[from_network(TryFrom)]
 pub enum QType {
     #[default]
     A = 1, // a host address	[RFC1035]
