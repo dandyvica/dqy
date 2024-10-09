@@ -8,6 +8,16 @@ pub enum IPVersion {
     V6,
 }
 
+// impl IPVersion {
+//     // return the QType corresponding to the ip version, to get an ip address
+//     pub fn adress_qtype(&self) -> QType {
+//         match self {
+//             IPVersion::Any, IPVersion::V4 => QType::A,
+//             IPVersion::V6 => QType::AAAA
+//         }
+//     }
+// }
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub enum Protocol {
     #[default]

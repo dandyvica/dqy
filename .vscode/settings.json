@@ -8,5 +8,6 @@
     "Lua.diagnostics.globals": [
         "dns",
         "info"
-    ]
+    ],
+    "sarif-viewer.connectToGithubCodeScanning": "off"
 }

@@ -1,5 +1,5 @@
 use args::args::CliOptions;
-use dns::rfc::qtype::QType;
+use dns::rfc::{qtype::QType, response::ResponseCategory};
 
 use transport::{
     endpoint::EndPoint,
@@ -159,7 +159,7 @@ pub fn trace_resolution(opts: &CliOptions) -> error::Result<()> {
     let mut info = Info::default();
 
     // shortcuts
-    let port = opts.transport.port;
+    //let port = opts.transport.port;
     let qt = options.protocol.qtype[0];
 
     // we only allow just one QType to query
@@ -173,12 +173,14 @@ pub fn trace_resolution(opts: &CliOptions) -> error::Result<()> {
     // we'll stop whenever an authorative answer is found
     let mut authorative = true;
 
+    trace!("tracing {}", qt);
+
     //───────────────────────────────────────────────────────────────────────────────────
     // step 1: get the ip address of a random root server
     //───────────────────────────────────────────────────────────────────────────────────
     let random_root_server = get_random_root(&options.transport.ip_version);
     info!("choosen random root server: {}", random_root_server);
-    let endpoint = EndPoint::try_from((&random_root_server, port))?;
+    let endpoint = EndPoint::try_from((&random_root_server, opts.transport.port))?;
     options.transport.endpoint = endpoint;
 
     // while authorative {
@@ -200,6 +202,20 @@ pub fn trace_resolution(opts: &CliOptions) -> error::Result<()> {
     // }
 
     let messages = get_messages(&mut info, &options)?;
+    let resp = messages[0].response();
+    let rr = resp.random_rr(&qt, ResponseCategory::Additional);
+    println!("rr ==========> {}", rr.unwrap());
+
+    if let Some(rr) = rr {
+        let ip = rr.ip_address(&QType::A);
+        println!("ip ==========> {:?}", ip);
+
+        let endpoint = EndPoint::try_from((&ip.unwrap(), opts.transport.port))?;
+        options.transport.endpoint = endpoint;
+
+        
+    }
+
     DnsProtocol::display(&options.display, &info, &messages);
 
     Ok(())

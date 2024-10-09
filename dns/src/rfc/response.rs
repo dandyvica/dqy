@@ -11,7 +11,15 @@ use serde::Serialize;
 use crate::rfc::response_code::ResponseCode;
 use transport::Transporter;
 
-use super::{header::Header, qtype::QType, question::Question, rrset::RRSet};
+use super::{
+    header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
+};
+
+pub enum ResponseCategory {
+    Answer,
+    Authority,
+    Additional,
+}
 
 #[derive(Debug, Default, Serialize)]
 pub struct Response {
@@ -73,6 +81,32 @@ impl Response {
         trace!("response authority: {:?}", self.authority);
 
         Ok(received)
+    }
+
+    pub fn random_rr(&self, qt: &QType, cat: ResponseCategory) -> Option<&ResourceRecord> {
+        match cat {
+            ResponseCategory::Answer => {
+                if let Some(ans) = &self.answer {
+                    ans.random(qt)
+                } else {
+                    None
+                }
+            }
+            ResponseCategory::Authority => {
+                if let Some(auth) = &self.authority {
+                    auth.random(qt)
+                } else {
+                    None
+                }
+            }
+            ResponseCategory::Additional => {
+                if let Some(add) = &self.additional {
+                    add.random(qt)
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     // return the ip address of a NS server found in the additional section

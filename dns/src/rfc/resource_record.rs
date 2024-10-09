@@ -157,7 +157,7 @@ impl Serialize for OptOrElse {
 }
 
 #[derive(Debug, Default, ToNetwork, Serialize)]
-pub(super) struct ResourceRecord {
+pub struct ResourceRecord {
     pub name: DomainName, // an owner name, i.e., the name of the node to which this resource record pertains.
     pub r#type: QType,    // two octets containing one of the RR TYPE codes.
 

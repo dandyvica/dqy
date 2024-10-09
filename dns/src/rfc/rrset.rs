@@ -11,7 +11,7 @@ use type2network_derive::FromNetwork;
 use rand::seq::IteratorRandom;
 use serde::Serialize;
 
-use super::resource_record::ResourceRecord;
+use super::{qtype::QType, resource_record::ResourceRecord};
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
 pub(super) struct RRSet(Vec<ResourceRecord>);
@@ -27,12 +27,12 @@ impl RRSet {
     //     self.0.iter().filter(|x| x.r#type == *qt).collect()
     // }
 
-    // // return a random RR corresponding to the QType
-    // pub fn random(&self, qt: &QType) -> Option<&RR> {
-    //     let mut rng = rand::thread_rng();
+    // return a random RR corresponding to the QType
+    pub fn random(&self, qt: &QType) -> Option<&ResourceRecord> {
+        let mut rng = rand::thread_rng();
 
-    //     self.filter(qt).into_iter().choose(&mut rng)
-    // }
+        self.0.iter().filter(|rr| rr.r#type == *qt).choose(&mut rng)
+    }
 }
 
 impl Deref for RRSet {
