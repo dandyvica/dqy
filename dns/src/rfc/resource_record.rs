@@ -1,7 +1,6 @@
 use std::{fmt, io::Cursor, net::IpAddr};
 
 use show::Show;
-use transport::protocol::IPVersion;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 

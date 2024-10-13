@@ -88,8 +88,6 @@ impl Default for BitFlags {
     }
 }
 
-//getter!(Flags, qr, PacketType);
-
 impl TryFrom<u16> for Flags {
     type Error = Error;
 

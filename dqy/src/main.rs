@@ -63,22 +63,32 @@ impl fmt::Display for Info {
 // get list of messages depending on transport
 //───────────────────────────────────────────────────────────────────────────────────
 fn get_messages_using_transport<T: Transporter>(
-    info: &mut Info,
+    info: Option<&mut Info>,
     transport: &mut T,
     options: &CliOptions,
 ) -> error::Result<MessageList> {
-    info.server = transport.peer().ok();
+    //info.server = transport.peer().ok();
     let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
 
-    let stats = transport.netstat();
+    // we want info
+    if let Some(info) = info {
+        let stats = transport.netstat();
 
-    info.bytes_sent = stats.0;
-    info.bytes_received = stats.1;
+        info.bytes_sent = stats.0;
+        info.bytes_received = stats.1;
+
+        info.server = transport.peer().ok();
+    }
+
+    // let stats = transport.netstat();
+
+    // info.bytes_sent = stats.0;
+    // info.bytes_received = stats.1;
 
     Ok(messages)
 }
 
-pub fn get_messages(info: &mut Info, options: &CliOptions) -> error::Result<MessageList> {
+pub fn get_messages(info: Option<&mut Info>, options: &CliOptions) -> error::Result<MessageList> {
     match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
@@ -179,14 +189,15 @@ fn run() -> error::Result<()> {
     // trace if requested
     //───────────────────────────────────────────────────────────────────────────────────
     if options.display.trace {
-        let _ = trace_resolution(&options);
+        //let _ = trace_resolution(&options);
+        let _ = resolve_ip("www.google.co.uk", None);
         std::process::exit(0);
     }
 
     //───────────────────────────────────────────────────────────────────────────────────
     // send queries and receive responses
     //───────────────────────────────────────────────────────────────────────────────────
-    let messages = get_messages(&mut info, &options)?;
+    let messages = get_messages(Some(&mut info), &options)?;
 
     //───────────────────────────────────────────────────────────────────────────────────
     // elapsed as millis will be hopefully enough

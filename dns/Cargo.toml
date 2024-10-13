@@ -28,10 +28,8 @@ serde.workspace = true
 serde_json.workspace = true
 show = { path = "../show" }
 transport = { path = "../transport" }
-type2network = { path = "/data/projects/rust/type2network" }
-type2network_derive = { path = "/data/projects/rust/type2network/type2network_derive" }
-# type2network = { git = "https://github.com/dandyvica/type2network" }
-# type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
+type2network = { git = "https://github.com/dandyvica/type2network" }
+type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 webpki-roots.workspace = true
 
 [dev-dependencies]

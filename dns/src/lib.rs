@@ -1,11 +1,6 @@
 pub mod buffer;
-// pub mod butter_mut;
-//pub mod databuf;
 pub mod date_time;
-// pub mod either_or;
-//pub mod error;
 pub mod rfc;
-//pub mod transport;
 
 // Macro used to define getters
 #[macro_export]

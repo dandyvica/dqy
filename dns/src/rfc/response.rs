@@ -1,8 +1,7 @@
-use std::{fmt, io::Cursor};
+use std::{fmt, io::Cursor, net::IpAddr};
 
 use log::{debug, trace};
 
-use rustls_pki_types::IpAddr;
 use show::Show;
 use type2network::FromNetworkOrder;
 
@@ -81,6 +80,17 @@ impl Response {
         trace!("response authority: {:?}", self.authority);
 
         Ok(received)
+    }
+
+    // return a random ip address in the glue records in th additional section
+    pub fn random_glue(&self) -> Option<&ResourceRecord> {
+        if let Some(add) = &self.additional {
+            // choose a random resource record for an A address
+            let a_record = add.random(&QType::A)?;
+            Some(a_record)
+        } else {
+            None
+        }
     }
 
     pub fn random_rr(&self, qt: &QType, cat: ResponseCategory) -> Option<&ResourceRecord> {

@@ -38,8 +38,8 @@ impl<'a> HttpsProtocol<'a> {
         let cb = Self::client_builder(trp_options);
 
         let client = match trp_options.https_version {
-            Version::HTTP_11 => cb.http1_only().build()?,
-            Version::HTTP_2 => cb.http2_prior_knowledge().build()?,
+            Some(Version::HTTP_11) => cb.http1_only().build()?,
+            Some(Version::HTTP_2) => cb.http2_prior_knowledge().build()?,
             _ => unimplemented!(
                 "version {:?} of HTTP is not yet implemented",
                 trp_options.https_version

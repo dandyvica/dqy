@@ -77,8 +77,8 @@ pub struct EdnsOptions {
 //───────────────────────────────────────────────────────────────────────────────────
 // Protocol options: linked to the DNS protocol itself
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default, Clone)]
-pub struct DnsProtocolOptions {
+#[derive(Debug, Clone)]
+pub struct ProtocolOptions {
     pub qtype: Vec<QType>,
 
     // Qclass is IN by default
@@ -89,9 +89,21 @@ pub struct DnsProtocolOptions {
 
     // domain name to query. IDNA domains are punycoded before being sent
     pub domain: String,
-    // server is the name passed after @
-    //pub server: String,
+
+    // domain name but converted to a DomainName struct
     pub domain_name: DomainName,
+}
+
+impl Default for ProtocolOptions {
+    fn default() -> Self {
+        Self {
+            qtype: vec![QType::NS],
+            qclass: QClass::default(),
+            resolvers: Vec::new(),
+            domain: String::from("."), // by default, query is NS and sent to root
+            domain_name: DomainName::try_from(".").unwrap(),
+        }
+    }
 }
 
 pub trait FromOptions<T> {

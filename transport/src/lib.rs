@@ -23,6 +23,7 @@ pub mod endpoint;
 pub mod https;
 pub mod protocol;
 // pub mod quic;
+pub mod root_servers;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
@@ -43,7 +44,7 @@ impl<T> TransportProtocol<T> {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 //───────────────────────────────────────────────────────────────────────────────────
 // Transport options
 //───────────────────────────────────────────────────────────────────────────────────
@@ -77,11 +78,11 @@ pub struct TransportOptions {
     pub https: bool,
     pub doh: bool,
 
+    // http version
+    pub https_version: Option<Version>,
+
     // true if DNS over Quic
     pub doq: bool,
-
-    // http version
-    pub https_version: Version,
 
     // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
@@ -89,6 +90,29 @@ pub struct TransportOptions {
     // keep bytes sent and received
     pub bytes_sent: usize,
     pub bytes_received: usize,
+}
+
+impl Default for TransportOptions {
+    fn default() -> Self {
+        Self {
+            transport_mode: Protocol::default(),
+            ip_version: IPVersion::default(),
+            timeout: Duration::from_millis(3000),
+            endpoint: EndPoint::default(),
+            stats: false,
+            bufsize: 1232,
+            tls: false,
+            dot: false,
+            tcp: false,
+            https: false,
+            doh: false,
+            https_version: None,
+            doq: false,
+            port: 53,
+            bytes_sent: 0,
+            bytes_received: 0,
+        }
+    }
 }
 
 pub trait Transporter {

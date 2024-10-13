@@ -21,7 +21,7 @@ use transport::{
 
 use log::{debug, trace};
 
-use crate::options::{DnsProtocolOptions, EdnsOptions};
+use crate::options::{EdnsOptions, ProtocolOptions};
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -39,7 +39,7 @@ macro_rules! set_unset_flag {
 #[derive(Debug, Default, Clone)]
 pub struct CliOptions {
     // DNS protocol options
-    pub protocol: DnsProtocolOptions,
+    pub protocol: ProtocolOptions,
 
     // transport related
     pub transport: TransportOptions,
@@ -218,6 +218,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_name("https-version")
                     .value_parser(["v1", "v2", "v3"])
                     .default_value("v2")
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("norecurse")
+                    .long("norecurse")
+                    .long_help("Don't set the rd flag (recursion desired). Same as '--unset rd'.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("norecurse")
                     .help_heading("Transport options")
             )
             .arg(
@@ -468,15 +476,22 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
+        // recursion desired flag
+        //───────────────────────────────────────────────────────────────────────────────────
+        if matches.get_flag("norecurse") {
+            options.flags.recursion_desired = false;
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
         // if no domain to query, by default set root (.)
         //───────────────────────────────────────────────────────────────────────────────────
-        if options.protocol.domain.is_empty() {
-            options.protocol.domain = if let Some(d) = matches.get_one::<String>("domain") {
-                d.clone()
-            } else {
-                String::from(".")
-            };
-        }
+        // if options.protocol.domain.is_empty() {
+        //     options.protocol.domain = if let Some(d) = matches.get_one::<String>("domain") {
+        //         d.clone()
+        //     } else {
+        //         String::from(".")
+        //     };
+        // }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // transport mode
@@ -497,9 +512,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 .to_string();
 
             match v.as_str() {
-                "v1" => options.transport.https_version = version::Version::HTTP_11,
-                "v2" => options.transport.https_version = version::Version::HTTP_2,
-                "v3" => options.transport.https_version = version::Version::HTTP_3,
+                "v1" => options.transport.https_version = Some(version::Version::HTTP_11),
+                "v2" => options.transport.https_version = Some(version::Version::HTTP_2),
+                "v3" => options.transport.https_version = Some(version::Version::HTTP_3),
                 _ => unimplemented!("this version of HTTP is not implemented"),
             }
         }

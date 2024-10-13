@@ -13,7 +13,9 @@ doctest = false
 bytes.workspace = true
 error = { path = "../error" }
 http.workspace = true
+lazy_static = "1.4.0"
 log.workspace = true
+rand.workspace = true
 reqwest.workspace = true
 resolver.workspace = true
 rustls.workspace = true

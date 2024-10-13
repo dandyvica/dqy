@@ -13,10 +13,9 @@ args = { path = "../args" }
 dns = { path = "../dns" }
 env_logger.workspace = true
 error = { path = "../error" }
-lazy_static = "1.4.0"
 log.workspace = true
 mlua.workspace = true
-rand = "0.8.5"
+rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 show = { path = "../show" }

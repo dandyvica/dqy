@@ -3,11 +3,12 @@ use std::{
     path::PathBuf,
 };
 
+use crate::root_servers::get_random_root;
 use resolver::ResolverList;
 
 use crate::protocol::IPVersion;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct EndPoint {
     pub server: String,
     pub addrs: Vec<SocketAddr>,
@@ -21,6 +22,14 @@ impl EndPoint {
             IPVersion::V4 => self.addrs.retain(|ip| ip.is_ipv4()),
             IPVersion::V6 => self.addrs.retain(|ip| ip.is_ipv6()),
         }
+    }
+}
+
+// Default endpoint will be a random root server
+impl Default for EndPoint {
+    fn default() -> Self {
+        let rs = get_random_root(&IPVersion::V4);
+        EndPoint::try_from((&rs, 53)).unwrap()
     }
 }
 
