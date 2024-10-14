@@ -9,7 +9,8 @@ use error::{Error, Result};
 use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
-use super::{protocol::Protocol, Transporter};
+use network::{Messenger, Protocol};
+
 use crate::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
@@ -64,7 +65,7 @@ impl TlsProtocol {
     }
 }
 
-impl Transporter for TlsProtocol {
+impl Messenger for TlsProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.write(buffer)?;
         self.netstat.0 = sent;

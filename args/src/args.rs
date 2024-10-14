@@ -12,12 +12,9 @@ use http::*;
 use rustc_version_runtime::version;
 
 use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
+use network::{IPVersion, Protocol};
 use show;
-use transport::endpoint::EndPoint;
-use transport::{
-    protocol::{IPVersion, Protocol},
-    TransportOptions,
-};
+use transport::{endpoint::EndPoint, TransportOptions};
 
 use log::{debug, trace};
 

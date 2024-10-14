@@ -5,23 +5,14 @@ use std::time::Duration;
 
 use endpoint::EndPoint;
 use http::version::Version;
-// use https::HttpsProtocol;
 use log::trace;
 
 use error::{Error, Result};
-// use tcp::TcpProtocol;
-// use tls::TlsProtocol;
-// use udp::UdpProtocol;
-
-// use self::https::HttpsProtocol;
-use self::protocol::{IPVersion, Protocol};
-// use self::tcp::TcpProtocol;
-// use self::tls::TlsProtocol;
-// use self::udp::UdpProtocol;
+use network::{IPVersion, Protocol};
 
 pub mod endpoint;
 pub mod https;
-pub mod protocol;
+// pub mod protocol;
 // pub mod quic;
 pub mod root_servers;
 pub mod tcp;
@@ -115,100 +106,51 @@ impl Default for TransportOptions {
     }
 }
 
-pub trait Transporter {
-    // send query using the underlying transport
-    fn send(&mut self, buffer: &[u8]) -> Result<usize>;
+// pub trait Transporter {
+//     // send query using the underlying transport
+//     fn send(&mut self, buffer: &[u8]) -> Result<usize>;
 
-    // receive response using the underlying transport
-    fn recv(&mut self, buffer: &mut [u8]) -> Result<usize>;
+//     // receive response using the underlying transport
+//     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize>;
 
-    // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
-    // for the message length prepended in the query
-    fn uses_leading_length(&self) -> bool;
+//     // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
+//     // for the message length prepended in the query
+//     fn uses_leading_length(&self) -> bool;
 
-    // return the transport mode
-    fn mode(&self) -> Protocol;
+//     // return the transport mode
+//     fn mode(&self) -> Protocol;
 
-    // read data from a TCP stream
-    // fn tcp_read<R>(stream: &mut R, buffer: &mut [u8]) -> Result<usize>
-    // where
-    //     R: Read + Debug, Self: Sized
-    // {
-    //     // in case of TCP, the first 2 bytes is lthe length of data coming
-    //     // so read 2 first bytes
-    //     let mut buf = [0u8; 2];
-    //     stream.read_exact(&mut buf)?;
-    //     let length = u16::from_be_bytes(buf) as usize;
+//     // read data from a TCP stream
+//     // fn tcp_read<R>(stream: &mut R, buffer: &mut [u8]) -> Result<usize>
+//     // where
+//     //     R: Read + Debug, Self: Sized
+//     // {
+//     //     // in case of TCP, the first 2 bytes is lthe length of data coming
+//     //     // so read 2 first bytes
+//     //     let mut buf = [0u8; 2];
+//     //     stream.read_exact(&mut buf)?;
+//     //     let length = u16::from_be_bytes(buf) as usize;
 
-    //     trace!(
-    //         "about to read {} bytes in the TCP stream {:?}",
-    //         length,
-    //         stream
-    //     );
+//     //     trace!(
+//     //         "about to read {} bytes in the TCP stream {:?}",
+//     //         length,
+//     //         stream
+//     //     );
 
-    //     // now read exact length
-    //     stream.read_exact(&mut buffer[..length])?;
+//     //     // now read exact length
+//     //     stream.read_exact(&mut buffer[..length])?;
 
-    //     Ok(length)
-    // }
+//     //     Ok(length)
+//     // }
 
-    // return the local address used by the transport
-    fn local(&self) -> std::io::Result<SocketAddr>;
+//     // return the local address used by the transport
+//     fn local(&self) -> std::io::Result<SocketAddr>;
 
-    // return the remote address used by the transport
-    fn peer(&self) -> std::io::Result<SocketAddr>;
+//     // return the remote address used by the transport
+//     fn peer(&self) -> std::io::Result<SocketAddr>;
 
-    // return the network stats in the underlying structure
-    fn netstat(&self) -> NetworkStat;
-}
-
-// calls F depending on transport to be used
-// type Binop = fn(&dyn Transporter) -> error::Result<()>;
-
-// pub fn call_transport<F, P>(trp_options: &TransportOptions, f: F) -> error::Result<()>
-// where
-//     F: Fn(Transporter) -> error::Result<()>,
-//     P: Transporter
-// {
-//     match trp_options.transport_mode {
-//         Protocol::Udp => {
-//             let trp = UdpProtocol::new(&trp_options)?;
-//             f(trp)
-//         }
-//         Protocol::Tcp => {
-//             let trp = TcpProtocol::new(&trp_options)?;
-//             f(trp)
-//         }
-//         Protocol::DoT => {
-//             let trp = TlsProtocol::new(&trp_options)?;
-//             f(trp)
-//         }
-//         Protocol::DoH => {
-//             let trp = HttpsProtocol::new(&trp_options)?;
-//             f(trp)
-//         }
-//     }
-// }
-
-// pub fn init_transport(trp_options: &TransportOptions) -> error::Result<Box<dyn Transporter + '_>> {
-//     match trp_options.transport_mode {
-//         Protocol::Udp => {
-//             let trp = UdpProtocol::new(&trp_options)?;
-//             Ok(Box::new(trp))
-//         }
-//         Protocol::Tcp => {
-//             let trp = TcpProtocol::new(&trp_options)?;
-//             Ok(Box::new(trp))
-//         }
-//         Protocol::DoT => {
-//             let trp = TlsProtocol::new(&trp_options)?;
-//             Ok(Box::new(trp))
-//         }
-//         Protocol::DoH => {
-//             let trp = HttpsProtocol::new(&trp_options)?;
-//             Ok(Box::new(trp))
-//         }
-//     }
+//     // return the network stats in the underlying structure
+//     fn netstat(&self) -> NetworkStat;
 // }
 
 // Helper function to read TCP data

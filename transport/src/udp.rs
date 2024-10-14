@@ -1,15 +1,11 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
+use error::Result;
 use log::debug;
 
-use error::Result;
+use network::{IPVersion, Messenger, Protocol};
 
 use crate::{NetworkStat, TransportOptions, TransportProtocol};
-
-use super::{
-    protocol::{IPVersion, Protocol},
-    Transporter,
-};
 
 pub type UdpProtocol = TransportProtocol<UdpSocket>;
 
@@ -54,7 +50,7 @@ impl UdpProtocol {
     }
 }
 
-impl Transporter for UdpProtocol {
+impl Messenger for UdpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.send(buffer)?;
         self.netstat.0 = sent;

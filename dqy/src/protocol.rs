@@ -19,8 +19,9 @@ use args::{
     args::CliOptions,
     options::{EdnsOptions, FromOptions},
 };
+use network::{IPVersion, Messenger, Protocol};
 use show::Show;
-use transport::{protocol::Protocol, tcp::TcpProtocol, Transporter};
+use transport::tcp::TcpProtocol;
 
 use crate::Info;
 
@@ -119,7 +120,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn send_query<T: Transporter>(
+    fn send_query<T: Messenger>(
         options: &CliOptions,
         qt: &QType,
         trp: &mut T,
@@ -147,7 +148,7 @@ impl DnsProtocol {
     // receive response from resolver
     //───────────────────────────────────────────────────────────────────────────────────
     #[inline(always)]
-    fn receive_response<T: Transporter>(trp: &mut T, buffer: &mut [u8]) -> error::Result<Response> {
+    fn receive_response<T: Messenger>(trp: &mut T, buffer: &mut [u8]) -> error::Result<Response> {
         let mut response = Response::default();
         let _ = response.recv(trp, buffer)?;
 
@@ -157,7 +158,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // This sends and receive queries using a transport
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) fn process_request<T: Transporter>(
+    pub(crate) fn process_request<T: Messenger>(
         options: &CliOptions,
         trp: &mut T,
         buffer_size: usize,

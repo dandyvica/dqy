@@ -182,9 +182,9 @@ pub struct ResourceRecord {
 }
 
 impl ResourceRecord {
-    // in case of A or AAAA addresses, returns the ip address in the RData
-    pub fn ip_address(&self, qtype: &QType) -> Option<IpAddr> {
-        match qtype {
+    // in case of A or AAAA addresses, returns the ip address (either V4 or V6) from the RData
+    pub fn ip_address(&self) -> Option<IpAddr> {
+        match self.r#type {
             QType::A => {
                 if let RData::A(ip4) = &self.r_data {
                     return Some(IpAddr::from(ip4.0));
@@ -197,7 +197,6 @@ impl ResourceRecord {
             }
             _ => return None,
         }
-
         None
     }
 }
@@ -376,7 +375,7 @@ mod tests {
         resource_record::{OptOrElse, RegularClassTtl},
     };
 
-    use transport::protocol::IPVersion;
+    use network::IPVersion;
     use type2network::FromNetworkOrder;
 
     use super::ResourceRecord;
@@ -389,9 +388,8 @@ mod tests {
         let mut rr = ResourceRecord::default();
         rr.deserialize_from(&mut buffer).unwrap();
 
-        let ip = rr.ip_address(&QType::A).unwrap();
+        let ip = rr.ip_address().unwrap();
         assert_eq!(ip, Ipv4Addr::from_str("142.250.179.68").unwrap());
-        assert!(rr.ip_address(&QType::SOA).is_none());
 
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::A);
@@ -412,7 +410,7 @@ mod tests {
         let mut rr = ResourceRecord::default();
         rr.deserialize_from(&mut buffer).unwrap();
 
-        let ip = rr.ip_address(&QType::AAAA).unwrap();
+        let ip = rr.ip_address().unwrap();
 
         assert_eq!(ip, Ipv6Addr::from_str("2a00:1450:4007:818::2004").unwrap());
 

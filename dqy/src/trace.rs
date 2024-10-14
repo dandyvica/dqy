@@ -3,6 +3,7 @@ use std::net::IpAddr;
 use args::args::CliOptions;
 use dns::rfc::{domain::DomainName, qtype::QType, response::ResponseCategory};
 
+use serde_json::ser;
 use transport::endpoint::EndPoint;
 
 // for the --trace optionflags
@@ -13,8 +14,10 @@ use crate::{get_messages, get_messages_using_transport, protocol::DnsProtocol, I
 //───────────────────────────────────────────────────────────────────────────────────
 // send query to ip address
 //───────────────────────────────────────────────────────────────────────────────────
-pub fn resolve_ip(domain: &str, server_ip: Option<IpAddr>) -> error::Result<IpAddr> {
+pub fn resolve_ip(domain: &str, server_ip: Option<IpAddr>) -> error::Result<()> {
     // by default, endpoint is a random root server
+    println!("=========> domain={}, server_ip={:?}", domain, server_ip);
+
     let mut options = CliOptions::default();
 
     // no recursion is mandatory for iterative query tracing
@@ -31,19 +34,57 @@ pub fn resolve_ip(domain: &str, server_ip: Option<IpAddr>) -> error::Result<IpAd
     // now send query
     let messages = get_messages(None, &options)?;
     let resp = messages[0].response();
-    let a_record = resp.random_glue();
+    println!("{}", resp);
 
-    if let Some(rr) = a_record {
-        println!("{} {:?} {}", rr.name, rr.ip_address(&QType::A), options.flags.authorative_answer);
+    // in this case, a glue record with an ip address is found
+    if let Some(rr) = resp.random_glue_record() {
+        let ip = rr.ip_address();
+
+        println!(
+            "{} {:?} {}",
+            rr.name,
+            rr.ip_address(),
+            options.flags.authorative_answer
+        );
+
+        if options.flags.authorative_answer {
+            return Ok(());
+        } else {
+            resolve_ip(domain, ip)?
+        }
     }
-    
-    if options.flags.authorative_answer {
-        return Ok(ip.unwrap());
-    } else {
-        resolve_ip(domain, ip)
+    // no glue record means no A or AAAA address for the NS records found.
+    // so need to restart from root
+    else {
+        let rr = resp.random_ns_record();
+        println!("{}", rr.unwrap());
+
+        resolve_ip(&rr.unwrap().name.to_string(), None)?
     }
 
-    
+    Ok(())
+}
+
+pub fn find_ip(options: &mut CliOptions, domain: &str, server_ip: IpAddr) {
+    println!("domain={}, ip={}", options.protocol.domain_name, server_ip);
+
+    options.transport.endpoint = EndPoint::try_from((&server_ip, options.transport.port)).unwrap();
+
+    // now send query
+    let messages = get_messages(None, &options).unwrap();
+    let resp = messages[0].response();
+    println!("{}", resp);
+
+    if let Some(rr) = resp.random_glue_record() {
+        let name = &rr.name;
+        let ip = rr.ip_address().unwrap();
+        println!("domain: {}, ip: {} !!", name, ip);
+
+        options.transport.endpoint = EndPoint::try_from((&ip, options.transport.port)).unwrap();
+        let messages = get_messages(None, &options).unwrap();
+        let resp = messages[0].response();
+        println!("{}", resp);
+    }
 }
 
 //───────────────────────────────────────────────────────────────────────────────────

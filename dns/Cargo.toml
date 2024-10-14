@@ -18,6 +18,7 @@ chrono = "0.4.38"
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
 error = { path = "../error" }
 log.workspace = true
+network.workspace = true
 num_enum = "0.7.3"
 rand = "0.8.5"
 reqwest.workspace = true
@@ -27,7 +28,7 @@ rustls-pki-types.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 show = { path = "../show" }
-transport = { path = "../transport" }
+# transport = { path = "../transport" }
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 webpki-roots.workspace = true

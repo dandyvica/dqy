@@ -14,6 +14,7 @@ dns = { path = "../dns" }
 env_logger.workspace = true
 error = { path = "../error" }
 log.workspace = true
+network.workspace = true
 mlua.workspace = true
 rand.workspace = true
 serde.workspace = true

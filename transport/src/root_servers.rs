@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use rand::seq::IteratorRandom;
 
-use crate::protocol::IPVersion;
+use network::IPVersion;
 
 use std::{
     collections::HashMap,
@@ -111,11 +111,17 @@ lazy_static! {
 }
 
 //───────────────────────────────────────────────────────────────────────────────────
-// return a random root server ip address
+// return a random root server ip address for an IP version.
+// if server is specified, we want this one.
 //───────────────────────────────────────────────────────────────────────────────────
-pub fn get_random_root(version: &IPVersion) -> IpAddr {
-    let mut rng = rand::thread_rng();
-    let root = ROOT_SERVERS.keys().into_iter().choose(&mut rng).unwrap();
+pub fn get_root_server(version: &IPVersion, server: Option<&str>) -> IpAddr {
+    // we want a specific server ?
+    let root = if let Some(server) = server {
+        server
+    } else {
+        let mut rng = rand::thread_rng();
+        ROOT_SERVERS.keys().into_iter().choose(&mut rng).unwrap()
+    };
 
     if version == &IPVersion::V4 || version == &IPVersion::Any {
         IpAddr::from(ROOT_SERVERS[root].0)

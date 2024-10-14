@@ -8,10 +8,11 @@ use type2network::FromNetworkOrder;
 use serde::Serialize;
 
 use crate::rfc::response_code::ResponseCode;
-use transport::Transporter;
+use network::Messenger;
 
 use super::{
-    header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
+    domain::DomainName, header::Header, qtype::QType, question::Question,
+    resource_record::ResourceRecord, rrset::RRSet,
 };
 
 pub enum ResponseCategory {
@@ -58,18 +59,13 @@ impl Response {
     }
 
     // Receive message for DNS resolver
-    pub fn recv<T: Transporter>(&mut self, trp: &mut T, buffer: &mut [u8]) -> error::Result<usize> {
+    pub fn recv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> error::Result<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
         trace!("received buffer {:X?}", &buffer[..received]);
 
         // if using TCP, we get rid of 2 bytes which are the length of the message received
-        // let mut cursor = if trp.uses_leading_length() {
-        //     Cursor::new(&buffer[2..received])
-        // } else {
-        //     Cursor::new(&buffer[..received])
-        // };
         let mut cursor = Cursor::new(&buffer[..received]);
 
         // get response
@@ -82,12 +78,23 @@ impl Response {
         Ok(received)
     }
 
-    // return a random ip address in the glue records in th additional section
-    pub fn random_glue(&self) -> Option<&ResourceRecord> {
+    // return a random ip address in the glue records from the additional section
+    pub fn random_glue_record(&self) -> Option<&ResourceRecord> {
         if let Some(add) = &self.additional {
             // choose a random resource record for an A address
             let a_record = add.random(&QType::A)?;
             Some(a_record)
+        } else {
+            None
+        }
+    }
+
+    // return a random NS record in the answer section
+    pub fn random_ns_record(&self) -> Option<&ResourceRecord> {
+        if let Some(ans) = &self.authority {
+            // choose a random resource record for an A address
+            let ns_record = ans.random(&QType::NS)?;
+            Some(ns_record)
         } else {
             None
         }

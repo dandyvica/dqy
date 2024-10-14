@@ -3,13 +3,12 @@ use std::{
     net::{SocketAddr, TcpStream},
 };
 
+use error::Result;
 use log::debug;
 
-use error::Result;
+use network::{Messenger, Protocol};
 
 use crate::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-
-use super::{protocol::Protocol, Transporter};
 
 pub type TcpProtocol = TransportProtocol<TcpStream>;
 
@@ -28,7 +27,7 @@ impl TcpProtocol {
     }
 }
 
-impl Transporter for TcpProtocol {
+impl Messenger for TcpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.write(buffer)?;
         self.netstat.0 = sent;

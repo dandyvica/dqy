@@ -15,6 +15,7 @@ error = { path = "../error" }
 http.workspace = true
 lazy_static = "1.4.0"
 log.workspace = true
+network.workspace = true
 rand.workspace = true
 reqwest.workspace = true
 resolver.workspace = true

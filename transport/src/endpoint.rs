@@ -3,10 +3,10 @@ use std::{
     path::PathBuf,
 };
 
-use crate::root_servers::get_random_root;
+use crate::root_servers::get_root_server;
 use resolver::ResolverList;
 
-use crate::protocol::IPVersion;
+use network::IPVersion;
 
 #[derive(Debug, Clone)]
 pub struct EndPoint {
@@ -28,7 +28,7 @@ impl EndPoint {
 // Default endpoint will be a random root server
 impl Default for EndPoint {
     fn default() -> Self {
-        let rs = get_random_root(&IPVersion::V4);
+        let rs = get_root_server(&IPVersion::V4, None);
         EndPoint::try_from((&rs, 53)).unwrap()
     }
 }

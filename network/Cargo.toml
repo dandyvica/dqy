@@ -1,0 +1,8 @@
+[package]
+name = "network"
+
+[lib]
+doctest = false
+
+[dependencies]
+error.workspace = true

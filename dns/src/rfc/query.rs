@@ -7,7 +7,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use error::Result;
-use transport::Transporter;
+use network::Messenger;
 
 use super::{
     domain::DomainName, flags::BitFlags, header::Header, opt::opt::OPT, qclass::QClass,
@@ -82,7 +82,7 @@ impl Query {
     }
 
     // Send the query through the wire
-    pub fn send<T: Transporter>(&mut self, trp: &mut T) -> Result<usize> {
+    pub fn send<T: Messenger>(&mut self, trp: &mut T) -> Result<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self.serialize_to(&mut buffer)? as u16;

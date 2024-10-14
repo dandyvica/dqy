@@ -1,9 +1,10 @@
 // Transport for sending DNS messages
-
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::Bytes;
 use http::version::*;
+
+use network::{IPVersion, Messenger, Protocol};
 
 use reqwest::{
     blocking::{Client, ClientBuilder},
@@ -12,9 +13,7 @@ use reqwest::{
 
 use error::Result;
 
-use crate::{protocol::IPVersion, NetworkStat, TransportOptions};
-
-use super::{protocol::Protocol, Transporter};
+use crate::{NetworkStat, TransportOptions};
 
 pub struct HttpsProtocol<'a> {
     // URL endpoint
@@ -34,7 +33,7 @@ pub struct HttpsProtocol<'a> {
 }
 
 impl<'a> HttpsProtocol<'a> {
-    pub fn new(trp_options: &'a TransportOptions) -> Result<Self> {
+    pub fn new(trp_options: &'a TransportOptions) -> error::Result<Self> {
         let cb = Self::client_builder(trp_options);
 
         let client = match trp_options.https_version {
@@ -84,8 +83,8 @@ impl<'a> HttpsProtocol<'a> {
     }
 }
 
-impl<'a> Transporter for HttpsProtocol<'a> {
-    fn send(&mut self, buffer: &[u8]) -> Result<usize> {
+impl<'a> Messenger for HttpsProtocol<'a> {
+    fn send(&mut self, buffer: &[u8]) -> error::Result<usize> {
         // need to copy bytes because body() prototype is: pub fn body<T: Into<Body>>(self, body: T) -> RequestBuilder
         // and From<Body> is not implemented for &[u8]. See here: https://docs.rs/reqwest/latest/reqwest/blocking/struct.Body.html
         // it can then be consumed by the body() method
