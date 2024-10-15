@@ -1,7 +1,7 @@
 //! RRSet is a list of resource records for the same domain name.
 //!
 
-use std::{net::IpAddr, ops::Deref};
+use std::{fmt, net::IpAddr, ops::Deref};
 
 use show::Show;
 use type2network::FromNetworkOrder;
@@ -11,14 +11,10 @@ use type2network_derive::FromNetwork;
 use rand::seq::IteratorRandom;
 use serde::Serialize;
 
-use super::{
-    domain::DomainName,
-    qtype::{self, QType},
-    resource_record::ResourceRecord,
-};
+use super::{domain::DomainName, qtype::QType, resource_record::ResourceRecord};
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct RRSet(Vec<ResourceRecord>);
+pub struct RRSet(Vec<ResourceRecord>);
 
 impl RRSet {
     // necessery for deserialization
@@ -26,23 +22,16 @@ impl RRSet {
         Self(Vec::with_capacity(capa))
     }
 
-    // return a list of RRs having the same QType
-    // pub fn filter(&self, qt: &QType) -> Vec<&RR> {
-    //     self.0.iter().filter(|x| x.r#type == *qt).collect()
-    // }
-
     // in case a RR in the set is a A or AAAA type, return the corresponding ip address
-    pub fn ip_address<'a, T: TryInto<DomainName>>(&self, qt: &QType, name: T) -> Option<IpAddr>
-    where
-        <T as TryInto<DomainName>>::Error: std::fmt::Debug,
-    {
-        let name = name.try_into().unwrap();
+    pub fn ip_address<T: TryInto<DomainName>>(&self, qt: &QType, name: T) -> Option<IpAddr> {
+        let name = name.try_into().ok()?;
 
         let rr = self
             .0
             .iter()
             .filter(|x| x.name == name && x.r#type == *qt)
             .nth(0);
+
         if let Some(rr) = rr {
             rr.ip_address()
         } else {
@@ -66,10 +55,26 @@ impl Deref for RRSet {
     }
 }
 
+impl fmt::Display for RRSet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for rr in &self.0 {
+            writeln!(f, "{}", rr)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl Show for RRSet {
     fn show(&self, display_options: &show::DisplayOptions) {
         for rr in &self.0 {
-            rr.show(display_options);
+            // don't display OPT if not requested
+            if rr.r#type == QType::OPT && !display_options.show_opt {
+                continue;
+            } else {
+                rr.show(display_options);
+            }
+            
         }
     }
 }
@@ -78,7 +83,7 @@ impl Show for RRSet {
 mod tests {
 
     use crate::{
-        rfc::{qtype::QType, response::Response},
+        rfc::{domain::DomainName, qtype::QType, response::Response},
         tests::get_packets,
     };
     use type2network::FromNetworkOrder;
@@ -91,7 +96,8 @@ mod tests {
         let mut resp = Response::default();
         resp.deserialize_from(&mut buffer)?;
 
-        assert!(resp.answer.is_none());
+        // no anwser is response => this is a referral
+        assert!(resp.is_referral());
 
         assert!(resp.authority.is_some());
         let auth = resp.authority.unwrap();
@@ -105,6 +111,12 @@ mod tests {
         assert_eq!(ip.to_string(), "192.41.162.30");
         let ip = add.ip_address(&QType::AAAA, "g.gtld-servers.net.").unwrap();
         assert_eq!(ip.to_string(), "2001:503:eea3::30");
+        let ip = add.ip_address(&QType::AAAA, "foo.");
+        assert!(ip.is_none());
+
+        let d = DomainName::try_from("i.gtld-servers.net.").unwrap();
+        let ip = add.ip_address(&QType::A, d).unwrap();
+        assert_eq!(ip.to_string(), "192.43.172.30");
 
         // let answer = &answer[0];
         // assert_eq!(format!("{}", answer.name), "www.google.com.");

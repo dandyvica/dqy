@@ -16,7 +16,7 @@ use network::{IPVersion, Protocol};
 use show;
 use transport::{endpoint::EndPoint, TransportOptions};
 
-use log::{debug, trace};
+use log::trace;
 
 use crate::options::{EdnsOptions, ProtocolOptions};
 
@@ -173,7 +173,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("trace")
                     .long("trace")
-                    .long_help("Iterative lookup from a random root server (not yet implemented).")
+                    .long_help("Iterative lookup from a random root server.")
                     .action(ArgAction::SetTrue)
             )
             //───────────────────────────────────────────────────────────────────────────────────
@@ -383,6 +383,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             // Display options
             //───────────────────────────────────────────────────────────────────────────────────   
             .arg(
+                Arg::new("headers")
+                    .long("headers")
+                    .long_help("Show headers for each of the sections (answer, authorative, additional).")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
                 Arg::new("json")
                     .short('j')
                     .long("json")
@@ -393,7 +400,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("json-pretty")
                     .long("json-pretty")
-                    .long_help("Results are rendered as a JSON pretty-formatted string.")
+                    .long_help("Records are rendered as a JSON pretty-formatted string.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -432,6 +439,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 Arg::new("short")
                     .long("short")
                     .long_help("If set, only the RDATA part of a RR is showed.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("show-opt")
+                    .long("show-opt")
+                    .long_help("If set, OPT record is displayed, if any.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -489,6 +503,10 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //         String::from(".")
         //     };
         // }
+
+        if let Some(d) = matches.get_one::<String>("domain") {
+            options.protocol.domain = d.to_string();
+        }       
 
         //───────────────────────────────────────────────────────────────────────────────────
         // transport mode
@@ -649,9 +667,11 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .map(|v| v.copied().collect::<Vec<u8>>());
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // manage other misc. options
+        // display options
         //───────────────────────────────────────────────────────────────────────────────────
         options.display.stats = matches.get_flag("stats");
+        options.display.show_opt = matches.get_flag("show-opt");
+        options.display.headers = matches.get_flag("headers");
         options.display.json = matches.get_flag("json");
         options.display.json_pretty = matches.get_flag("json-pretty");
         options.display.question = matches.get_flag("question");
@@ -673,6 +693,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             env_logger::Builder::new().filter_level(level).init();
         }
 
+        //───────────────────────────────────────────────────────────────────────────────────
+        // manage other misc. options
+        //───────────────────────────────────────────────────────────────────────────────────
         options.display.trace = matches.get_flag("trace");
 
         // finally convert domain as a string to a domain name

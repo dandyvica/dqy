@@ -2,16 +2,13 @@
 use std::{fmt, net::SocketAddr, process::ExitCode, time::Instant};
 
 use dns::rfc::message::MessageList;
-use log::debug;
+use log::{debug, info};
 use serde::Serialize;
 
 use args::args::CliOptions;
 use error::Error;
 use network::{Messenger, Protocol};
-use transport::{
-    https::HttpsProtocol, root_servers::get_root_server, tcp::TcpProtocol, tls::TlsProtocol,
-    udp::UdpProtocol,
-};
+use transport::{https::HttpsProtocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol};
 
 mod trace;
 use trace::*;
@@ -90,6 +87,10 @@ fn get_messages_using_transport<T: Messenger>(
 }
 
 pub fn get_messages(info: Option<&mut Info>, options: &CliOptions) -> error::Result<MessageList> {
+    info!(
+        "qtype={:?} domain='{}' resolver=<{}>",
+        options.protocol.qtype, options.protocol.domain_name, options.transport.endpoint
+    );
     match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
@@ -190,11 +191,8 @@ fn run() -> error::Result<()> {
     // trace if requested
     //───────────────────────────────────────────────────────────────────────────────────
     if options.display.trace {
-        //let _ = trace_resolution(&options);
-        let random_root = get_root_server(&network::IPVersion::V4, Some("a.root-servers.net"));
-        let _ = find_ip(&mut options, "ns2.google.com.", random_root);
-        // let _ = resolve_ip("www.google.co.uk", None);
-        std::process::exit(0);
+        trace_resolution(&mut options)?;
+        return Ok(());
     }
 
     //───────────────────────────────────────────────────────────────────────────────────

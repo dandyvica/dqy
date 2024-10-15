@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 // my DNS library
 use dns::rfc::{
-    domain::DomainName,
+    domain::{DomainName, ROOT},
     opt::{
         dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
         nsid::NSID,
@@ -97,11 +97,11 @@ pub struct ProtocolOptions {
 impl Default for ProtocolOptions {
     fn default() -> Self {
         Self {
-            qtype: vec![QType::NS],
+            qtype: Vec::new(),
             qclass: QClass::default(),
             resolvers: Vec::new(),
             domain: String::from("."), // by default, query is NS and sent to root
-            domain_name: DomainName::try_from(".").unwrap(),
+            domain_name: ROOT,
         }
     }
 }
@@ -173,7 +173,7 @@ impl FromOptions<&QType> for Query {
         //───────────────────────────────────────────────────────────────────────────────────
         // build the OPT record to be added in the additional section
         //───────────────────────────────────────────────────────────────────────────────────
-        let opt = OPT::from_options(&options, options.transport.bufsize);
+        let opt = OPT::from_options(options, options.transport.bufsize);
         trace!("OPT record: {:#?}", &opt);
 
         //───────────────────────────────────────────────────────────────────────────────────

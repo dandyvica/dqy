@@ -9,7 +9,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0"  #:version
+version = "0.3.0"  #:version
 authors = ["Alain Viguier <dandyvica@gmail.com>"]
 description = """
 dqy is a DNS query tool inspired by dig, drill and dog.
@@ -21,7 +21,7 @@ keywords = ["dns"]
 categories = ["command-line-utilities"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.81.0"
 
 [workspace.dependencies]
 bytes = "1.5.0"

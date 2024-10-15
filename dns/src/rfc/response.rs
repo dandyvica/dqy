@@ -15,7 +15,7 @@ use super::{
     resource_record::ResourceRecord, rrset::RRSet,
 };
 
-pub enum ResponseCategory {
+pub enum ResponseSection {
     Answer,
     Authority,
     Additional,
@@ -26,7 +26,7 @@ pub struct Response {
     //pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question,
-    pub(super) answer: Option<RRSet>,
+    pub answer: Option<RRSet>,
     pub(super) authority: Option<RRSet>,
     pub(super) additional: Option<RRSet>,
 }
@@ -58,6 +58,12 @@ impl Response {
         self.header.flags.bitflags.authorative_answer == true
     }
 
+    // referral response means no answer
+    #[inline]
+    pub fn is_referral(&self) -> bool {
+        self.answer.is_none()
+    }
+
     // Receive message for DNS resolver
     pub fn recv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> error::Result<usize> {
         // receive packet from endpoint
@@ -79,10 +85,10 @@ impl Response {
     }
 
     // return a random ip address in the glue records from the additional section
-    pub fn random_glue_record(&self) -> Option<&ResourceRecord> {
+    pub fn random_glue_record(&self, qt: &QType) -> Option<&ResourceRecord> {
         if let Some(add) = &self.additional {
             // choose a random resource record for an A address
-            let a_record = add.random(&QType::A)?;
+            let a_record = add.random(qt)?;
             Some(a_record)
         } else {
             None
@@ -100,23 +106,23 @@ impl Response {
         }
     }
 
-    pub fn random_rr(&self, qt: &QType, cat: ResponseCategory) -> Option<&ResourceRecord> {
+    pub fn random_rr(&self, qt: &QType, cat: ResponseSection) -> Option<&ResourceRecord> {
         match cat {
-            ResponseCategory::Answer => {
+            ResponseSection::Answer => {
                 if let Some(ans) = &self.answer {
                     ans.random(qt)
                 } else {
                     None
                 }
             }
-            ResponseCategory::Authority => {
+            ResponseSection::Authority => {
                 if let Some(auth) = &self.authority {
                     auth.random(qt)
                 } else {
                     None
                 }
             }
-            ResponseCategory::Additional => {
+            ResponseSection::Additional => {
                 if let Some(add) = &self.additional {
                     add.random(qt)
                 } else {
@@ -126,25 +132,46 @@ impl Response {
         }
     }
 
-    // return the ip address of a NS server found in the additional section
-    // corresponding to a named server in the answer section
-    // This is used for tracing resolution
-    pub fn ns_ip_address(&self) -> Option<IpAddr> {
-        // answer might be empty (?)
+    // look for an ip address in anwer, additional and authority sections
+    pub fn ip_address(&self, qt: &QType, name: &DomainName) -> Option<IpAddr> {
         if let Some(ans) = &self.answer {
-            // filter only NS records
-            let ns_records: Vec<_> = ans
-                .iter()
-                .filter(|r| r.r#type == QType::NS)
-                .map(|r| &r.name)
-                .collect();
-
-            // find ip address of any domain name found as a NS record
-            if let Some(add) = &self.additional {}
+            if let Some(ip) = ans.ip_address(qt, name) {
+                return Some(ip);
+            }
+        }
+        if let Some(add) = &self.additional {
+            if let Some(ip) = add.ip_address(qt, name) {
+                return Some(ip);
+            }
+        }
+        if let Some(auth) = &self.authority {
+            if let Some(ip) = auth.ip_address(qt, name) {
+                return Some(ip);
+            }
         }
 
         None
     }
+
+    // return the ip address of a NS server found in the additional section
+    // corresponding to a named server in the answer section
+    // This is used for tracing resolution
+    // pub fn ns_ip_address(&self) -> Option<IpAddr> {
+    //     // answer might be empty (?)
+    //     if let Some(ans) = &self.answer {
+    //         // filter only NS records
+    //         let ns_records: Vec<_> = ans
+    //             .iter()
+    //             .filter(|r| r.r#type == QType::NS)
+    //             .map(|r| &r.name)
+    //             .collect();
+
+    //         // find ip address of any domain name found as a NS record
+    //         if let Some(add) = &self.additional {}
+    //     }
+
+    //     None
+    // }
 }
 
 impl fmt::Display for Response {
@@ -205,14 +232,29 @@ impl<'a> FromNetworkOrder<'a> for Response {
 impl Show for Response {
     fn show(&self, display_options: &show::DisplayOptions) {
         if self.header.an_count > 0 {
+            debug_assert!(self.answer.is_some());
+
+            if display_options.headers {
+                println!("ANSWER:")
+            }
             self.answer.as_ref().unwrap().show(display_options);
         }
 
         if self.header.ns_count > 0 && !display_options.no_authorative {
+            debug_assert!(self.authority.is_some());
+
+            if display_options.headers {
+                println!("\nAUTHORATIVE:")
+            }            
             self.authority.as_ref().unwrap().show(display_options);
         }
 
         if self.header.ar_count > 0 && !display_options.no_additional {
+            debug_assert!(self.additional.is_some());
+
+            if display_options.headers {
+                println!("\nADDITIONAL:")
+            }            
             self.additional.as_ref().unwrap().show(display_options);
         }
     }

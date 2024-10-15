@@ -11,6 +11,8 @@ use error::{err_internal, Error, ProtocolError};
 use serde::{Serialize, Serializer};
 use type2network_derive::ToNetwork;
 
+pub const ROOT: DomainName = DomainName { labels: vec![] };
+
 //---------------------------------------------------------------------------------------------
 // Define a Label first
 //---------------------------------------------------------------------------------------------
@@ -63,7 +65,7 @@ impl PartialEq for Label {
 //---------------------------------------------------------------------------------------------
 
 // Domain name: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct DomainName {
     // a domain name is a list of labels as defined in the RFC1035
     labels: Vec<Label>,
@@ -236,6 +238,12 @@ impl fmt::Display for DomainName {
     }
 }
 
+impl fmt::Debug for DomainName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 // impl<'a> show::Show for DomainName<'a> {
 //     fn show(&self, stype: ShowType) {
 
@@ -249,6 +257,15 @@ impl fmt::Display for DomainName {
 //         Ok(Label(s))
 //     }
 // }
+
+// Convert from a ref
+impl<'a> TryFrom<&'a DomainName> for DomainName {
+    type Error = Error;
+
+    fn try_from(domain: &'a DomainName) -> std::result::Result<Self, Self::Error> {
+        Ok(domain.clone())
+    }
+}
 
 // Convert a str to a domain name
 impl<'a> TryFrom<&'a str> for DomainName {

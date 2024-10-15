@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     net::{IpAddr, SocketAddr, ToSocketAddrs},
     path::PathBuf,
 };
@@ -30,6 +31,12 @@ impl Default for EndPoint {
     fn default() -> Self {
         let rs = get_root_server(&IPVersion::V4, None);
         EndPoint::try_from((&rs, 53)).unwrap()
+    }
+}
+
+impl fmt::Display for EndPoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server: {} addresses: {:?}", self.server, self.addrs)
     }
 }
 

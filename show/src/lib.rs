@@ -25,6 +25,12 @@ pub struct DisplayOptions {
     // true if no authorative section is printed out
     pub no_authorative: bool,
 
+    // true if we want header for each section
+    pub headers: bool,
+
+    // show OPT record if any
+    pub show_opt: bool,
+
     // Lua code if specified
     #[cfg(not(feature = "nolua"))]
     pub lua_code: Option<String>,

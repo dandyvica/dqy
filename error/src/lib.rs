@@ -72,6 +72,9 @@ pub enum ProtocolError {
 
     // can't convert the server name or ip address to a socket address
     CantCreateSocketAddress,
+
+    // error when tracing
+    ErrorDuringTracing,
 }
 
 impl fmt::Display for ProtocolError {
@@ -101,6 +104,9 @@ impl fmt::Display for ProtocolError {
             ProtocolError::UnreachableResolvers => f.write_str("can't contact any resolver"),
             ProtocolError::CantCreateSocketAddress => {
                 f.write_str("can't create a socket address from input")
+            }
+            ProtocolError::ErrorDuringTracing => {
+                f.write_str("during tracing, an unexpected error occured")
             }
         }
     }

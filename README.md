@@ -124,7 +124,7 @@ using the resolver crate: https://github.com/dandyvica/resolver
 
 ## Compiling
 
-Compiled and tests with Rust version 1.77.2.
+Compiled and tests with Rust version 1.81.
 
 * on Linux: make sure pkg-config is installed ```sudo apt-get install pkg-config``` and Lua dev libs too: ```sudo apt install liblua5.4-dev```
 * OS/X: ```brew install pkg-config``` and ```brew install lua@5.4```

@@ -88,14 +88,14 @@ use log::{debug, trace};
 
 // When a RR is a standard RR (not a pseudo or meta-RR)
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
-pub(super) struct RegularClassTtl {
+pub struct RegularClassTtl {
     pub(super) class: QClass,
     pub(super) ttl: u32,
 }
 
 // Case of OPT RR
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
-pub(super) struct OptClassTtl {
+pub struct OptClassTtl {
     pub(super) payload: u16,
     pub(super) extended_rcode: u8,
     pub(super) version: u8,
@@ -105,7 +105,7 @@ pub(super) struct OptClassTtl {
 #[derive(Debug, ToNetwork)]
 // CLASS & TTL vary if RR is OPT or not
 #[derive(PartialEq)]
-pub(super) enum OptOrElse {
+pub enum OptOrElse {
     Regular(RegularClassTtl),
     Opt(OptClassTtl),
 }
@@ -182,6 +182,16 @@ pub struct ResourceRecord {
 }
 
 impl ResourceRecord {
+    // return the domain name when rr is NS
+    pub fn ns_name(&self) -> Option<DomainName> {
+        if self.r#type == QType::NS {
+            if let RData::NS(ns) = &self.r_data {
+                return Some(ns.0.clone());
+            }
+        }
+        None
+    }
+
     // in case of A or AAAA addresses, returns the ip address (either V4 or V6) from the RData
     pub fn ip_address(&self) -> Option<IpAddr> {
         match self.r#type {
@@ -365,7 +375,6 @@ mod tests {
     use std::str::FromStr;
 
     use crate::rfc::a::A;
-    use crate::rfc::soa::SOA;
     use crate::rfc::{
         aaaa::AAAA,
         domain::DomainName,
@@ -375,7 +384,6 @@ mod tests {
         resource_record::{OptOrElse, RegularClassTtl},
     };
 
-    use network::IPVersion;
     use type2network::FromNetworkOrder;
 
     use super::ResourceRecord;
