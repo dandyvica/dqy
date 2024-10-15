@@ -113,7 +113,7 @@ Project home page: https://github.com/dandyvica/dqy
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
         let matches = Command::new("A DNS query tool")
-            .version("0.2.0")
+            .version("0.3.0")
             .author("Alain Viguier dandyvica@gmail.com")
             .about(about)
             .after_help(rustc_version)
