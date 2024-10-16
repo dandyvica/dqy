@@ -12,10 +12,10 @@ function build_dqy() {
 
 # platforms to build dqy for
 declare -A platforms
-# platforms[dockerfile.alpine]="dqy-amd64-linux-musl"
-# platforms[dockerfile.arm64v8-alpine]="dqy-aarch64-linux-musl"
+platforms[dockerfile.alpine]="dqy-amd64-linux-musl"
+platforms[dockerfile.arm64v8-alpine]="dqy-aarch64-linux-musl"
 platforms[dockerfile.arm64v8-ubuntu]="dqy-aarch64-linux-libc"
-# platforms[dockerfile.ubuntu]="dqy-amd64-linux-libc"
+platforms[dockerfile.ubuntu]="dqy-amd64-linux-libc"
 
 for dockerfile in "${!platforms[@]}"
 do

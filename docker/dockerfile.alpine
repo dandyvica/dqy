@@ -18,4 +18,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 git clone https://github.com/dandyvica/dqy
 echo "cd dqy && git pull && source ~/.cargo/env && cargo build --release" >compile.sh
 chmod +x compile.sh
+./compile.sh
+strip /dqy/target/release/dqy
 EOF
