@@ -1,9 +1,3 @@
-# used to compile Linux x64 musl
-# build image with: docker build -t dqy-alpine -f dockerfile.alpine .
-# run a container from image: docker run -d -it --name dqy-alpine-ctr dqy-alpine /bin/sh
-# compile dqy: 
-
-# build dqy from container: 
 FROM alpine
 
 RUN <<EOF
@@ -21,6 +15,7 @@ echo "git pull" >> compile.sh
 echo "source ~/.cargo/env" >> compile.sh
 echo "cargo build --release" >> compile.sh
 echo "strip /dqy/target/release/dqy" >> compile.sh
+echo "#/dqy/scripts/rename_bin.sh"  >> compile.sh
 chmod +x compile.sh
 EOF
 
