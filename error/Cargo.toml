@@ -10,7 +10,7 @@ edition.workspace = true
 doctest = false
 
 [dependencies]
-mlua.workspace = true
+mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 reqwest.workspace = true
 resolver.workspace = true
 rustls.workspace = true

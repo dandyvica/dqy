@@ -17,10 +17,9 @@ error.workspace = true
 http.workspace = true
 idna = "0.4.0"
 log.workspace = true
+mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 network.workspace = true
 rustc_version_runtime = "0.3.0"
 show = { path = "../show" }
 transport = { path = "../transport" }
 
-[features]
-nolua = []

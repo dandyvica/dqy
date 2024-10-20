@@ -16,10 +16,11 @@ use trace::*;
 mod protocol;
 use protocol::DnsProtocol;
 
-#[cfg(not(feature = "nolua"))]
-mod lua;
-#[cfg(not(feature = "nolua"))]
+#[cfg(feature = "mlua")]
+mod lua; 
+#[cfg(feature = "mlua")]
 use lua::LuaDisplay;
+
 
 // the initial length of the Vec buffer
 const BUFFER_SIZE: usize = 4096;
@@ -158,6 +159,7 @@ fn main() -> ExitCode {
                 }
                 return ExitCode::from(8);
             }
+            #[cfg(feature = "mlua")]            
             Error::Lua(err) => {
                 eprintln!("Error calling Lua script (details: {:?})", err);
                 return ExitCode::from(9);
@@ -212,7 +214,7 @@ fn run() -> error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // final display to the user: either Lua code or Json or else
     //───────────────────────────────────────────────────────────────────────────────────
-    #[cfg(not(feature = "nolua"))]
+    #[cfg(feature = "mlua")]
     if let Some(lua_code) = options.display.lua_code {
         LuaDisplay::call_lua(messages, info, &lua_code)?;
         return Ok(());

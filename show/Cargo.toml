@@ -12,9 +12,9 @@ doctest = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mlua.workspace = true
+mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 serde.workspace = true
 serde_json.workspace = true
 
 [features]
-nolua = []
+lua = []

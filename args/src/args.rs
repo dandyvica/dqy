@@ -112,7 +112,7 @@ Project home page: https://github.com/dandyvica/dqy
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
-        let matches = Command::new("A DNS query tool")
+        let cmd = Command::new("A DNS query tool")
             .version("0.3.0")
             .author("Alain Viguier dandyvica@gmail.com")
             .about(about)
@@ -404,16 +404,16 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
-            .arg(
-                Arg::new("lua")
-                .short('l')
-                    .long("lua")
-                    .long_help("Name of a lua script that will be called to display results.")
-                    .action(ArgAction::Set)
-                    .value_name("lua")
-                    .value_parser(clap::value_parser!(PathBuf))
-                    .help_heading("Display options")
-            )
+            // .arg(
+            //     Arg::new("lua")
+            //     .short('l')
+            //         .long("lua")
+            //         .long_help("Name of a lua script that will be called to display results.")
+            //         .action(ArgAction::Set)
+            //         .value_name("lua")
+            //         .value_parser(clap::value_parser!(PathBuf))
+            //         .help_heading("Display options")
+            // )
             .arg(
                 Arg::new("no-add")
                     .long("no-add")
@@ -465,7 +465,22 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::Count)
                     .help_heading("Display options")
             )
-        .get_matches_from(with_dash);
+            ;
+
+        //add Lua option if feature lua
+        #[cfg(feature = "mlua")]
+        let cmd = cmd.arg(
+            Arg::new("lua")
+                .short('l')
+                .long("lua")
+                .long_help("Name of a lua script that will be called to display results.")
+                .action(ArgAction::Set)
+                .value_name("lua")
+                .value_parser(clap::value_parser!(PathBuf))
+                .help_heading("Display options"),
+        );
+
+        let matches = cmd.get_matches_from(with_dash);
 
         //───────────────────────────────────────────────────────────────────────────────────
         // QTypes, QClass
@@ -506,7 +521,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 
         if let Some(d) = matches.get_one::<String>("domain") {
             options.protocol.domain = d.to_string();
-        }       
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // transport mode
@@ -710,7 +725,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         }
 
         // open Lua script to load code
-        #[cfg(not(feature = "nolua"))]
+        #[cfg(feature = "mlua")]
         if let Some(path) = matches.get_one::<PathBuf>("lua") {
             // open Lua script and load code
             let code = std::fs::read_to_string(path)?;

@@ -1,3 +1,4 @@
+#[cfg(feature = "lua")]
 use mlua::{Lua, LuaSerdeExt, Result};
 use serde::Serialize;
 

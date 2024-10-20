@@ -8,8 +8,6 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
-COPY compile.sh /
-
 RUN <<EOF
 apk add git
 apk add curl
@@ -18,8 +16,14 @@ apk add pkg-config
 apk add lua
 apk add lua5.4-dev
 apk add musl-dev
+curl gcc pkg-config lua lua5.4-dev musl-dev
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 git clone https://github.com/dandyvica/dqy
+echo "cd dqy" >compile.sh
+echo "git pull" >> compile.sh
+echo "source ~/.cargo/env" >> compile.sh
+echo "cargo build --release" >> compile.sh
+echo "strip /dqy/target/release/dqy" >> compile.sh
 chmod +x compile.sh
 EOF
 

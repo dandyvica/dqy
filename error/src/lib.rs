@@ -41,6 +41,7 @@ pub enum Error {
     NoValidTCPConnection(Vec<SocketAddr>),
 
     // Error during Lua calls
+    #[cfg(feature = "mlua")]
     Lua(mlua::Error),
 }
 
@@ -130,6 +131,7 @@ impl fmt::Debug for Error {
             Error::Tls(e) => write!(f, "TLS error {:?}", e),
             Error::Resolv(e) => write!(f, "error {:?} fetching resolvers", e),
             Error::NoValidTCPConnection(e) => write!(f, "error {:?} for TCP connections", e),
+            #[cfg(feature = "mlua")]
             Error::Lua(e) => write!(f, "Lua error: {:?}", e),
         }
     }
@@ -172,6 +174,7 @@ impl From<resolver::error::Error> for Error {
     }
 }
 
+#[cfg(feature = "mlua")]
 impl From<mlua::Error> for Error {
     fn from(err: mlua::Error) -> Self {
         Error::Lua(err)

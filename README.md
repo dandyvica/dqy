@@ -9,13 +9,13 @@ A DNS query tool inspired by _dig_, _drill_ and _dog_.
 This tool is written in pure Rust with the following features:
 
 * depends only on _rustls_ (no _openssl_)
-* support upd, tcp, DoT and DoH protocols (DoQ to come)
+* support upd, tcp, DoT and DoH protocols (DoQ to come later)
 * available on: Linux (x64, ARM64, musl), Window, MacOs
 * IDNA support
 * possible outputs:
     * plain vanilla ascii
     * Json (useful with ```jq```)
-    * ability to call a Lua script to fine tune the output
+    * ability to call a Lua script to fine tune the output (when `mlua` feature is enabled)
 
 ## Supported resource records
 The following list of RRs is supported:
@@ -74,7 +74,7 @@ The _--json_ and _--json-pretty_ options allows to display output data in JSON f
 * info: meta-info like elpased time, endpoint address etc
 
 ## Lua scripting support
-Using _-l <Lua source file>_, all DNS data are sent as global variables to the Lua interpreter which makes it possible to format the output in a very flexible manner.
+Using `-l <Lua source file>`, all DNS data are sent as global variables to the Lua interpreter which makes it possible to format the output in a very flexible manner.
 
 As Lua tables can't keep the order of fields when created, a special Lua module is provided in the repository: ```rdata.lua``` which contains RRs list of fields in an ordered way, and a helper function to display ```RData```.
 
@@ -123,8 +123,9 @@ If no resolver is given, OS configured resolvers are fetched from:
 using the resolver crate: https://github.com/dandyvica/resolver
 
 ## Compiling
+Compiled and tested with Rust version 1.81.
 
-Compiled and tests with Rust version 1.81.
+
 
 * on Linux: make sure pkg-config is installed ```sudo apt-get install pkg-config``` and Lua dev libs too: ```sudo apt install liblua5.4-dev```
 * OS/X: ```brew install pkg-config``` and ```brew install lua@5.4```

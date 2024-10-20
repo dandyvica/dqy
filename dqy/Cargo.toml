@@ -15,15 +15,15 @@ env_logger.workspace = true
 error = { path = "../error" }
 log.workspace = true
 network.workspace = true
-mlua.workspace = true
+mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 show = { path = "../show" }
 transport = { path = "../transport" }
 
-[features]
-nolua = []
+# [features]
+# lua = [dep:mlua]
 
 
 

@@ -74,7 +74,6 @@ impl Show for RRSet {
             } else {
                 rr.show(display_options);
             }
-            
         }
     }
 }

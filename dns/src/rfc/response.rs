@@ -245,7 +245,7 @@ impl Show for Response {
 
             if display_options.headers {
                 println!("\nAUTHORATIVE:")
-            }            
+            }
             self.authority.as_ref().unwrap().show(display_options);
         }
 
@@ -254,7 +254,7 @@ impl Show for Response {
 
             if display_options.headers {
                 println!("\nADDITIONAL:")
-            }            
+            }
             self.additional.as_ref().unwrap().show(display_options);
         }
     }

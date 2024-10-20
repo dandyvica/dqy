@@ -32,7 +32,7 @@ pub struct DisplayOptions {
     pub show_opt: bool,
 
     // Lua code if specified
-    #[cfg(not(feature = "nolua"))]
+    #[cfg(feature = "lua")]
     pub lua_code: Option<String>,
 }
 
