@@ -9,9 +9,11 @@ ARG IMAGE
 FROM $IMAGE
 
 RUN <<EOF
+apk update
 apk add git
 apk add curl
 apk add gcc
+apk add musl-dev
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 git clone https://github.com/dandyvica/dqy
 echo "cd dqy" >compile.sh
