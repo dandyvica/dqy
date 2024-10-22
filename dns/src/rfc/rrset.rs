@@ -3,7 +3,7 @@
 
 use std::{fmt, net::IpAddr, ops::Deref};
 
-use show::Show;
+use show::show::{Show, ShowOptions};
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
@@ -45,6 +45,12 @@ impl RRSet {
 
         self.0.iter().filter(|rr| rr.r#type == *qt).choose(&mut rng)
     }
+
+    // return the maximum length of all domain names in all RRs in the RR set
+    // used to align all domain names in output
+    pub fn max_length(&self) -> Option<usize> {
+        self.0.iter().map(|x| x.name.len()).max()
+    }
 }
 
 impl Deref for RRSet {
@@ -66,13 +72,19 @@ impl fmt::Display for RRSet {
 }
 
 impl Show for RRSet {
-    fn show(&self, display_options: &show::DisplayOptions) {
+    fn show(&self, display_options: &ShowOptions) {
+        let max_length = if display_options.align_names {
+            self.max_length()
+        } else {
+            None
+        };
+
         for rr in &self.0 {
             // don't display OPT if not requested
             if rr.r#type == QType::OPT && !display_options.show_opt {
                 continue;
             } else {
-                rr.show(display_options);
+                rr.show(display_options, max_length);
             }
         }
     }

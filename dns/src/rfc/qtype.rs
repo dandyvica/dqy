@@ -1,7 +1,9 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use colored::Colorize;
 use serde::Serialize;
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
+use show::show::ToColor;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -122,17 +124,11 @@ pub enum QType {
     TYPE(u16),
 }
 
-// impl fmt::Display for QType {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         if let QType::Reserved(qt) = self {
-//             write!(f, "TYPE{}", qt)?;
-//         } else {
-//             write!(f, "{}", self.to_string())?;
-//         }
-
-//         Ok(())
-//     }
-// }
+impl ToColor for QType {
+    fn to_color(&self) -> colored::ColoredString {
+        self.to_string().bright_blue()
+    }
+}
 
 #[cfg(test)]
 mod tests {

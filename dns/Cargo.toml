@@ -15,6 +15,7 @@ base64 = "0.21.5"
 byteorder = "1.5.0"
 bytes.workspace = true
 chrono = "0.4.38"
+colored.workspace = true
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
 error = { path = "../error" }
 log.workspace = true
@@ -28,7 +29,6 @@ rustls-pki-types.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 show = { path = "../show" }
-# transport = { path = "../transport" }
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 webpki-roots.workspace = true

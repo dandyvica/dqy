@@ -1,13 +1,13 @@
 //! A DNS resource query tool
-use std::{fmt, net::SocketAddr, process::ExitCode, time::Instant};
+use std::{process::ExitCode, time::Instant};
 
-use dns::rfc::message::MessageList;
+use dns::message::MessageList;
 use log::{debug, info};
-use serde::Serialize;
 
 use args::args::CliOptions;
 use error::Error;
 use network::{Messenger, Protocol};
+use show::{query_info::QueryInfo, show::ShowAll};
 use transport::{https::HttpsProtocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol};
 
 mod trace;
@@ -17,10 +17,9 @@ mod protocol;
 use protocol::DnsProtocol;
 
 #[cfg(feature = "mlua")]
-mod lua; 
+mod lua;
 #[cfg(feature = "mlua")]
 use lua::LuaDisplay;
-
 
 // the initial length of the Vec buffer
 const BUFFER_SIZE: usize = 4096;
@@ -28,41 +27,41 @@ const BUFFER_SIZE: usize = 4096;
 //───────────────────────────────────────────────────────────────────────────────────
 // Gather some information which might be useful for the user
 //───────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default, Serialize)]
-pub struct Info {
-    //resolver reached
-    server: Option<SocketAddr>,
+// #[derive(Debug, Default, Serialize)]
+// pub struct Info {
+//     //resolver reached
+//     server: Option<SocketAddr>,
 
-    // elapsed time in ms
-    elapsed: u128,
+//     // elapsed time in ms
+//     elapsed: u128,
 
-    // transport used (ex: Udp)
-    mode: String,
+//     // transport used (ex: Udp)
+//     mode: String,
 
-    // bytes sent and received during network operations
-    bytes_sent: usize,
-    bytes_received: usize,
-}
+//     // bytes sent and received during network operations
+//     bytes_sent: usize,
+//     bytes_received: usize,
+// }
 
-impl fmt::Display for Info {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(peer) = self.server {
-            write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
-        }
-        writeln!(f, "elapsed: {} ms", self.elapsed)?;
-        write!(
-            f,
-            "sent:{}, received:{} bytes",
-            self.bytes_sent, self.bytes_received
-        )
-    }
-}
+// impl fmt::Display for Info {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         if let Some(peer) = self.server {
+//             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
+//         }
+//         writeln!(f, "elapsed: {} ms", self.elapsed)?;
+//         write!(
+//             f,
+//             "sent:{}, received:{} bytes",
+//             self.bytes_sent, self.bytes_received
+//         )
+//     }
+// }
 
 //───────────────────────────────────────────────────────────────────────────────────
 // get list of messages depending on transport
 //───────────────────────────────────────────────────────────────────────────────────
 fn get_messages_using_transport<T: Messenger>(
-    info: Option<&mut Info>,
+    info: Option<&mut QueryInfo>,
     transport: &mut T,
     options: &CliOptions,
 ) -> error::Result<MessageList> {
@@ -87,7 +86,10 @@ fn get_messages_using_transport<T: Messenger>(
     Ok(messages)
 }
 
-pub fn get_messages(info: Option<&mut Info>, options: &CliOptions) -> error::Result<MessageList> {
+pub fn get_messages(
+    info: Option<&mut QueryInfo>,
+    options: &CliOptions,
+) -> error::Result<MessageList> {
     info!(
         "qtype={:?} domain='{}' resolver=<{}>",
         options.protocol.qtype, options.protocol.domain_name, options.transport.endpoint
@@ -159,7 +161,7 @@ fn main() -> ExitCode {
                 }
                 return ExitCode::from(8);
             }
-            #[cfg(feature = "mlua")]            
+            #[cfg(feature = "mlua")]
             Error::Lua(err) => {
                 eprintln!("Error calling Lua script (details: {:?})", err);
                 return ExitCode::from(9);
@@ -187,7 +189,7 @@ fn run() -> error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // this will give user some information on how the protocol ran
     //───────────────────────────────────────────────────────────────────────────────────
-    let mut info = Info::default();
+    let mut info = QueryInfo::default();
 
     //───────────────────────────────────────────────────────────────────────────────────
     // trace if requested
@@ -220,6 +222,9 @@ fn run() -> error::Result<()> {
         return Ok(());
     }
 
-    DnsProtocol::display(&options.display, &info, &messages);
+    // print out final results
+    messages.show_all(&options.display, info);
+
+    // DnsProtocol::display(&options.display, &info, &messages);
     Ok(())
 }

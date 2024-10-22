@@ -1,6 +1,7 @@
 use std::{fmt, io::Cursor, net::IpAddr};
 
-use show::Show;
+use colored::Colorize;
+use show::show::{ShowOptions, ToColor};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -95,7 +96,7 @@ pub struct RegularClassTtl {
 
 // Case of OPT RR
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
-pub struct OptClassTtl {
+pub struct OptPayload {
     pub(super) payload: u16,
     pub(super) extended_rcode: u8,
     pub(super) version: u8,
@@ -105,22 +106,42 @@ pub struct OptClassTtl {
 #[derive(Debug, ToNetwork)]
 // CLASS & TTL vary if RR is OPT or not
 #[derive(PartialEq)]
-pub enum OptOrElse {
+pub enum OptOrClassTtl {
     Regular(RegularClassTtl),
-    Opt(OptClassTtl),
+    Opt(OptPayload),
 }
 
-impl Default for OptOrElse {
+impl OptOrClassTtl {
+    // return the regular struct
+    pub fn regular(&self) -> Option<&RegularClassTtl> {
+        if let OptOrClassTtl::Regular(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    // return the OPT struct
+    pub fn opt(&self) -> Option<&OptPayload> {
+        if let OptOrClassTtl::Opt(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+}
+
+impl Default for OptOrClassTtl {
     fn default() -> Self {
         Self::Regular(RegularClassTtl::default())
     }
 }
 
-impl fmt::Display for OptOrElse {
+impl fmt::Display for OptOrClassTtl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OptOrElse::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
-            OptOrElse::Opt(x) => write!(
+            OptOrClassTtl::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
+            OptOrClassTtl::Opt(x) => write!(
                 f,
                 "{} {} {} {}",
                 x.payload, x.extended_rcode, x.version, x.flags
@@ -131,19 +152,19 @@ impl fmt::Display for OptOrElse {
 
 // Custom serialization
 use serde::{ser::SerializeMap, Serializer};
-impl Serialize for OptOrElse {
+impl Serialize for OptOrClassTtl {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            OptOrElse::Regular(x) => {
+            OptOrClassTtl::Regular(x) => {
                 let mut seq = serializer.serialize_map(Some(2))?;
                 seq.serialize_entry("class", &x.class)?;
                 seq.serialize_entry("ttl", &x.ttl)?;
                 seq.end()
             }
-            OptOrElse::Opt(x) => {
+            OptOrClassTtl::Opt(x) => {
                 let mut seq = serializer.serialize_map(Some(4))?;
                 seq.serialize_entry("payload", &x.payload)?;
                 seq.serialize_entry("extended_rcode", &x.extended_rcode)?;
@@ -155,6 +176,40 @@ impl Serialize for OptOrElse {
     }
 }
 
+// a new type definition for printing out TTL as days, hours, minutes and seconds
+struct Ttl(u32);
+
+impl fmt::Display for Ttl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut ttl = self.0;
+
+        let days = ttl / (60 * 60 * 24);
+        ttl -= days * (60 * 60 * 24);
+        let hours = ttl / (60 * 60);
+        ttl -= hours * (60 * 60);
+        let minutes = ttl / 60;
+        let seconds = ttl - minutes * 60;
+
+        if days != 0 {
+            write!(f, "{}d{}h{}m{}s", days, hours, minutes, seconds)?;
+        } else if hours != 0 {
+            write!(f, "{}h{}m{}s", hours, minutes, seconds)?;
+        } else if minutes != 0 {
+            write!(f, "{}m{}s", minutes, seconds)?;
+        } else {
+            write!(f, "{}s", seconds)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl ToColor for Ttl {
+    fn to_color(&self) -> colored::ColoredString {
+        self.to_string().bright_red()
+    }
+}
+
 #[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct ResourceRecord {
     pub name: DomainName, // an owner name, i.e., the name of the node to which this resource record pertains.
@@ -163,7 +218,7 @@ pub struct ResourceRecord {
     // pub class: EitherOr<QClass, u16>, // two octets containing one of the RR CLASS codes or payload size in case of OPT
     // pub ttl: EitherOr<u32, OptTTL>,
     #[serde(flatten)]
-    pub opt_or_else: OptOrElse,
+    pub opt_or_class_ttl: OptOrClassTtl,
     // a bit = 32 signed (actually unsigned) integer that specifies the time interval
     // that the resource record may be cached before the source
     // of the information should again be consulted. Zero
@@ -220,7 +275,7 @@ impl fmt::Display for ResourceRecord {
             self.r#type.to_string(),
             // self.class.to_string(),
             // self.ttl.to_string(),
-            self.opt_or_else.to_string(),
+            self.opt_or_class_ttl.to_string(),
             self.rd_length
         )?;
 
@@ -232,12 +287,65 @@ impl fmt::Display for ResourceRecord {
     }
 }
 
-impl Show for ResourceRecord {
-    fn show(&self, display_options: &show::DisplayOptions) {
+// standard lengths for displaying and aligning a RR
+const NAME: usize = 28;
+const TYPE: usize = 10;
+const LENGTH: usize = 5;
+const CLASS: usize = 4;
+const TTL_INT: usize = 7;
+const TTL_STRING: usize = 12;
+
+// don't use Show trait to provide extra length used to align output
+// use this function
+impl ResourceRecord {
+    // local function to print out RR
+    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize) {
+        for f in fmt.split(",") {
+            match f.trim() {
+                "name" => print!("{:<name_length$} ", self.name.to_color()),
+                "type" => print!("{:<TYPE$} ", self.r#type.to_color()),
+                "length" => print!("{:<LENGTH$} ", self.rd_length),
+                "class" => {
+                    if let Some(r) = self.opt_or_class_ttl.regular() {
+                        print!("{:<CLASS$} ", r.class.to_string())
+                    }
+                }
+                "ttl" => {
+                    if let Some(r) = self.opt_or_class_ttl.regular() {
+                        if raw_ttl {
+                            print!("{:<TTL_INT$} ", r.ttl)
+                        } else {
+                            print!("{:<TTL_STRING$} ", Ttl(r.ttl).to_color())
+                        }
+                    }
+                }
+                "rdata" => print!("{}", self.r_data),
+                _ => (),
+            }
+        }
+    }
+
+    pub(super) fn show(&self, display_options: &ShowOptions, length: Option<usize>) {
+        let name_length = length.unwrap_or(NAME);
+
+        // formatting display
+        if !display_options.fmt.is_empty() {
+            self.display(&display_options.fmt, display_options.raw_ttl, name_length);
+            println!("");
+            return;
+        }
+
+        // other options
         if display_options.short {
             println!("{}", self.r_data);
         } else {
-            println!("{}", self);
+            if self.r#type != QType::OPT {
+                const ALL_FIELDS: &'static str = "name,type, length,class,ttl,length,rdata";
+                self.display(&ALL_FIELDS, display_options.raw_ttl, name_length);
+                println!("");
+            } else {
+                println!("OPT");
+            }
         }
     }
 }
@@ -265,17 +373,17 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
         self.r#type.deserialize_from(buffer)?;
 
         // OPT or a regular RR ?
-        self.opt_or_else = if self.r#type == QType::OPT {
-            get_rr!(buffer, OptClassTtl, OptOrElse::Opt)
+        self.opt_or_class_ttl = if self.r#type == QType::OPT {
+            get_rr!(buffer, OptPayload, OptOrClassTtl::Opt)
         } else {
-            get_rr!(buffer, RegularClassTtl, OptOrElse::Regular)
+            get_rr!(buffer, RegularClassTtl, OptOrClassTtl::Regular)
         };
 
         self.rd_length.deserialize_from(buffer)?;
 
         debug!(
             "found RR: type:{:?} name:<{}> class-ttl/opt:{} RD_length:{}",
-            self.r#type, self.name, self.opt_or_else, self.rd_length
+            self.r#type, self.name, self.opt_or_class_ttl, self.rd_length
         );
 
         if self.rd_length != 0 {
@@ -381,7 +489,7 @@ mod tests {
         qclass::QClass,
         qtype::QType,
         rdata::RData,
-        resource_record::{OptOrElse, RegularClassTtl},
+        resource_record::{OptOrClassTtl, RegularClassTtl},
     };
 
     use type2network::FromNetworkOrder;
@@ -402,7 +510,7 @@ mod tests {
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::A);
         assert!(
-            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 190 })
+            matches!(rr.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 190 })
         );
         assert_eq!(rr.rd_length, 4);
         assert!(
@@ -425,7 +533,7 @@ mod tests {
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::AAAA);
         assert!(
-            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 253 })
+            matches!(rr.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 253 })
         );
         assert_eq!(rr.rd_length, 16);
         assert!(
@@ -444,13 +552,11 @@ mod tests {
         assert_eq!(rr.name, DomainName::try_from("www.google.com.").unwrap());
         assert_eq!(rr.r#type, QType::SOA);
         assert!(
-            matches!(rr.opt_or_else, OptOrElse::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 23 })
+            matches!(rr.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 23 })
         );
         assert_eq!(rr.rd_length, 38);
         if let RData::SOA(soa) = rr.r_data {
-            // due to compression, don't test domain names
-            // assert_eq!(soa.rname, DomainName::try_from("ns1.google.").unwrap());
-            // assert_eq!(soa.rname, DomainName::try_from("dns-admin.").unwrap());
+            assert_eq!(soa.rname, DomainName::try_from("dns-admin.").unwrap());
             assert_eq!(soa.serial, 655495352);
             assert_eq!(soa.refresh, 900);
             assert_eq!(soa.retry, 900);

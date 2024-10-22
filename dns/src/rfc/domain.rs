@@ -3,7 +3,9 @@ use std::io::{Cursor, Result};
 use std::ops::Deref;
 use std::slice::Iter;
 
+use colored::Colorize;
 use log::trace;
+use show::show::ToColor;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 
 use error::{err_internal, Error, ProtocolError};
@@ -244,19 +246,12 @@ impl fmt::Debug for DomainName {
     }
 }
 
-// impl<'a> show::Show for DomainName<'a> {
-//     fn show(&self, stype: ShowType) {
-
-//     }
-// }
-
-// Convert an array of u8 to a domain name
-// impl<'a, const N: usize> From<[u8; N]> for  DomainName<'a> {
-//     fn from(v: [u8; N]) -> Self {
-//         let s = std::str::from_utf8(slice)?;
-//         Ok(Label(s))
-//     }
-// }
+impl ToColor for DomainName {
+    fn to_color(&self) -> colored::ColoredString {
+        self.to_string().bright_green()
+        // self.to_string().truecolor(NAME_COLOR.0, NAME_COLOR.1, NAME_COLOR.2)
+    }
+}
 
 // Convert from a ref
 impl<'a> TryFrom<&'a DomainName> for DomainName {

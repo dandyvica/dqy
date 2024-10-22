@@ -1,12 +1,16 @@
 //! A comination of a query and a response
 //!
+use std::{fmt, ops::Deref};
 
-use std::ops::Deref;
-
-use super::{query::Query, response::Response, response_code::ResponseCode};
+use super::rfc::{query::Query, response::Response, response_code::ResponseCode};
 
 use log::error;
 use serde::Serialize;
+use show::{
+    query_info::QueryInfo,
+    show::{Show, ShowAll, ShowOptions},
+};
+// use show::{show::Show, ShowOptions};
 
 #[derive(Debug, Serialize)]
 pub struct Message {
@@ -51,6 +55,14 @@ impl Message {
     }
 }
 
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.query)?;
+        write!(f, "{}", self.response)?;
+        Ok(())
+    }
+}
+
 //───────────────────────────────────────────────────────────────────────────────────
 // convenient struct for holding al messages
 //───────────────────────────────────────────────────────────────────────────────────
@@ -68,5 +80,41 @@ impl Deref for MessageList {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl fmt::Display for MessageList {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for msg in self.iter() {
+            write!(f, "{}", msg)?;
+        }
+        Ok(())
+    }
+}
+
+impl ShowAll for MessageList {
+    fn show_all(&self, display_options: &ShowOptions, info: QueryInfo) {
+        // JSON
+        if display_options.json_pretty {
+            let j = serde_json::json!({
+                "messages": self,
+                "info": info
+            });
+            println!("{}", serde_json::to_string_pretty(&j).unwrap());
+        } else if display_options.json {
+            let j = serde_json::json!({
+                "messages": self,
+                "info": info
+            });
+            println!("{}", serde_json::to_string(&j).unwrap());
+        } else {
+            for msg in self.iter() {
+                msg.response().show(display_options);
+            }
+
+            if display_options.stats {
+                println!("{}", info);
+            }
+        }
     }
 }

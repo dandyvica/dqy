@@ -1,19 +1,17 @@
 use std::{fmt, io::Cursor, net::IpAddr};
 
-use log::{debug, trace};
-
-use show::Show;
-use type2network::FromNetworkOrder;
-
-use serde::Serialize;
-
-use crate::rfc::response_code::ResponseCode;
-use network::Messenger;
-
 use super::{
     domain::DomainName, header::Header, qtype::QType, question::Question,
     resource_record::ResourceRecord, rrset::RRSet,
 };
+use crate::rfc::response_code::ResponseCode;
+
+use network::Messenger;
+use show::show::{Show, ShowOptions};
+use type2network::FromNetworkOrder;
+
+use log::{debug, trace};
+use serde::Serialize;
 
 pub enum ResponseSection {
     Answer,
@@ -23,7 +21,6 @@ pub enum ResponseSection {
 
 #[derive(Debug, Default, Serialize)]
 pub struct Response {
-    //pub(super) _length: Option<u16>, // length in case of TCP transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
     pub header: Header,
     pub question: Question,
     pub answer: Option<RRSet>,
@@ -152,26 +149,6 @@ impl Response {
 
         None
     }
-
-    // return the ip address of a NS server found in the additional section
-    // corresponding to a named server in the answer section
-    // This is used for tracing resolution
-    // pub fn ns_ip_address(&self) -> Option<IpAddr> {
-    //     // answer might be empty (?)
-    //     if let Some(ans) = &self.answer {
-    //         // filter only NS records
-    //         let ns_records: Vec<_> = ans
-    //             .iter()
-    //             .filter(|r| r.r#type == QType::NS)
-    //             .map(|r| &r.name)
-    //             .collect();
-
-    //         // find ip address of any domain name found as a NS record
-    //         if let Some(add) = &self.additional {}
-    //     }
-
-    //     None
-    // }
 }
 
 impl fmt::Display for Response {
@@ -230,7 +207,7 @@ impl<'a> FromNetworkOrder<'a> for Response {
 }
 
 impl Show for Response {
-    fn show(&self, display_options: &show::DisplayOptions) {
+    fn show(&self, display_options: &ShowOptions) {
         if self.header.an_count > 0 {
             debug_assert!(self.answer.is_some());
 
@@ -267,7 +244,7 @@ mod tests {
     use crate::{
         rfc::{
             opcode::OpCode, packet_type::PacketType, qclass::QClass, qtype::QType, rdata::RData,
-            resource_record::OptOrElse, response_code::ResponseCode,
+            resource_record::OptOrClassTtl, response_code::ResponseCode,
         },
         tests::get_packets,
     };
@@ -308,8 +285,10 @@ mod tests {
         let answer = &answer[0];
         assert_eq!(format!("{}", answer.name), "www.google.com.");
         assert_eq!(answer.r#type, QType::A);
-        assert!(matches!(&answer.opt_or_else, OptOrElse::Regular(x) if x.class == QClass::IN));
-        assert!(matches!(&answer.opt_or_else, OptOrElse::Regular(x) if x.ttl == 119));
+        assert!(
+            matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.class == QClass::IN)
+        );
+        assert!(matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.ttl == 119));
         assert_eq!(answer.rd_length, 4);
 
         // assert!(
@@ -377,7 +356,7 @@ mod tests {
 
         assert_eq!(format!("{}", add.name), ".");
         assert_eq!(add.r#type, QType::OPT);
-        assert!(matches!(&add.opt_or_else, OptOrElse::Opt(x) if x.payload == 1232));
+        assert!(matches!(&add.opt_or_class_ttl, OptOrClassTtl::Opt(x) if x.payload == 1232));
         assert_eq!(add.rd_length, 0);
 
         Ok(())

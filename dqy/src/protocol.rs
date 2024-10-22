@@ -2,18 +2,13 @@ use args::{args::CliOptions, options::FromOptions};
 use log::{debug, info};
 
 // my DNS library
-use dns::rfc::{
+use dns::{
     message::{Message, MessageList},
-    qtype::QType,
-    query::Query,
-    response::Response,
+    rfc::{qtype::QType, query::Query, response::Response},
 };
 
 use network::{Messenger, Protocol};
-use show::Show;
 use transport::tcp::TcpProtocol;
-
-use crate::Info;
 
 // a unit struct with gathers all high level functions
 pub(crate) struct DnsProtocol;
@@ -100,37 +95,5 @@ impl DnsProtocol {
         }
 
         Ok(MessageList::new(v))
-    }
-
-    //───────────────────────────────────────────────────────────────────────────────────
-    // print out list of messages
-    //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) fn display(
-        display_options: &show::DisplayOptions,
-        info: &Info,
-        messages: &MessageList,
-    ) {
-        // JSON
-        if display_options.json_pretty {
-            let j = serde_json::json!({
-                "messages": messages,
-                "info": info
-            });
-            println!("{}", serde_json::to_string_pretty(&j).unwrap());
-        } else if display_options.json {
-            let j = serde_json::json!({
-                "messages": messages,
-                "info": info
-            });
-            println!("{}", serde_json::to_string(&j).unwrap());
-        } else {
-            for msg in messages.iter() {
-                msg.response().show(display_options);
-            }
-
-            if display_options.stats {
-                println!("{}", info);
-            }
-        }
     }
 }

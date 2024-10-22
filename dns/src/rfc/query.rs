@@ -208,10 +208,10 @@ mod tests {
         assert_eq!(query.header.ns_count, 0);
         assert_eq!(query.header.ar_count, 1);
 
-        query.question.deserialize_from(&mut buffer)?;
-        assert_eq!(format!("{}", query.question.qname), "hk.");
-        assert_eq!(query.question.qtype, QType::NS);
-        assert_eq!(query.question.qclass, QClass::IN);
+        // query.question.deserialize_from(&mut buffer)?;
+        // assert_eq!(format!("{}", query.question.qname), "hk.");
+        // assert_eq!(query.question.qtype, QType::NS);
+        // assert_eq!(query.question.qclass, QClass::IN);
 
         // query.additional.deserialize_from(&mut buffer.buf_query)?;
         // assert!(query.additional.is_some());

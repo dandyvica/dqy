@@ -13,7 +13,7 @@ use rustc_version_runtime::version;
 
 use dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
 use network::{IPVersion, Protocol};
-use show;
+use show::{self, show::ShowOptions};
 use transport::{endpoint::EndPoint, TransportOptions};
 
 use log::trace;
@@ -48,7 +48,7 @@ pub struct CliOptions {
     pub edns: EdnsOptions,
 
     // Display options
-    pub display: show::DisplayOptions,
+    pub display: ShowOptions,
 }
 
 impl CliOptions {
@@ -119,8 +119,34 @@ Project home page: https://github.com/dandyvica/dqy
             .after_help(rustc_version)
             .after_long_help(r#"Examples:
 
-- dqy AAAA www.google.com
-- dqy A AAAA MX TXT www.example.com @1.1.1.1 --no-opt
+
+Simple query:
+$ dqy AAAA www.google.com
+$ dqy NS hk.
+
+Multiple query:
+$ dqy A AAAA MX TXT www.example.com
+
+Specific resolver:
+$ dqy A www.google.co.uk @1.1.1.1
+
+Use DoT for a resolver supporting DNS over TLS:
+$ dqy A AAAA MX TXT NSEC3 www.example.com @1.1.1.1 --tls
+
+Use DoH for a resolver supporting DNS over HTTPS:
+$ dqy A www.google.com @https://cloudflare-dns.com/dns-query --doh
+
+Show OPT record
+$ dqy AAAA www.google.com --show-opt
+
+Don't use colors in output
+$ dqy A AAAA MX TXT www.example.com --no-colors
+
+Don't ask for recursion
+$ dqy AAAA www.google.com --no-recurse
+
+IDNA support
+$ dqy AAAA ουτοπία.δπθ.gr
 
             "#)
             .bin_name("dqy")
@@ -218,11 +244,11 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Transport options")
             )
             .arg(
-                Arg::new("norecurse")
-                    .long("norecurse")
+                Arg::new("no-recurse")
+                    .long("no-recurse")
                     .long_help("Don't set the rd flag (recursion desired). Same as '--unset rd'.")
                     .action(ArgAction::SetTrue)
-                    .value_name("norecurse")
+                    .value_name("no-recurse")
                     .help_heading("Transport options")
             )
             .arg(
@@ -383,6 +409,22 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             // Display options
             //───────────────────────────────────────────────────────────────────────────────────   
             .arg(
+                Arg::new("align")
+                    .long("align")
+                    .long_help("Align domain names, useful for AXFR type.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("ALIGN")
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("fmt")
+                    .long("fmt")
+                    .long_help("User-defined format for output. Specify a list of comma-separated fields. Poosible value: name, type, class, ttl, rdata. Ex: -fmt 'type,name,ttl, rdata'")
+                    .action(ArgAction::Set)
+                    .value_name("FORMAT")
+                    .help_heading("Display options")
+            )
+            .arg(
                 Arg::new("headers")
                     .long("headers")
                     .long_help("Show headers for each of the sections (answer, authorative, additional).")
@@ -404,16 +446,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
-            // .arg(
-            //     Arg::new("lua")
-            //     .short('l')
-            //         .long("lua")
-            //         .long_help("Name of a lua script that will be called to display results.")
-            //         .action(ArgAction::Set)
-            //         .value_name("lua")
-            //         .value_parser(clap::value_parser!(PathBuf))
-            //         .help_heading("Display options")
-            // )
             .arg(
                 Arg::new("no-add")
                     .long("no-add")
@@ -429,9 +461,23 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Display options")
             )
             .arg(
+                Arg::new("no-colors")
+                    .long("no-colors")
+                    .long_help("Don't color the output.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
                 Arg::new("question")
                     .long("question")
                     .long_help("The question section is displayed.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("raw-ttl")
+                    .long("raw-ttl")
+                    .long_help("Display TTL as seconds.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -467,7 +513,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             )
             ;
 
-        //add Lua option if feature lua
+        // add Lua option if feature lua
         #[cfg(feature = "mlua")]
         let cmd = cmd.arg(
             Arg::new("lua")
@@ -504,7 +550,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // recursion desired flag
         //───────────────────────────────────────────────────────────────────────────────────
-        if matches.get_flag("norecurse") {
+        if matches.get_flag("no-recurse") {
             options.flags.recursion_desired = false;
         }
 
@@ -682,17 +728,33 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .map(|v| v.copied().collect::<Vec<u8>>());
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // display options
+        // manage display options
         //───────────────────────────────────────────────────────────────────────────────────
-        options.display.stats = matches.get_flag("stats");
-        options.display.show_opt = matches.get_flag("show-opt");
+        options.display.align_names = matches.get_flag("align");
         options.display.headers = matches.get_flag("headers");
         options.display.json = matches.get_flag("json");
         options.display.json_pretty = matches.get_flag("json-pretty");
-        options.display.question = matches.get_flag("question");
-        options.display.no_authorative = matches.get_flag("no-auth");
         options.display.no_additional = matches.get_flag("no-add");
+        options.display.no_authorative = matches.get_flag("no-auth");
+        options.display.question = matches.get_flag("question");
+        options.display.raw_ttl = matches.get_flag("raw-ttl");
         options.display.short = matches.get_flag("short");
+        options.display.show_opt = matches.get_flag("show-opt");
+        options.display.stats = matches.get_flag("stats");
+
+        // if QType is AXFR, auto-align
+        if options.protocol.qtype == vec![QType::AXFR] {
+            options.display.align_names = true;
+        }
+
+        // if no-colors, sets the NO_COLOR variable
+        if matches.get_flag("no-colors") {
+            std::env::set_var("NO_COLOR", "1");
+        }
+
+        if let Some(fmt) = matches.get_one::<String>("fmt") {
+            options.display.fmt = fmt.to_string();
+        }
 
         // verbosity (for --nolog, see comments for unit tests)
         if matches.contains_id("verbose") && !matches.get_flag("nolog") {

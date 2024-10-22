@@ -1,5 +1,6 @@
 pub mod buffer;
 pub mod date_time;
+pub mod message;
 pub mod rfc;
 
 // Macro used to define getters
