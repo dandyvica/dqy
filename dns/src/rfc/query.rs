@@ -10,7 +10,7 @@ use error::Result;
 use network::Messenger;
 
 use super::{
-    domain::DomainName, flags::BitFlags, header::Header, opt::opt::OPT, qclass::QClass,
+    domain::DomainName, flags::BitFlags, header::Header, opt::opt_rr::OPT, qclass::QClass,
     qtype::QType, question::Question,
 };
 

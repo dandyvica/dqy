@@ -32,7 +32,7 @@ use super::{
     nsec3::NSEC3,
     nsec3param::NSEC3PARAM,
     openpgpkey::OPENPGPKEY,
-    opt::opt::OptOption,
+    opt::opt_rr::OptOption,
     ptr::PTR,
     rp::RP,
     rrsig::RRSIG,

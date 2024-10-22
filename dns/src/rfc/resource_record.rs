@@ -34,7 +34,7 @@ use crate::{
         nsec3::NSEC3,
         nsec3param::NSEC3PARAM,
         openpgpkey::OPENPGPKEY,
-        opt::opt::OptOption,
+        opt::opt_rr::OptOption,
         rp::RP,
         rrsig::RRSIG,
         srv::SRV,
@@ -275,7 +275,7 @@ impl fmt::Display for ResourceRecord {
             self.r#type.to_string(),
             // self.class.to_string(),
             // self.ttl.to_string(),
-            self.opt_or_class_ttl.to_string(),
+            self.opt_or_class_ttl,
             self.rd_length
         )?;
 
@@ -331,21 +331,19 @@ impl ResourceRecord {
         // formatting display
         if !display_options.fmt.is_empty() {
             self.display(&display_options.fmt, display_options.raw_ttl, name_length);
-            println!("");
+            println!();
             return;
         }
 
         // other options
         if display_options.short {
             println!("{}", self.r_data);
+        } else if self.r#type != QType::OPT {
+            const ALL_FIELDS: &str = "name,type, length,class,ttl,length,rdata";
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
+            println!();
         } else {
-            if self.r#type != QType::OPT {
-                const ALL_FIELDS: &'static str = "name,type, length,class,ttl,length,rdata";
-                self.display(&ALL_FIELDS, display_options.raw_ttl, name_length);
-                println!("");
-            } else {
-                println!("OPT");
-            }
+            println!("OPT");
         }
     }
 }

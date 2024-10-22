@@ -22,8 +22,6 @@ serde_json.workspace = true
 show = { path = "../show" }
 transport = { path = "../transport" }
 
-# [features]
-# lua = [dep:mlua]
 
 
 

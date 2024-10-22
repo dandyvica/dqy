@@ -123,7 +123,7 @@ impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
             debug_assert!((1..=32).contains(&win.length));
 
             // now just point to types bits data
-            win.data = &buf
+            win.data = buf
                 .get(i..i + win.length as usize)
                 .ok_or(err_internal!(CantCreateNSEC3Types))?;
             i += win.length as usize;

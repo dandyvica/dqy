@@ -7,7 +7,7 @@ use dns::rfc::{
     opt::{
         dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
         nsid::NSID,
-        opt::OPT,
+        opt_rr::OPT,
         padding::Padding,
     },
     qclass::QClass,

@@ -60,4 +60,4 @@ pub trait ToColor: Display {
     fn to_color(&self) -> colored::ColoredString;
 }
 
-pub const NAME_COLOR: (u8, u8, u8) = (100, 100, 100);
+// pub const NAME_COLOR: (u8, u8, u8) = (100, 100, 100);

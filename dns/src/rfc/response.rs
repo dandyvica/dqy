@@ -47,12 +47,12 @@ impl Response {
 
     #[inline]
     pub fn is_truncated(&self) -> bool {
-        self.header.flags.bitflags.truncation == true
+        self.header.flags.bitflags.truncation
     }
 
     #[inline]
     pub fn is_authorative(&self) -> bool {
-        self.header.flags.bitflags.authorative_answer == true
+        self.header.flags.bitflags.authorative_answer
     }
 
     // referral response means no answer

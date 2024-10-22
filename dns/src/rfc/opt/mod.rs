@@ -15,13 +15,13 @@
 // 65001-65534	Reserved for Local/Experimental Use		[RFC6891]
 // 65535	Reserved for future expansion		[RFC6891]
 
-use self::opt::{OptOptionCode, OptOptionData};
+use self::opt_rr::{OptOptionCode, OptOptionData};
 
 pub mod client_subnet;
 pub mod cookie;
 pub mod dau_dhu_n3u;
 pub mod nsid;
-pub mod opt;
+pub mod opt_rr;
 pub mod padding;
 
 pub trait OptionData {
@@ -30,6 +30,9 @@ pub trait OptionData {
 
     // return option data length
     fn len(&self) -> u16;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     // return the option data enum arm
     fn data(self) -> OptOptionData;

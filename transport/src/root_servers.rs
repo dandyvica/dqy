@@ -120,7 +120,7 @@ pub fn get_root_server(version: &IPVersion, server: Option<&str>) -> IpAddr {
         server
     } else {
         let mut rng = rand::thread_rng();
-        ROOT_SERVERS.keys().into_iter().choose(&mut rng).unwrap()
+        ROOT_SERVERS.keys().choose(&mut rng).unwrap()
     };
 
     if version == &IPVersion::V4 || version == &IPVersion::Any {
