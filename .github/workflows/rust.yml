@@ -81,6 +81,7 @@ jobs:
 
     - name: Building using Docker
       run: |
+        cd docker
         docker build -t dqy --platform "linux/arm64" --build-arg IMAGE="arm64v8/alpine" .
         docker run --name dqy dqy
         docker cp dqy:/dqy/target/release/dqy .

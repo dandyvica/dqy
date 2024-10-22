@@ -18,7 +18,6 @@ echo "cd dqy" >compile.sh
 echo "git pull" >> compile.sh
 echo "source ~/.cargo/env" >> compile.sh
 echo "cargo build --release" >> compile.sh
-echo "strip /dqy/target/release/dqy" >> compile.sh
 chmod +x compile.sh
 EOF
 
