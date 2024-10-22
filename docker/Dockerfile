@@ -5,8 +5,8 @@
 
 # build dqy inside container
 
-ARG BASE_IMAGE
-FROM $BASE_IMAGE
+ARG IMAGE
+FROM $IMAGE
 
 RUN <<EOF
 apk add git
