@@ -10,34 +10,85 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  # build:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-20.04, windows-latest, macos-latest, macos-13]
+  #       toolchain:
+  #         - stable
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest, macos-13]
-        toolchain:
-          - stable
+  #   steps:
 
+  #   - name: Checkout repo
+  #     uses: actions/checkout@v4
+
+  #   - name: Install Rust
+  #     uses: dtolnay/rust-toolchain@master
+  #     with:
+  #       toolchain: stable
+  #       # targets: x86_64-unknown-linux-gnu,x86_64-unknown-linux-musl
+
+  #   - name: Build on ${{ runner.os }}-${{ runner.arch }}
+  #     run: |
+  #       echo "TRIPLE=$(rustc -vV | sed -n 's|host: ||p')" >> $GITHUB_ENV
+  #       echo ${{ env.TRIPLE }}
+  #       cargo t
+  #       cargo build --release
+  #       # cargo build --release --target x86_64-unknown-linux-musl
+  #     shell: bash
+
+  #   - name: Archive compilation target for ${{ matrix.os }}-${{ matrix.version }}
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: dqy-${{ env.TRIPLE }}
+  #       if-no-files-found: ignore
+  #       path: |
+  #         target/release/dqy
+  #         target/release/dqy.exe
+
+  build_x86_musl:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: stable
-        # targets: x86_64-unknown-linux-gnu,x86_64-unknown-linux-musl
-    - name: Building on ${{ runner.os }}-${{ runner.arch }}
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Building using Docker
       run: |
-        echo "TRIPLE=$(rustc -vV | sed -n 's|host: ||p')" >> $GITHUB_ENV
-        echo ${{ env.TRIPLE }}
-        cargo t
-        cargo build --release
-        # cargo build --release --target x86_64-unknown-linux-musl
-      shell: bash
-    - name: Archive compilation target for ${{ matrix.os }}-${{ matrix.version }}
+        cd docker
+        docker build -t dqy --build-arg IMAGE=alpine .
+        docker run --name dqy dqy
+        docker cp dqy:/dqy/target/release/dqy .
+
+    - name: Create artifact
       uses: actions/upload-artifact@v4
       with:
-        name: dqy-${{ env.TRIPLE }}
+        name: dqy-x86_64-unknown-linux-musl
         if-no-files-found: ignore
         path: |
-          target/release/dqy
-          target/release/dqy.exe
+          docker/dqy          
+
+  build_arm64_musl:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Install Qemu
+      uses: docker/setup-qemu-action@v3
+
+    - name: Building using Docker
+      run: |
+        docker build -t dqy --platform "linux/arm64" --build-arg IMAGE="arm64v8/alpine" .
+        docker run --name dqy dqy
+        docker cp dqy:/dqy/target/release/dqy .
+
+    - name: Create artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: qy-arm64-unknown-linux-musl
+        if-no-files-found: ignore
+        path: |
+          docker/dqy          

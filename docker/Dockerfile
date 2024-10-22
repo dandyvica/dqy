@@ -10,13 +10,7 @@ FROM $BASE_IMAGE
 
 RUN <<EOF
 apk add git
-apk add curl
 apk add gcc
-apk add pkg-config
-apk add lua
-apk add lua5.4-dev
-apk add musl-dev
-curl gcc pkg-config lua lua5.4-dev musl-dev
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 git clone https://github.com/dandyvica/dqy
 echo "cd dqy" >compile.sh
