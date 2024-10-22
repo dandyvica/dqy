@@ -104,10 +104,10 @@ Specially in the display options, not all are implemented or even specially usef
 ## Roadmap
 Following is a tentative roadmap:
 
-* v0.2: ipv6 support
-* v0.3: trace option
-* v0.4: DNS over Quic
-* v0.5: OPT options full support
+* v0.2: ipv6 support (done)
+* v0.3: trace option (done)
+* v0.4: OPT options full support
+* v0.5: DNS over Quic
 * ...
 
 ## Usage
@@ -125,17 +125,7 @@ using the resolver crate: https://github.com/dandyvica/resolver
 ## Compiling
 Compiled and tested with Rust version 1.81.
 
-
-
-* on Linux: make sure pkg-config is installed ```sudo apt-get install pkg-config``` and Lua dev libs too: ```sudo apt install liblua5.4-dev```
-* OS/X: ```brew install pkg-config``` and ```brew install lua@5.4```
-* on Windows (using ```PowerShell```)
-    * download ```pkg-config```: https://download.gnome.org/binaries/win32/dependencies/
-    * download ```Lua5.4 libs```: https://luabinaries.sourceforge.net/
-    * set environment variables:    
-        * ```Set-Item -Path env:LUA_LIB_NAME -Value "lua54"```
-        * ```Set-Item -Path env:LUA_LIB -Value "mypath_where_lua54_lib_are"```
-* then: ```cargo build --release```
+Compilation instructions: [compiling dqy](./compile.md)
 
 ## Exit codes
 * 0: no error
