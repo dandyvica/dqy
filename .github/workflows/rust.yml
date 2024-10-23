@@ -87,7 +87,7 @@ jobs:
     - name: Create artifact
       uses: actions/upload-artifact@v4
       with:
-        name: qy-arm64-unknown-linux-musl
+        name: dqy-arm64-unknown-linux-musl
         if-no-files-found: ignore
         path: |
           docker/dqy          
