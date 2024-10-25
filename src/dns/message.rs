@@ -4,10 +4,13 @@ use std::{fmt, ops::Deref};
 
 use super::rfc::{query::Query, response::Response, response_code::ResponseCode};
 
-use log::error;
+use log::{error, trace};
 use serde::Serialize;
 
-use crate::show::{QueryInfo, Show, ShowAll, ShowOptions};
+use crate::{
+    error::ProtocolError,
+    show::{QueryInfo, Show, ShowAll, ShowOptions},
+};
 
 #[derive(Debug, Serialize)]
 pub struct Message {
@@ -33,7 +36,9 @@ impl Message {
     //───────────────────────────────────────────────────────────────────────────────────
     // check if response corresponds to what the client sent
     //───────────────────────────────────────────────────────────────────────────────────
-    pub fn check(&self) {
+    pub fn check(&self) -> crate::error::Result<()> {
+        trace!("checking message validity");
+
         if self.response.id() != self.query.header.id
             || self.query.question != self.response.question
         {
@@ -43,12 +48,20 @@ impl Message {
             );
         }
 
+        // if self.response.rcode() != ResponseCode::NoError {
+        //     return Err(crate::error::Error::Internal(ProtocolError::ResponseError(
+        //         self.response.rcode(),
+        //     )));
+        // }
+
         // check return code
         if self.response.rcode() != ResponseCode::NoError
             || (self.response.rcode() == ResponseCode::NXDomain && self.response.ns_count() == 0)
         {
             eprintln!("response error:{}", self.response.rcode());
         }
+
+        Ok(())
     }
 }
 

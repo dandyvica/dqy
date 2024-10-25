@@ -4,9 +4,9 @@ use crate::dns::{
     message::{Message, MessageList},
     rfc::{qtype::QType, query::Query, response::Response},
 };
-use crate::network::{Messenger, Protocol};
+use crate::transport::network::{Messenger, Protocol};
 use crate::transport::tcp::TcpProtocol;
-use crate::{args::CliOptions, options::FromOptions};
+use crate::{args::CliOptions, cli_options::FromOptions};
 
 // a unit struct with gathers all high level functions
 pub(crate) struct DnsProtocol;
@@ -84,14 +84,14 @@ impl DnsProtocol {
 
                 // struct Message is a convenient way
                 let msg = Message { query, response };
-                msg.check();
+                msg.check()?;
                 v.push(msg);
                 continue;
             }
 
             // struct Message is a convenient way
             let msg = Message { query, response };
-            msg.check();
+            msg.check()?;
             v.push(msg);
         }
 

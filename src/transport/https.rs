@@ -8,9 +8,9 @@ use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
 };
 
+use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions};
 use crate::error::Result;
-use crate::network::{IPVersion, Messenger, Protocol};
 
 pub struct HttpsProtocol<'a> {
     // URL endpoint

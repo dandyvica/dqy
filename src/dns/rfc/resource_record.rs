@@ -318,7 +318,7 @@ impl ResourceRecord {
                         }
                     }
                 }
-                "rdata" => print!("{}", self.r_data),
+                "rdata" => print!("{}", self.r_data.to_color()),
                 _ => (),
             }
         }

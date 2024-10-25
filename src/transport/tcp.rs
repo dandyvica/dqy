@@ -5,9 +5,9 @@ use std::{
 
 use log::debug;
 
+use super::network::{Messenger, Protocol};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
 use crate::error::Result;
-use crate::network::{Messenger, Protocol};
 
 pub type TcpProtocol = TransportProtocol<TcpStream>;
 

@@ -8,9 +8,9 @@ use std::{
 use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
+use super::network::{Messenger, Protocol};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
 use crate::error::{Error, Result};
-use crate::network::{Messenger, Protocol};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 

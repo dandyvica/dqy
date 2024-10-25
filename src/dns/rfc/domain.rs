@@ -13,7 +13,8 @@ use crate::err_internal;
 use crate::error::{Error, ProtocolError};
 use crate::show::ToColor;
 
-pub const ROOT: DomainName = DomainName { labels: vec![] };
+pub const ROOT_DOMAIN: DomainName = DomainName { labels: vec![] };
+pub const ROOT: &str = ".";
 
 //---------------------------------------------------------------------------------------------
 // Define a Label first
@@ -80,9 +81,6 @@ impl Serialize for DomainName {
     where
         S: Serializer,
     {
-        // let mut seq = serializer.serialize_map(Some(2))?;
-        // seq.serialize_entry("domain", &self.to_string())?;
-        // seq.end()
         serializer.serialize_str(&self.to_string())
     }
 }
@@ -114,7 +112,11 @@ impl DomainName {
         self.labels.iter()
     }
 
-    pub fn from_position(&mut self, pos: usize, buffer: &[u8]) -> crate::error::Result<usize> {
+    pub fn create_from_position(
+        &mut self,
+        pos: usize,
+        buffer: &[u8],
+    ) -> crate::error::Result<usize> {
         let mut index = pos;
         let at_index = *buffer
             .get(index)
@@ -172,7 +174,7 @@ impl DomainName {
                 //println!("pointer={:0b}", pointer);
 
                 // recursively call the same method with the pointer as starting point
-                let _ = self.from_position(pointer, buffer);
+                let _ = self.create_from_position(pointer, buffer);
                 return Ok(index + 2);
             }
 
@@ -324,7 +326,9 @@ impl<'a> FromNetworkOrder<'a> for DomainName {
         let inner_ref = buffer.get_ref();
 
         // fill-in labels from inner data
-        let new_position = self.from_position(start_position, inner_ref).unwrap();
+        let new_position = self
+            .create_from_position(start_position, inner_ref)
+            .unwrap();
 
         // set new position
         buffer.set_position(new_position as u64);
@@ -354,7 +358,7 @@ mod tests {
             0x00,
         ];
         let mut dn = DomainName::default();
-        dn.from_position(0usize, &&v[..]).unwrap();
+        dn.create_from_position(0usize, &&v[..]).unwrap();
         assert_eq!(
             dn.labels,
             &[
@@ -377,7 +381,7 @@ mod tests {
         let d2 = DomainName::try_from("www.google.com").unwrap();
         assert!(d1 == d2);
         let d1 = DomainName::try_from("www.google.com").unwrap();
-        let d2 = DomainName::try_from("WWW.google.com").unwrap();
+        let d2 = DomainName::try_from("WWW.GOOGLE.com").unwrap();
         assert!(d1 == d2);
     }
 

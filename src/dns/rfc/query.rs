@@ -7,7 +7,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use crate::error::Result;
-use crate::network::Messenger;
+use crate::transport::network::Messenger;
 
 use super::{
     domain::DomainName, flags::BitFlags, header::Header, opt::opt_rr::OPT, qclass::QClass,

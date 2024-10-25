@@ -23,11 +23,10 @@ chrono = "0.4.38"
 clap = "4.5.9"
 colored = "2.1.0"
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
-env_logger = "0.10.1"
 http = "1.0.0"
 idna = "0.4.0"
 lazy_static = "1.4.0"
-log = "0.4.20"
+log = "0.4.22"
 mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 rand = "0.8.5"
 reqwest = { version = "0.11.23", default-features = false, features = ["rustls-tls-webpki-roots", "blocking"] }
@@ -37,6 +36,7 @@ rustls = { version = "0.23.15", default-features = false, features = ["std", "tl
 rustls-pki-types = "1.1.0"
 serde = { version = "1.0.195", features = [ "derive" ] }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }
+simplelog = "0.12.2"
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 webpki-roots = "0.26.0"

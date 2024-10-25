@@ -1,0 +1,31 @@
+Examples:
+
+
+# Simple query:
+$ dqy AAAA www.google.com
+$ dqy NS hk.
+
+# Multiple query:
+$ dqy A AAAA MX TXT www.example.com
+
+# Specific resolver:
+$ dqy A www.google.co.uk @1.1.1.1
+
+# Use DoT for a resolver supporting DNS over TLS:
+$ dqy A AAAA MX TXT NSEC3 www.example.com @1.1.1.1 --tls
+
+# Use DoH for a resolver supporting DNS over HTTPS:
+$ dqy A www.google.com @https://cloudflare-dns.com/dns-query --doh
+
+# Show OPT record
+$ dqy AAAA www.google.com --show-opt
+
+# Don't use colors in output
+$ dqy A AAAA MX TXT www.example.com --no-colors
+
+# Don't ask for recursion
+$ dqy AAAA www.google.com --no-recurse
+
+# IDNA support
+$ dqy AAAA ουτοπία.δπθ.gr
+$ dqy 中国.asia

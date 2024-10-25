@@ -4,8 +4,9 @@ use std::net::SocketAddr;
 use log::trace;
 
 use crate::args::CliOptions;
+use crate::dns::rfc::domain::ROOT;
 use crate::dns::rfc::{
-    domain::{DomainName, ROOT},
+    domain::{DomainName, ROOT_DOMAIN},
     opt::{
         dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
         nsid::NSID,
@@ -99,8 +100,8 @@ impl Default for ProtocolOptions {
             qtype: Vec::new(),
             qclass: QClass::default(),
             resolvers: Vec::new(),
-            domain: String::from("."), // by default, query is NS and sent to root
-            domain_name: ROOT,
+            domain: String::from(ROOT), // by default, query is NS and sent to root
+            domain_name: ROOT_DOMAIN,
         }
     }
 }

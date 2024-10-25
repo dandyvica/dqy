@@ -9,8 +9,8 @@ use super::{
     resource_record::ResourceRecord, rrset::RRSet,
 };
 use crate::dns::rfc::response_code::ResponseCode;
-use crate::network::Messenger;
 use crate::show::{Show, ShowOptions};
+use crate::transport::network::Messenger;
 
 pub enum ResponseSection {
     Answer,

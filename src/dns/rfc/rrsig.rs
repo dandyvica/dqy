@@ -3,9 +3,9 @@ use std::fmt;
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
-use crate::dns::{date_time::DnsDateTime, buffer::Buffer};
-use crate::new_rd_length;
 use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
+use crate::dns::{buffer::Buffer, date_time::DnsDateTime};
+use crate::new_rd_length;
 
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
@@ -98,8 +98,8 @@ impl Serialize for RRSIG {
 #[cfg(test)]
 mod tests {
     use crate::{
-        dns::tests::get_packets,
         dns::rfc::{rdata::RData, response::Response},
+        dns::tests::get_packets,
         test_rdata,
     };
 

@@ -2,9 +2,9 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use log::debug;
 
+use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions, TransportProtocol};
 use crate::error::Result;
-use crate::network::{IPVersion, Messenger, Protocol};
 
 pub type UdpProtocol = TransportProtocol<UdpSocket>;
 

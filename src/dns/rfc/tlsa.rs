@@ -64,8 +64,8 @@ pub(super) type SMIMEA = TLSA;
 #[cfg(test)]
 mod tests {
     use crate::{
-        dns::tests::get_packets,
         dns::rfc::{rdata::RData, response::Response},
+        dns::tests::get_packets,
         test_rdata,
     };
 

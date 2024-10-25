@@ -11,16 +11,19 @@ mod args;
 use args::CliOptions;
 
 mod error;
-use error::Error;
-
-mod network;
-use network::{Messenger, Protocol};
 
 mod show;
 use show::{QueryInfo, ShowAll};
 
 mod transport;
-use transport::{https::HttpsProtocol, tcp::TcpProtocol, tls::TlsProtocol, udp::UdpProtocol};
+use transport::{
+    https::HttpsProtocol,
+    network::{Messenger, Protocol},
+    root_servers::init_root_map,
+    tcp::TcpProtocol,
+    tls::TlsProtocol,
+    udp::UdpProtocol,
+};
 
 mod trace;
 use trace::*;
@@ -28,7 +31,7 @@ use trace::*;
 mod protocol;
 use protocol::DnsProtocol;
 
-mod options;
+mod cli_options;
 
 #[cfg(feature = "mlua")]
 mod lua;
@@ -39,39 +42,6 @@ use lua::LuaDisplay;
 const BUFFER_SIZE: usize = 4096;
 
 //───────────────────────────────────────────────────────────────────────────────────
-// Gather some information which might be useful for the user
-//───────────────────────────────────────────────────────────────────────────────────
-// #[derive(Debug, Default, Serialize)]
-// pub struct Info {
-//     //resolver reached
-//     server: Option<SocketAddr>,
-
-//     // elapsed time in ms
-//     elapsed: u128,
-
-//     // transport used (ex: Udp)
-//     mode: String,
-
-//     // bytes sent and received during network operations
-//     bytes_sent: usize,
-//     bytes_received: usize,
-// }
-
-// impl fmt::Display for Info {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         if let Some(peer) = self.server {
-//             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
-//         }
-//         writeln!(f, "elapsed: {} ms", self.elapsed)?;
-//         write!(
-//             f,
-//             "sent:{}, received:{} bytes",
-//             self.bytes_sent, self.bytes_received
-//         )
-//     }
-// }
-
-//───────────────────────────────────────────────────────────────────────────────────
 // get list of messages depending on transport
 //───────────────────────────────────────────────────────────────────────────────────
 fn get_messages_using_transport<T: Messenger>(
@@ -79,10 +49,9 @@ fn get_messages_using_transport<T: Messenger>(
     transport: &mut T,
     options: &CliOptions,
 ) -> crate::error::Result<MessageList> {
-    //info.server = transport.peer().ok();
     let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
 
-    // we want info
+    // we want run info
     if let Some(info) = info {
         let stats = transport.netstat();
 
@@ -91,11 +60,6 @@ fn get_messages_using_transport<T: Messenger>(
 
         info.server = transport.peer().ok();
     }
-
-    // let stats = transport.netstat();
-
-    // info.bytes_sent = stats.0;
-    // info.bytes_received = stats.1;
 
     Ok(messages)
 }
@@ -138,52 +102,11 @@ fn main() -> ExitCode {
     let res = run();
 
     if let Err(e) = res {
-        match e {
-            Error::Io(err) => {
-                eprintln!("I/O error (details: {err})");
-                return ExitCode::from(1);
-            }
-            Error::Utf8(err) => {
-                eprintln!("UTF8 conversion error (details: {err})");
-                return ExitCode::from(2);
-            }
-            Error::IPParse(err) => {
-                eprintln!("IP address parsing error (details: {err})");
-                return ExitCode::from(3);
-            }
-            Error::Internal(err) => {
-                eprintln!("DNS protocol error (details: {err})");
-                return ExitCode::from(4);
-            }
-            Error::Reqwest(err) => {
-                eprintln!("DoH error (details: {err})");
-                return ExitCode::from(5);
-            }
-            Error::Tls(err) => {
-                eprintln!("DoT error (details: {err})");
-                return ExitCode::from(6);
-            }
-            Error::Resolv(err) => {
-                eprintln!("Fetching resolvers error (details: {:?})", err);
-                return ExitCode::from(7);
-            }
-            Error::NoValidTCPConnection(a) => {
-                if a.len() == 1 {
-                    eprintln!("Timeout occured: couldn't TCP connect to: {:?}", a);
-                } else {
-                    eprintln!("Timeout occured: couldn't TCP connect to any of: {:?}", a);
-                }
-                return ExitCode::from(8);
-            }
-            #[cfg(feature = "mlua")]
-            Error::Lua(err) => {
-                eprintln!("Error calling Lua script (details: {:?})", err);
-                return ExitCode::from(9);
-            }
-        }
+        eprintln!("{}", e);
+        e.into()
+    } else {
+        ExitCode::SUCCESS
     }
-
-    ExitCode::SUCCESS
 }
 
 //───────────────────────────────────────────────────────────────────────────────────
@@ -193,9 +116,12 @@ fn main() -> ExitCode {
 fn run() -> crate::error::Result<()> {
     let now = Instant::now();
 
+    init_root_map();
+
     //───────────────────────────────────────────────────────────────────────────────────
     // get arguments
     //───────────────────────────────────────────────────────────────────────────────────
+    // skip program name
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut options = CliOptions::options(&args)?;
     debug!("{:#?}", options);
@@ -239,6 +165,5 @@ fn run() -> crate::error::Result<()> {
     // print out final results
     messages.show_all(&options.display, info);
 
-    // DnsProtocol::display(&options.display, &info, &messages);
     Ok(())
 }

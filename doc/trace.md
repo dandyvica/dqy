@@ -12,7 +12,7 @@ Samples:
 
 1) Send to the h-root server
 
-dqy A www.google.co.uk @198.97.190.53 --norecurse
+dqy A www.google.co.uk @198.97.190.53 --no-recurse
 
 uk.                          NS         IN         172800     10        nsa.nic.uk.
 uk.                          NS         IN         172800     6         nsb.nic.uk.
@@ -41,7 +41,7 @@ dns4.nic.uk.                 AAAA       IN         172800     16        2401:fd8
 
 2) choose a referral ip address and send request to ip
 
-dqy A www.google.co.uk @156.154.100.3 --norecurse
+dqy A www.google.co.uk @156.154.100.3 --no-recurse
 
 google.co.uk.                NS         IN         172800     16        ns2.google.com.
 google.co.uk.                NS         IN         172800     6         ns3.google.com.
@@ -51,7 +51,7 @@ google.co.uk.                NS         IN         172800     6         ns1.goog
 3) no glue records, so need to get the ip address of ns2.google.com. (for example)
 so need to restart from any root (e.g.: g-root)
 
-dqy A @192.112.36.4 ns2.google.com. --norecurse
+dqy A @192.112.36.4 ns2.google.com. --no-recurse
 
 com.                         NS         IN         172800     20        j.gtld-servers.net.
 com.                         NS         IN         172800     4         f.gtld-servers.net.
@@ -95,7 +95,7 @@ a.gtld-servers.net.          AAAA       IN         172800     16        2001:503
 
 4) find NS records of .com and send request to let say 192.55.83.30 (m.gtld-servers.net.)
 
-dqy A @192.55.83.30 ns2.google.com. --norecurse
+dqy A @192.55.83.30 ns2.google.com. --no-recurse
 
 google.com.                  NS         IN         172800     2         ns2.google.com.
 google.com.                  NS         IN         172800     6         ns1.google.com.
@@ -112,7 +112,7 @@ ns4.google.com.              A          IN         172800     4         216.239.
 
 5) now we have the ip address of ns2.google.com. => 216.239.34.10, we can send final request:
 
-dqy A @216.239.34.10 www.google.co.uk. --norecurse
+dqy A @216.239.34.10 www.google.co.uk. --no-recurse
 
 www.google.co.uk.            A          IN         300        4         172.217.20.195
 

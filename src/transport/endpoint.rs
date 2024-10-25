@@ -6,8 +6,8 @@ use std::{
 
 use resolver::ResolverList;
 
+use super::network::IPVersion;
 use super::root_servers::get_root_server;
-use crate::network::IPVersion;
 
 #[derive(Debug, Clone)]
 pub struct EndPoint {

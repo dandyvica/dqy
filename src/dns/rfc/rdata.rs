@@ -1,9 +1,10 @@
 use std::fmt::{self};
 
+use colored::{ColoredString, Colorize};
 use serde::Serialize;
 use type2network::ToNetworkOrder;
 
-use crate::dns::buffer::Buffer;
+use crate::{dns::buffer::Buffer, show::ToColor};
 
 use super::{
     a::A,
@@ -166,4 +167,10 @@ impl fmt::Display for RData {
             _ => unimplemented!("not yet implemented"),
         }
     }
+}
+
+impl ToColor for RData {
+    fn to_color(&self) -> ColoredString { 
+        self.to_string().bright_yellow()
+     }
 }

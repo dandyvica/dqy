@@ -138,6 +138,7 @@ Compilation instructions: [compiling dqy](./compile.md)
 * 7: error fetching OS resolvers
 * 8: network timeout error
 * 9: Lua script error
+* 10: logger error
 
 
 

@@ -1,21 +1,26 @@
 //! Manage command line arguments here.
+use std::fs::OpenOptions;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
 use clap::{Arg, ArgAction, Command};
-use log::trace;
-
-use crate::dns::rfc::domain::DomainName;
 use http::*;
+use log::trace;
 use rustc_version_runtime::version;
+use simplelog::*;
 
+use crate::cli_options::{EdnsOptions, ProtocolOptions};
+use crate::dns::rfc::domain::DomainName;
 use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
-use crate::network::{IPVersion, Protocol};
-use crate::options::{EdnsOptions, ProtocolOptions};
 use crate::show::ShowOptions;
+use crate::transport::network::{IPVersion, Protocol};
 use crate::transport::{endpoint::EndPoint, TransportOptions};
+
+// value of the environment variable for flags if any
+const ENV_FLAGS: &str = "DQY_FLAGS";
+const VERSION: &str = "0.3.0";
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -48,10 +53,31 @@ pub struct CliOptions {
     pub display: ShowOptions,
 }
 
+impl FromStr for CliOptions {
+    type Err = crate::error::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
+        Ok(CliOptions::options(&args)?)
+    }
+}
+
 impl CliOptions {
     pub fn options(args: &[String]) -> crate::error::Result<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
+
+        // check first if DQY_FLAGS is present
+        let mut args = args.to_owned();
+
+        if let Ok(env) = std::env::var(ENV_FLAGS) {
+            let mut flag_args: Vec<String> = env
+                .split_ascii_whitespace()
+                .map(|a| a.to_string())
+                .collect();
+            flag_args.retain(|arg| arg.starts_with("--"));
+            args.extend(flag_args);
+        }
 
         // split arguments into 2 sets: those not starting with a '-' which should be first
         // and the others
@@ -59,7 +85,7 @@ impl CliOptions {
 
         let (without_dash, with_dash) = match dash_pos {
             Some(pos) => (&args[0..pos], &args[pos..]),
-            None => (args, &[] as &[String]),
+            None => (args.as_slice(), &[] as &[String]),
         };
 
         trace!("options without dash:{:?}", without_dash);
@@ -73,7 +99,7 @@ impl CliOptions {
         for arg in without_dash {
             if let Some(s) = arg.strip_prefix('@') {
                 server = s;
-                // options.protocol.server = s.to_string();
+
                 // if https:// is found in the server, it's DoH
                 if server.contains("https://") {
                     options.transport.transport_mode = Protocol::DoH;
@@ -109,43 +135,12 @@ Project home page: https://github.com/dandyvica/dqy
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
-        let cmd = Command::new("A DNS query tool")
-            .version("0.3.0")
+        let cmd = Command::new("A DNS query tool inspired by dig, drill and dog")
+            .version(VERSION)
             .author("Alain Viguier dandyvica@gmail.com")
             .about(about)
             .after_help(rustc_version)
-            .after_long_help(r#"Examples:
-
-
-Simple query:
-$ dqy AAAA www.google.com
-$ dqy NS hk.
-
-Multiple query:
-$ dqy A AAAA MX TXT www.example.com
-
-Specific resolver:
-$ dqy A www.google.co.uk @1.1.1.1
-
-Use DoT for a resolver supporting DNS over TLS:
-$ dqy A AAAA MX TXT NSEC3 www.example.com @1.1.1.1 --tls
-
-Use DoH for a resolver supporting DNS over HTTPS:
-$ dqy A www.google.com @https://cloudflare-dns.com/dns-query --doh
-
-Show OPT record
-$ dqy AAAA www.google.com --show-opt
-
-Don't use colors in output
-$ dqy A AAAA MX TXT www.example.com --no-colors
-
-Don't ask for recursion
-$ dqy AAAA www.google.com --no-recurse
-
-IDNA support
-$ dqy AAAA ουτοπία.δπθ.gr
-
-            "#)
+            .after_long_help(include_str!("../doc/usage_examples.txt"))
             .bin_name("dqy")
             .no_binary_name(true)
             .override_usage(r#"dqy [TYPES] [DOMAIN] [@RESOLVER] [OPTIONS]
@@ -508,6 +503,18 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::Count)
                     .help_heading("Display options")
             )
+            //───────────────────────────────────────────────────────────────────────────────────
+            // Misc. options
+            //───────────────────────────────────────────────────────────────────────────────────   
+            .arg(
+                Arg::new("log")
+                    .long("log")
+                    .long_help("Save debugging info into the file LOG.")
+                    .action(ArgAction::Set)
+                    .value_name("LOG")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Miscellaneous options")
+            )
             ;
 
         // add Lua option if feature lua
@@ -739,6 +746,25 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.show_opt = matches.get_flag("show-opt");
         options.display.stats = matches.get_flag("stats");
 
+        //───────────────────────────────────────────────────────────────────────────────────
+        // manage misc. options
+        //───────────────────────────────────────────────────────────────────────────────────
+        if matches.contains_id("verbose") && !matches.get_flag("nolog") {
+            let level = match matches.get_count("verbose") {
+                0 => log::LevelFilter::Off,
+                1 => log::LevelFilter::Info,
+                2 => log::LevelFilter::Warn,
+                3 => log::LevelFilter::Error,
+                4 => log::LevelFilter::Debug,
+                5..=255 => log::LevelFilter::Trace,
+            };
+            if let Some(path) = matches.get_one::<PathBuf>("log") {
+                init_write_logger(path, level)?;
+            } else {
+                init_term_logger(level)?;
+            }
+        }
+
         // if QType is AXFR, auto-align
         if options.protocol.qtype == vec![QType::AXFR] {
             options.display.align_names = true;
@@ -751,20 +777,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 
         if let Some(fmt) = matches.get_one::<String>("fmt") {
             options.display.fmt = fmt.to_string();
-        }
-
-        // verbosity (for --nolog, see comments for unit tests)
-        if matches.contains_id("verbose") && !matches.get_flag("nolog") {
-            let level = match matches.get_count("verbose") {
-                0 => log::LevelFilter::Off,
-                1 => log::LevelFilter::Info,
-                2 => log::LevelFilter::Warn,
-                3 => log::LevelFilter::Error,
-                4 => log::LevelFilter::Debug,
-                5..=255 => log::LevelFilter::Trace,
-            };
-
-            env_logger::Builder::new().filter_level(level).init();
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -804,23 +816,35 @@ fn validate_qtypes(s: &str) -> std::result::Result<QType, String> {
         .map_err(|e| format!("can't convert value '{e}' to a valid query type"))
 }
 
-// // Initialize logger: either create it or use it
-// fn init_logger(logfile: &str) -> DNSResult<()> {
-//     // initialize logger
-//     let writable = OpenOptions::new().create(true).append(true).open(logfile)?;
+// Initialize write logger: either create it or use it
+fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error::Result<()> {
+    // initialize logger
+    let writable = OpenOptions::new().create(true).append(true).open(logfile)?;
 
-//     WriteLogger::init(
-//         LevelFilter::Trace,
-//         simplelog::ConfigBuilder::new()
-//             .set_time_format_rfc3339()
-//             // .set_time_format_custom(format_description!(
-//             //     "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]"
-//             .build(),
-//         writable,
-//     )?;
+    WriteLogger::init(
+        level,
+        simplelog::ConfigBuilder::new()
+            .set_time_format_rfc3339()
+            // .set_time_format_custom(format_description!(
+            //     "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]"
+            .build(),
+        writable,
+    )?;
 
-//     Ok(())
-// }
+    Ok(())
+}
+
+// Initialize terminal logger
+fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
+    TermLogger::init(
+        level,
+        Config::default(),
+        TerminalMode::Stderr,
+        ColorChoice::Auto,
+    )?;
+
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {

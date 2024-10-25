@@ -1,8 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./args/Cargo.toml",
         "./Cargo.toml",
-        "./dns/Cargo.toml",
     ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     "Lua.diagnostics.globals": [
