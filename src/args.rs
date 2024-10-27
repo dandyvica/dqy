@@ -109,12 +109,12 @@ impl CliOptions {
                     options.transport.doh = true;
                 }
 
-                // manage address:port server
-                if server.contains(":") {
-                    let v: Vec<_> = server.split(":").collect();
-                    server = v[0];
-                    options.transport.port = v[1].parse::<u16>()?;
-                }
+                // // manage address:port server
+                // if server.contains(":") {
+                //     let v: Vec<_> = server.split(":").collect();
+                //     server = v[0];
+                //     options.transport.port = v[1].parse::<u16>()?;
+                // }
                 continue;
             }
 
@@ -618,12 +618,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // port number is depending on transport mode or use one specified with --port
         //───────────────────────────────────────────────────────────────────────────────────
-        // port might have been set using address:port previously
-        if options.transport.port != 0 {
-            options.transport.port = *matches
-                .get_one::<u16>("port")
-                .unwrap_or(&options.transport.transport_mode.default_port());
-        }
+        options.transport.port = *matches
+            .get_one::<u16>("port")
+            .unwrap_or(&options.transport.transport_mode.default_port());
         //───────────────────────────────────────────────────────────────────────────────────
         // build the endpoint
         //───────────────────────────────────────────────────────────────────────────────────
