@@ -78,7 +78,7 @@ pub struct EdnsOptions {
 // Protocol options: linked to the DNS protocol itself
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Clone)]
-pub struct ProtocolOptions {
+pub struct DnsProtocolOptions {
     pub qtype: Vec<QType>,
 
     // Qclass is IN by default
@@ -94,7 +94,7 @@ pub struct ProtocolOptions {
     pub domain_name: DomainName,
 }
 
-impl Default for ProtocolOptions {
+impl Default for DnsProtocolOptions {
     fn default() -> Self {
         Self {
             qtype: Vec::new(),

@@ -170,7 +170,7 @@ impl fmt::Display for RData {
 }
 
 impl ToColor for RData {
-    fn to_color(&self) -> ColoredString { 
+    fn to_color(&self) -> ColoredString {
         self.to_string().bright_yellow()
-     }
+    }
 }

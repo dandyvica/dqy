@@ -1,6 +1,7 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
 use std::fmt::Display;
 use std::net::{AddrParseError, SocketAddr};
+use std::num::ParseIntError;
 use std::process::ExitCode;
 use std::str;
 use std::{fmt, io};
@@ -25,6 +26,9 @@ pub enum Error {
 
     // a conversion to str caused an error
     Utf8(str::Utf8Error),
+
+    // conversion from a string to int error
+    IntegerParse(ParseIntError),
 
     // an str to IP conversion error
     IPParse(AddrParseError),
@@ -58,6 +62,7 @@ impl Display for Error {
             Error::Io(e) => write!(f, "I/O error: {}", e),
             Error::Utf8(e) => write!(f, "UTF8 conversion {}", e),
             Error::IPParse(e) => write!(f, "IP address parsing error: {}", e),
+            Error::IntegerParse(e) => write!(f, "Can't convert port number: {}", e),
             Error::Internal(e) => write!(f, "DNS error: {}", e),
             Error::Reqwest(e) => write!(f, "DoH error: {}", e),
             Error::Tls(e) => write!(f, "TLS error: {}", e),
@@ -83,6 +88,7 @@ impl From<Error> for ExitCode {
             Error::Resolv(_) => ExitCode::from(7),
             Error::NoValidTCPConnection(_) => ExitCode::from(8),
             Error::Logger(_) => ExitCode::from(10),
+            Error::IntegerParse(_) => ExitCode::from(11),
             #[cfg(feature = "mlua")]
             Error::Lua(_) => ExitCode::from(9),
         }
@@ -184,6 +190,7 @@ ErrFrom!(rustls::Error, Error::Tls);
 ErrFrom!(resolver::error::Error, Error::Resolv);
 ErrFrom!(ProtocolError, Error::Internal);
 ErrFrom!(log::SetLoggerError, Error::Logger);
+ErrFrom!(ParseIntError, Error::IntegerParse);
 
 #[cfg(feature = "mlua")]
 ErrFrom!(mlua::Error, Error::Lua);
