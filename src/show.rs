@@ -78,6 +78,9 @@ pub struct ShowOptions {
     // align domain names
     pub align_names: bool,
 
+    // content of the handlebars template file
+    pub hb_tpl: Option<String>,
+
     // Lua code if specified
     #[cfg(feature = "mlua")]
     pub lua_code: Option<String>,

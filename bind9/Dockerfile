@@ -2,9 +2,15 @@
 
 FROM ubuntu/bind9
 
-COPY db.medical.equipment /etc/bind
+COPY db.dqy-test.dns /etc/bind
 COPY named.conf.local /etc/bind
 COPY named.conf.options /etc/bind
-COPY ./config/*.* /etc/bind/
+# COPY rndc.key /etc/bind
 
-CMD service bind9 start 
+RUN <<EOF
+apt update
+apt-get install dnsutils -y
+apt-get install net-tools -y
+EOF
+
+# CMD sudo service bind9 start 

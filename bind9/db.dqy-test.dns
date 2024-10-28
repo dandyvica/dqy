@@ -1,0 +1,24 @@
+;
+$TTL    604800
+@       IN      SOA     dqy-test.dns. root.dqy-test.dns. (
+                             15         ; Serial
+                         604800         ; Refresh
+                          86401         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+;
+@               IN      NS      dqy-test.dns.
+
+;
+@               IN      A       192.168.1.10
+
+;
+@               IN      MX      10              mail.dqy-test.dns.
+
+;
+@               IN      NS      dqy-test.dns.
+www             IN      A       10.0.100.100
+www             IN      AAAA    b567:6013:e52f:c164:cf0f:1276:aebd:f634
+txt             IN      TXT     "local network"
+hinfo           IN      HINFO   "x86_64" "Linux"

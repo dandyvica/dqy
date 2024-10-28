@@ -154,55 +154,71 @@ mod tests {
     }
 
     #[test]
-    fn from_name_port() {
+    fn from_ip_port() {
         let ep = EndPoint::try_from(("1.1.1.1", 53));
         assert!(ep.is_ok());
         let ep = ep.unwrap();
         assert_eq!(ep.addrs, vec![SocketAddr::from_str("1.1.1.1:53").unwrap()]);
-
-        let ep = EndPoint::try_from(("one.one.one.one", 53));
-        assert!(ep.is_ok());
-        let ep = ep.unwrap();
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
     }
 
     #[test]
-    fn from_name_colon_port() {
+    fn from_name_port() {
+        // as Github runners don't support IPV6, use this trick.
+        // if we want to run tests on runners locally, we have to define
+        // a special env variable DQY_LOCAL_TEST, whatever the value
+        if let Ok(_) = std::env::var("DQY_LOCAL_TEST") {
+            let ep = EndPoint::try_from(("one.one.one.one", 53));
+            assert!(ep.is_ok());
+            let ep = ep.unwrap();
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
+        }
+    }
+
+    #[test]
+    fn from_ip_colon_port() {
         let ep = EndPoint::try_from("1.1.1.1:53");
         assert!(ep.is_ok());
         let ep = ep.unwrap();
         assert_eq!(ep.addrs, vec![SocketAddr::from_str("1.1.1.1:53").unwrap()]);
-
-        let ep = EndPoint::try_from("one.one.one.one:53");
-        assert!(ep.is_ok());
-        let ep = ep.unwrap();
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
     }
 
     #[test]
-    fn from_ip_port() {
+    fn from_name_colon_port() {
+        // as Github runners don't support IPV6, use this trick.
+        // if we want to run tests on runners locally, we have to define
+        // a special env variable DQY_LOCAL_TEST, whatever the value
+        if let Ok(_) = std::env::var("DQY_LOCAL_TEST") {
+            let ep = EndPoint::try_from("one.one.one.one:53");
+            assert!(ep.is_ok());
+            let ep = ep.unwrap();
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
+        }
+    }
+
+    #[test]
+    fn from_ip_only_port() {
         let ip = IpAddr::from_str("1.1.1.1").unwrap();
         let ep = EndPoint::try_from((&ip, 53));
         assert!(ep.is_ok());

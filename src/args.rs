@@ -507,6 +507,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Display options")
             )
             .arg(
+                Arg::new("tpl")
+                    .long("tpl")
+                    .long_help("Name of the handlebars template to render to display results.")
+                    .action(ArgAction::Set)
+                    .value_name("TEMPLATE")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Display options")
+            )            
+            .arg(
                 Arg::new("verbose")
                     .short('v')
                     .long("verbose")
@@ -768,6 +777,12 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.short = matches.get_flag("short");
         options.display.show_opt = matches.get_flag("show-opt");
         options.display.stats = matches.get_flag("stats");
+
+        // handlebars template
+        if let Some(path) = matches.get_one::<PathBuf>("tpl") {
+            // read handlebars file as a string
+            options.display.hb_tpl = Some(std::fs::read_to_string(path)?);
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage misc. options

@@ -22,6 +22,7 @@ use super::{
     client_subnet::ClientSubnet,
     cookie::COOKIE,
     dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
+    extended::Extended,
     padding::Padding,
     OptionData,
 };
@@ -174,7 +175,13 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 subnet.deserialize_from(buffer)?;
                 self.data = OptOptionData::ClientSubnet(subnet);
             }
-            _ => unimplemented!("option code {} is not yet implemented", self.code),
+            OptOptionCode::Extended => {
+                let mut extended = Extended::default();
+                extended.extra_text = Buffer::with_capacity(self.length - 2);
+                extended.deserialize_from(buffer)?;
+                self.data = OptOptionData::Extended(extended);
+            }
+            _ => unimplemented!("option code <{}> is not yet implemented", self.code),
         }
         Ok(())
     }
@@ -227,6 +234,7 @@ pub enum OptOptionData {
     DHU(DHU),
     N3U(N3U),
     EdnsKeyTag(EdnsKeyTag),
+    Extended(Extended),
 }
 
 impl Default for OptOptionData {

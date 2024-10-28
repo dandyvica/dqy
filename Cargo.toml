@@ -23,6 +23,7 @@ chrono = "0.4.38"
 clap = "4.5.9"
 colored = "2.1.0"
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
+handlebars = "6.2.0"
 http = "1.0.0"
 idna = "0.4.0"
 lazy_static = "1.4.0"

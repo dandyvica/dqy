@@ -1,6 +1,7 @@
 //! A DNS resource query tool
 use std::{process::ExitCode, time::Instant};
 
+use handlebars::render;
 use log::{debug, info};
 
 // internal modules
@@ -32,6 +33,8 @@ mod protocol;
 use protocol::DnsProtocol;
 
 mod cli_options;
+
+mod handlebars;
 
 #[cfg(feature = "mlua")]
 mod lua;
@@ -162,7 +165,12 @@ fn run() -> crate::error::Result<()> {
         return Ok(());
     }
 
+    //───────────────────────────────────────────────────────────────────────────────────
     // print out final results
+    //───────────────────────────────────────────────────────────────────────────────────
+    if let Some(tpl) = &options.display.hb_tpl {
+        render(&messages, &tpl);
+    }
     messages.show_all(&options.display, info);
 
     Ok(())
