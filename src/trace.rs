@@ -25,7 +25,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
     options.protocol.domain_name = ROOT_DOMAIN;
     let messages = get_messages(None, options)?;
     let resp = messages[0].response();
-    resp.show(&options.display);
+    resp.show(&options.display, None);
     println!();
 
     // chose a random root server
@@ -49,7 +49,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
 
         let messages = get_messages(None, options)?;
         let resp = messages[0].response();
-        resp.show(&options.display);
+        resp.show(&options.display, None);
         println!();
 
         // did we find the ip address for the domain we asked for ?
@@ -82,7 +82,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
             );
             let messages = get_messages(None, options)?;
             let resp = messages[0].response();
-            resp.show(&options.display);
+            resp.show(&options.display, None);
 
             // find the ip address
             ip = resp

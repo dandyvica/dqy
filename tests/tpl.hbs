@@ -1,2 +1,9 @@
-=========> {{0.query.question.qname}}
+=========> {{info.server}}
 
+{{#each messages as |m|}}
+ID={{m.response.header.id}}
+NAME
+{{#each m.response.answer as |a|}}
+{{a.name}}
+{{/each}}}}
+{{/each}}}}

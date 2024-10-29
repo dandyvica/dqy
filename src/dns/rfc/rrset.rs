@@ -10,7 +10,7 @@ use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 use super::{domain::DomainName, qtype::QType, resource_record::ResourceRecord};
-use crate::show::{Show, ShowOptions};
+use crate::show::{DisplayOptions, Show};
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
 pub struct RRSet(Vec<ResourceRecord>);
@@ -67,12 +67,12 @@ impl fmt::Display for RRSet {
 }
 
 impl Show for RRSet {
-    fn show(&self, display_options: &ShowOptions) {
-        let max_length = if display_options.align_names {
-            self.max_length()
-        } else {
-            None
-        };
+    fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
+        // let max_length = if display_options.align_names {
+        //     self.max_length()
+        // } else {
+        //     None
+        // };
 
         for rr in &self.0 {
             // don't display OPT if not requested

@@ -15,7 +15,7 @@ use simplelog::*;
 use crate::cli_options::{DnsProtocolOptions, EdnsOptions};
 use crate::dns::rfc::domain::DomainName;
 use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
-use crate::show::ShowOptions;
+use crate::show::DisplayOptions;
 use crate::transport::network::{IPVersion, Protocol};
 use crate::transport::{endpoint::EndPoint, TransportOptions};
 
@@ -51,7 +51,7 @@ pub struct CliOptions {
     pub edns: EdnsOptions,
 
     // Display options
-    pub display: ShowOptions,
+    pub display: DisplayOptions,
 }
 
 impl FromStr for CliOptions {

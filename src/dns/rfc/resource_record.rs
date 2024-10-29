@@ -9,7 +9,7 @@ use super::{
     a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC, mx::MX, ns::NS,
     ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA, txt::TXT,
 };
-use crate::show::{ShowOptions, ToColor};
+use crate::show::{DisplayOptions, ToColor};
 
 use crate::dns::{
     buffer::Buffer,
@@ -320,7 +320,7 @@ impl ResourceRecord {
         }
     }
 
-    pub(super) fn show(&self, display_options: &ShowOptions, length: Option<usize>) {
+    pub(super) fn show(&self, display_options: &DisplayOptions, length: Option<usize>) {
         let name_length = length.unwrap_or(NAME);
 
         // formatting display

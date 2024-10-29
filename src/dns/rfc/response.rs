@@ -8,7 +8,7 @@ use super::{
     domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
 };
 use crate::dns::rfc::response_code::ResponseCode;
-use crate::show::{Show, ShowOptions};
+use crate::show::{DisplayOptions, Show};
 use crate::transport::network::Messenger;
 
 pub enum ResponseSection {
@@ -226,14 +226,14 @@ impl<'a> FromNetworkOrder<'a> for Response {
 }
 
 impl Show for Response {
-    fn show(&self, display_options: &ShowOptions) {
+    fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
         if self.header.an_count > 0 {
             debug_assert!(self.answer.is_some());
 
             if display_options.headers {
                 println!("ANSWER:")
             }
-            self.answer.as_ref().unwrap().show(display_options);
+            self.answer.as_ref().unwrap().show(display_options, max_length);
         }
 
         if self.header.ns_count > 0 && !display_options.no_authorative {
@@ -242,7 +242,7 @@ impl Show for Response {
             if display_options.headers {
                 println!("\nAUTHORATIVE:")
             }
-            self.authority.as_ref().unwrap().show(display_options);
+            self.authority.as_ref().unwrap().show(display_options, max_length);
         }
 
         if self.header.ar_count > 0 && !display_options.no_additional {
@@ -251,7 +251,7 @@ impl Show for Response {
             if display_options.headers {
                 println!("\nADDITIONAL:")
             }
-            self.additional.as_ref().unwrap().show(display_options);
+            self.additional.as_ref().unwrap().show(display_options, max_length);
         }
     }
 }

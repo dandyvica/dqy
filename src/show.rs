@@ -36,7 +36,7 @@ impl fmt::Display for QueryInfo {
 // Display options
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Default, Clone)]
-pub struct ShowOptions {
+pub struct DisplayOptions {
     // print out stats like elasped time etc
     pub stats: bool,
 
@@ -83,10 +83,10 @@ pub struct ShowOptions {
 }
 
 pub trait Show: Display {
-    fn show(&self, display_options: &ShowOptions);
+    fn show(&self, display_options: &DisplayOptions, length: Option<usize>);
 }
 pub trait ShowAll: Display {
-    fn show_all(&self, display_options: &ShowOptions, info: QueryInfo);
+    fn show_all(&self, display_options: &DisplayOptions, info: QueryInfo);
 }
 
 pub trait ToColor: Display {

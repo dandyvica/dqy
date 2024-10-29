@@ -9,7 +9,7 @@ use serde::Serialize;
 
 use crate::{
     error::ProtocolError,
-    show::{QueryInfo, Show, ShowAll, ShowOptions},
+    show::{DisplayOptions, QueryInfo, Show, ShowAll},
 };
 
 #[derive(Debug, Serialize)]
@@ -112,7 +112,7 @@ impl fmt::Display for MessageList {
 }
 
 impl ShowAll for MessageList {
-    fn show_all(&self, display_options: &ShowOptions, info: QueryInfo) {
+    fn show_all(&self, display_options: &DisplayOptions, info: QueryInfo) {
         // JSON
         if display_options.json_pretty {
             let j = serde_json::json!({
@@ -129,8 +129,10 @@ impl ShowAll for MessageList {
             println!("{}", serde_json::to_string(&j).unwrap());
         // Regular print out
         } else {
+            let max_length = self.max_length();
+
             for msg in self.iter() {
-                msg.response().show(display_options);
+                msg.response().show(display_options, max_length);
             }
 
             if display_options.stats {
