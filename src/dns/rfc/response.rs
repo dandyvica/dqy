@@ -5,8 +5,7 @@ use serde::Serialize;
 use type2network::FromNetworkOrder;
 
 use super::{
-    domain::DomainName, header::Header, qtype::QType, question::Question,
-    resource_record::ResourceRecord, rrset::RRSet,
+    domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
 };
 use crate::dns::rfc::response_code::ResponseCode;
 use crate::show::{Show, ShowOptions};
@@ -60,12 +59,29 @@ impl Response {
         self.answer.is_none()
     }
 
+    // return the max length of all RRs in either answer, additional or authority
+    pub fn max_length(&self) -> usize {
+        let m1 = if let Some(x) = &self.answer {
+            x.max_length().unwrap_or(0)
+        } else {
+            0
+        };
+        let m2 = if let Some(x) = &self.authority {
+            x.max_length().unwrap_or(0)
+        } else {
+            0
+        };
+        let m3 = if let Some(x) = &self.additional {
+            x.max_length().unwrap_or(0)
+        } else {
+            0
+        };
+
+        usize::max(usize::max(m1, m2), m3)
+    }
+
     // Receive message for DNS resolver
-    pub fn recv<T: Messenger>(
-        &mut self,
-        trp: &mut T,
-        buffer: &mut [u8],
-    ) -> crate::error::Result<usize> {
+    pub fn recv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
@@ -288,9 +304,7 @@ mod tests {
         let answer = &answer[0];
         assert_eq!(format!("{}", answer.name), "www.google.com.");
         assert_eq!(answer.r#type, QType::A);
-        assert!(
-            matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.class == QClass::IN)
-        );
+        assert!(matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.class == QClass::IN));
         assert!(matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.ttl == 119));
         assert_eq!(answer.rd_length, 4);
 

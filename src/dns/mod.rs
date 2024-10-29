@@ -31,21 +31,13 @@ mod tests {
         T: FromNetworkOrder<'a> + Default + std::fmt::Debug + std::cmp::PartialEq,
     {
         let mut buffer = std::io::Cursor::new(buf.as_slice());
-        let mut v: T = if def.is_none() {
-            T::default()
-        } else {
-            def.unwrap()
-        };
+        let mut v: T = if def.is_none() { T::default() } else { def.unwrap() };
         assert!(v.deserialize_from(&mut buffer).is_ok());
         assert_eq!(&v, val);
     }
 
     // get packets from pcap file
-    pub(crate) fn get_packets(
-        pcap_file: &str,
-        query: usize,
-        response: usize,
-    ) -> (Vec<u8>, Vec<u8>) {
+    pub(crate) fn get_packets(pcap_file: &str, query: usize, response: usize) -> (Vec<u8>, Vec<u8>) {
         use pcap_file::pcap::PcapReader;
 
         let pcap = File::open(pcap_file).expect("Error opening pcap file");

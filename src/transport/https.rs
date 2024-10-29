@@ -36,10 +36,7 @@ impl<'a> HttpsProtocol<'a> {
         let client = match trp_options.https_version {
             Some(Version::HTTP_11) => cb.http1_only().build()?,
             Some(Version::HTTP_2) => cb.http2_prior_knowledge().build()?,
-            _ => unimplemented!(
-                "version {:?} of HTTP is not yet implemented",
-                trp_options.https_version
-            ),
+            _ => unimplemented!("version {:?} of HTTP is not yet implemented", trp_options.https_version),
         };
 
         debug_assert!(!trp_options.endpoint.server.is_empty());
@@ -58,10 +55,7 @@ impl<'a> HttpsProtocol<'a> {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, HeaderValue::from_static("reqwest"));
         headers.insert(ACCEPT, HeaderValue::from_static("application/dns-message"));
-        headers.insert(
-            CONTENT_TYPE,
-            HeaderValue::from_static("application/dns-message"),
-        );
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/dns-message"));
         headers
     }
 
@@ -129,9 +123,8 @@ impl<'a> Messenger for HttpsProtocol<'a> {
     }
 
     fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.peer.ok_or(std::io::Error::other(
-            "unable to get remote peer from HTTPS response",
-        ))
+        self.peer
+            .ok_or(std::io::Error::other("unable to get remote peer from HTTPS response"))
     }
 
     fn netstat(&self) -> NetworkStat {

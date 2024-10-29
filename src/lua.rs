@@ -5,11 +5,7 @@ use serde::Serialize;
 pub struct LuaDisplay;
 
 impl LuaDisplay {
-    pub fn call_lua<T: Serialize, U: Serialize>(
-        messages: T,
-        info: U,
-        lua_code: &str,
-    ) -> crate::error::Result<()> {
+    pub fn call_lua<T: Serialize, U: Serialize>(messages: T, info: U, lua_code: &str) -> crate::error::Result<()> {
         // get lua context
         let lua = Lua::new();
 

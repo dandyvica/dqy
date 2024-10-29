@@ -39,9 +39,7 @@ impl Message {
     pub fn check(&self) -> crate::error::Result<()> {
         trace!("checking message validity");
 
-        if self.response.id() != self.query.header.id
-            || self.query.question != self.response.question
-        {
+        if self.response.id() != self.query.header.id || self.query.question != self.response.question {
             error!(
                 "query and response ID are not equal, discarding answer for type {:?}",
                 self.query.question.qtype
@@ -63,6 +61,12 @@ impl Message {
 
         Ok(())
     }
+
+    // Return the max length of the response part
+    #[inline]
+    pub fn max_length(&self) -> usize {
+        self.response.max_length()
+    }
 }
 
 impl fmt::Display for Message {
@@ -82,6 +86,11 @@ pub struct MessageList(Vec<Message>);
 impl MessageList {
     pub fn new(list: Vec<Message>) -> Self {
         Self(list)
+    }
+
+    // Return the max length of all messages (all RRs of all messages)
+    pub fn max_length(&self) -> Option<usize> {
+        self.0.iter().map(|x| x.max_length()).max()
     }
 }
 
@@ -111,12 +120,14 @@ impl ShowAll for MessageList {
                 "info": info
             });
             println!("{}", serde_json::to_string_pretty(&j).unwrap());
+        // JSON pretty
         } else if display_options.json {
             let j = serde_json::json!({
                 "messages": self,
                 "info": info
             });
             println!("{}", serde_json::to_string(&j).unwrap());
+        // Regular print out
         } else {
             for msg in self.iter() {
                 msg.response().show(display_options);

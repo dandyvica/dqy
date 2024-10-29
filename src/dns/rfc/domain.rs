@@ -112,15 +112,9 @@ impl DomainName {
         self.labels.iter()
     }
 
-    pub fn create_from_position(
-        &mut self,
-        pos: usize,
-        buffer: &[u8],
-    ) -> crate::error::Result<usize> {
+    pub fn create_from_position(&mut self, pos: usize, buffer: &[u8]) -> crate::error::Result<usize> {
         let mut index = pos;
-        let at_index = *buffer
-            .get(index)
-            .ok_or(err_internal!(CantCreateDomainName))?;
+        let at_index = *buffer.get(index).ok_or(err_internal!(CantCreateDomainName))?;
 
         trace!(
             "from_position(): starting at position: 0x{:X?} ({}) with value: 0x{:X?} ({})",
@@ -132,9 +126,7 @@ impl DomainName {
 
         loop {
             // always check if out of bounds
-            let at_index = *buffer
-                .get(index)
-                .ok_or(err_internal!(CantCreateDomainName))?;
+            let at_index = *buffer.get(index).ok_or(err_internal!(CantCreateDomainName))?;
 
             // we reach the sentinel
             if at_index == 0 {
@@ -158,9 +150,7 @@ impl DomainName {
             //    domain header).  A zero offset specifies the first byte of the ID field,
             //    etc.
             if DomainName::is_pointer(at_index) {
-                let at_index_plus = *buffer
-                    .get(index + 1)
-                    .ok_or(err_internal!(CantCreateDomainName))?;
+                let at_index_plus = *buffer.get(index + 1).ok_or(err_internal!(CantCreateDomainName))?;
 
                 // get pointer which is on 2 bytes
                 let ptr = [at_index, at_index_plus];
@@ -326,9 +316,7 @@ impl<'a> FromNetworkOrder<'a> for DomainName {
         let inner_ref = buffer.get_ref();
 
         // fill-in labels from inner data
-        let new_position = self
-            .create_from_position(start_position, inner_ref)
-            .unwrap();
+        let new_position = self.create_from_position(start_position, inner_ref).unwrap();
 
         // set new position
         buffer.set_position(new_position as u64);
@@ -354,8 +342,7 @@ mod tests {
     #[test]
     fn from_position() {
         let v = vec![
-            0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65,
-            0x00,
+            0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00,
         ];
         let mut dn = DomainName::default();
         dn.create_from_position(0usize, &&v[..]).unwrap();
@@ -420,9 +407,7 @@ mod tests {
         let domain = (0..255).map(|_| "X").collect::<String>();
         assert!(DomainName::try_from(domain.as_str()).is_err());
 
-        let _domain =
-            DomainName::try_from("0.0.9.3.2.7.e.f.f.f.3.6.6.7.2.e.4.8.0.3.0.7.4.1.0.0.2.ip6.arpa")
-                .unwrap();
+        let _domain = DomainName::try_from("0.0.9.3.2.7.e.f.f.f.3.6.6.7.2.e.4.8.0.3.0.7.4.1.0.0.2.ip6.arpa").unwrap();
     }
 
     #[test]
@@ -433,10 +418,7 @@ mod tests {
         assert_eq!(dn.serialize_to(&mut buffer).unwrap(), 15);
         assert_eq!(
             &buffer,
-            &[
-                0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65,
-                0x00
-            ]
+            &[0x03, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00]
         );
     }
 
@@ -447,8 +429,7 @@ mod tests {
         // with sentinel = 0
         let mut buffer = Cursor::new(
             [
-                0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69,
-                0x65, 0x00,
+                0x03_u8, 0x77, 0x77, 0x77, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x02, 0x69, 0x65, 0x00,
             ]
             .as_slice(),
         );

@@ -170,12 +170,8 @@ mod tests {
             let ep = EndPoint::try_from(("one.one.one.one", 53));
             assert!(ep.is_ok());
             let ep = ep.unwrap();
-            assert!(ep
-                .addrs
-                .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
-            assert!(ep
-                .addrs
-                .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
             assert!(ep
                 .addrs
                 .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));
@@ -202,12 +198,8 @@ mod tests {
             let ep = EndPoint::try_from("one.one.one.one:53");
             assert!(ep.is_ok());
             let ep = ep.unwrap();
-            assert!(ep
-                .addrs
-                .contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
-            assert!(ep
-                .addrs
-                .contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:53").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.0.0.1:53").unwrap()));
             assert!(ep
                 .addrs
                 .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:53").unwrap()));

@@ -15,11 +15,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn send_query<T: Messenger>(
-        options: &CliOptions,
-        qt: &QType,
-        trp: &mut T,
-    ) -> crate::error::Result<Query> {
+    fn send_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> crate::error::Result<Query> {
         // it's safe to unwrap here, see from_options() for Query
         let mut query = Query::from_options(options, qt).unwrap();
 
@@ -30,11 +26,7 @@ impl DnsProtocol {
 
         // send query using the chosen transport
         let bytes = query.send(trp)?;
-        debug!(
-            "sent query of {} bytes to remote address {}",
-            bytes,
-            trp.peer()?
-        );
+        debug!("sent query of {} bytes to remote address {}", bytes, trp.peer()?);
 
         Ok(query)
     }
@@ -43,10 +35,7 @@ impl DnsProtocol {
     // receive response from resolver
     //───────────────────────────────────────────────────────────────────────────────────
     #[inline(always)]
-    fn receive_response<T: Messenger>(
-        trp: &mut T,
-        buffer: &mut [u8],
-    ) -> crate::error::Result<Response> {
+    fn receive_response<T: Messenger>(trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<Response> {
         let mut response = Response::default();
         let _ = response.recv(trp, buffer)?;
 

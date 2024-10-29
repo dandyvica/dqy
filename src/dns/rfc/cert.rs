@@ -11,9 +11,7 @@ use serde::{ser::SerializeMap, Serialize, Serializer};
 use crate::{dns::buffer::Buffer, new_rd_length};
 
 // https://www.rfc-editor.org/rfc/rfc4398.html#section-2.2
-#[derive(
-    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
-)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork)]
 #[repr(u16)]
 #[from_network(TryFrom)]
 pub enum CertificateTypeValues {

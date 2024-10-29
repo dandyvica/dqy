@@ -6,8 +6,8 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::{
-    a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC,
-    mx::MX, ns::NS, ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA, txt::TXT,
+    a::A, aaaa::AAAA, cname::CNAME, dnskey::DNSKEY, domain::DomainName, hinfo::HINFO, loc::LOC, mx::MX, ns::NS,
+    ptr::PTR, qclass::QClass, qtype::QType, rdata::RData, soa::SOA, txt::TXT,
 };
 use crate::show::{ShowOptions, ToColor};
 
@@ -140,11 +140,7 @@ impl fmt::Display for OptOrClassTtl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptOrClassTtl::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
-            OptOrClassTtl::Opt(x) => write!(
-                f,
-                "{} {} {} {}",
-                x.payload, x.extended_rcode, x.version, x.flags
-            ),
+            OptOrClassTtl::Opt(x) => write!(f, "{} {} {} {}", x.payload, x.extended_rcode, x.version, x.flags),
         }
     }
 }
@@ -336,7 +332,7 @@ impl ResourceRecord {
 
         // other options
         if display_options.short {
-            println!("{}", self.r_data);
+            println!("{}", self.r_data.to_color());
         } else if self.r#type != QType::OPT {
             const ALL_FIELDS: &str = "name,type, length,class,ttl,length,rdata";
             self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
@@ -390,9 +386,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
                 QType::AAAA => self.r_data = get_rr!(buffer, AAAA, RData::AAAA),
                 QType::AFSDB => self.r_data = get_rr!(buffer, AFSDB, RData::AFSDB),
                 QType::APL => self.r_data = get_rr!(buffer, APL, RData::APL, self.rd_length),
-                QType::CDNSKEY => {
-                    self.r_data = get_rr!(buffer, CDNSKEY, RData::CDNSKEY, self.rd_length)
-                }
+                QType::CDNSKEY => self.r_data = get_rr!(buffer, CDNSKEY, RData::CDNSKEY, self.rd_length),
                 QType::CAA => self.r_data = get_rr!(buffer, CAA, RData::CAA, self.rd_length),
                 QType::CDS => self.r_data = get_rr!(buffer, CDS, RData::CDS, self.rd_length),
                 QType::CERT => self.r_data = get_rr!(buffer, CERT, RData::CERT, self.rd_length),
@@ -401,18 +395,14 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
                 QType::DHCID => self.r_data = get_rr!(buffer, DHCID, RData::DHCID, self.rd_length),
                 QType::DNAME => self.r_data = get_rr!(buffer, DNAME, RData::DNAME),
                 QType::DLV => self.r_data = get_rr!(buffer, DLV, RData::DLV, self.rd_length),
-                QType::DNSKEY => {
-                    self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length)
-                }
+                QType::DNSKEY => self.r_data = get_rr!(buffer, DNSKEY, RData::DNSKEY, self.rd_length),
                 QType::DS => self.r_data = get_rr!(buffer, DS, RData::DS, self.rd_length),
                 QType::EUI48 => self.r_data = get_rr!(buffer, EUI48, RData::EUI48),
                 QType::EUI64 => self.r_data = get_rr!(buffer, EUI64, RData::EUI64),
                 QType::HINFO => self.r_data = get_rr!(buffer, HINFO, RData::HINFO),
                 QType::HIP => self.r_data = get_rr!(buffer, HIP, RData::HIP, self.rd_length),
                 QType::HTTPS => self.r_data = get_rr!(buffer, HTTPS, RData::HTTPS, self.rd_length),
-                QType::IPSECKEY => {
-                    self.r_data = get_rr!(buffer, IPSECKEY, RData::IPSECKEY, self.rd_length)
-                }
+                QType::IPSECKEY => self.r_data = get_rr!(buffer, IPSECKEY, RData::IPSECKEY, self.rd_length),
                 QType::KX => self.r_data = get_rr!(buffer, KX, RData::KX),
                 QType::LOC => self.r_data = get_rr!(buffer, LOC, RData::LOC),
                 QType::MX => self.r_data = get_rr!(buffer, MX, RData::MX),
@@ -421,9 +411,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
                 QType::NSEC => self.r_data = get_rr!(buffer, NSEC, RData::NSEC, self.rd_length),
                 QType::NSEC3 => self.r_data = get_rr!(buffer, NSEC3, RData::NSEC3, self.rd_length),
                 QType::NSEC3PARAM => self.r_data = get_rr!(buffer, NSEC3PARAM, RData::NSEC3PARAM),
-                QType::OPENPGPKEY => {
-                    self.r_data = get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, self.rd_length)
-                }
+                QType::OPENPGPKEY => self.r_data = get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, self.rd_length),
                 QType::OPT => {
                     let mut v: Vec<OptOption> = Vec::new();
                     let mut current_length = 0u16;
@@ -443,9 +431,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
                 QType::PTR => self.r_data = get_rr!(buffer, PTR, RData::PTR),
                 QType::RP => self.r_data = get_rr!(buffer, RP, RData::RP),
                 QType::RRSIG => self.r_data = get_rr!(buffer, RRSIG, RData::RRSIG, self.rd_length),
-                QType::SMIMEA => {
-                    self.r_data = get_rr!(buffer, SMIMEA, RData::SMIMEA, self.rd_length)
-                }
+                QType::SMIMEA => self.r_data = get_rr!(buffer, SMIMEA, RData::SMIMEA, self.rd_length),
                 QType::SRV => self.r_data = get_rr!(buffer, SRV, RData::SRV),
                 QType::SOA => self.r_data = get_rr!(buffer, SOA, RData::SOA),
                 QType::SSHFP => self.r_data = get_rr!(buffer, SSHFP, RData::SSHFP, self.rd_length),
@@ -453,9 +439,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
                 QType::TLSA => self.r_data = get_rr!(buffer, TLSA, RData::TLSA, self.rd_length),
                 QType::TXT => self.r_data = get_rr!(buffer, TXT, RData::TXT),
                 QType::URI => self.r_data = get_rr!(buffer, URI, RData::URI, self.rd_length),
-                QType::ZONEMD => {
-                    self.r_data = get_rr!(buffer, ZONEMD, RData::ZONEMD, self.rd_length)
-                }
+                QType::ZONEMD => self.r_data = get_rr!(buffer, ZONEMD, RData::ZONEMD, self.rd_length),
                 _ => {
                     // allocate the buffer to hold the data
                     let mut buf = Buffer::with_capacity(self.rd_length);
@@ -510,9 +494,7 @@ mod tests {
             matches!(rr.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x == RegularClassTtl{ class: QClass::IN, ttl: 190 })
         );
         assert_eq!(rr.rd_length, 4);
-        assert!(
-            matches!(rr.r_data, RData::A(a) if a == A(Ipv4Addr::from_str("142.250.179.68").unwrap()))
-        );
+        assert!(matches!(rr.r_data, RData::A(a) if a == A(Ipv4Addr::from_str("142.250.179.68").unwrap())));
     }
 
     #[test]

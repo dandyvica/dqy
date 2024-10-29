@@ -77,10 +77,7 @@ mod tests {
         1,
         RData::URI,
         (|x: &URI, _| {
-            assert_eq!(
-                &x.to_string(),
-                "10 1 \"https://www.netmeister.org/blog/dns-rrs.html\""
-            );
+            assert_eq!(&x.to_string(), "10 1 \"https://www.netmeister.org/blog/dns-rrs.html\"");
         })
     );
 }

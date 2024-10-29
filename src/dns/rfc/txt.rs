@@ -37,7 +37,10 @@ mod tests {
         RData::TXT,
         (|x: &TXT, i: usize| {
             match i {
-                0 => assert_eq!(x.to_string(), "Descriptive text. Completely overloaded for all sorts of things. RFC1035 (1987)"),
+                0 => assert_eq!(
+                    x.to_string(),
+                    "Descriptive text. Completely overloaded for all sorts of things. RFC1035 (1987)"
+                ),
                 1 => assert_eq!(x.to_string(), "Format: <text>"),
                 _ => panic!("data not is the pcap file"),
             }

@@ -91,7 +91,10 @@ mod tests {
                 match i {
                     0 => {
                         if let RData::SOA(x) = &a.r_data {
-                            assert_eq!(&x.to_string(), "panix.netmeister.org. jschauma.netmeister.org. 2021073555 3600 300 3600000 3600");
+                            assert_eq!(
+                                &x.to_string(),
+                                "panix.netmeister.org. jschauma.netmeister.org. 2021073555 3600 300 3600000 3600"
+                            );
                         }
                     }
                     1 => {

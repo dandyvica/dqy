@@ -10,8 +10,8 @@ use crate::error::Result;
 use crate::transport::network::Messenger;
 
 use super::{
-    domain::DomainName, flags::BitFlags, header::Header, opt::opt_rr::OPT, qclass::QClass,
-    qtype::QType, question::Question,
+    domain::DomainName, flags::BitFlags, header::Header, opt::opt_rr::OPT, qclass::QClass, qtype::QType,
+    question::Question,
 };
 
 #[derive(Debug, ToNetwork, Serialize)]

@@ -38,10 +38,7 @@ mod tests {
         1,
         RData::RP,
         (|x: &RP, _| {
-            assert_eq!(
-                &x.to_string(),
-                "jschauma.netmeister.org. contact.netmeister.org."
-            );
+            assert_eq!(&x.to_string(), "jschauma.netmeister.org. contact.netmeister.org.");
         })
     );
 }

@@ -1,4 +1,5 @@
 //! Manage command line arguments here.
+use std::borrow::Cow;
 use std::fs::OpenOptions;
 use std::net::IpAddr;
 use std::path::PathBuf;
@@ -7,7 +8,7 @@ use std::time::Duration;
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
-use log::trace;
+use log::{debug, trace};
 use rustc_version_runtime::version;
 use simplelog::*;
 
@@ -53,23 +54,23 @@ pub struct CliOptions {
     pub display: ShowOptions,
 }
 
-// impl FromStr for CliOptions {
-//     type Err = crate::error::Error;
+impl FromStr for CliOptions {
+    type Err = crate::error::Error;
 
-//     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-//         let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
-//         Ok(CliOptions::options(&args)?)
-//     }
-// }
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
+        Ok(CliOptions::options(&args)?)
+    }
+}
 
-fn split_args(args: &[String]) -> (&[String], &[String]) {
-    // split arguments into 2 sets: those not starting with a '-' which should be first
-    // and the others
-    let dash_pos = args.iter().position(|arg| arg.starts_with('-'));
+// Split vector of string according to the first dash found
+// Uses Cow to not recreate Vec<String> (might be overkill though 😀)
+fn split_args(args: &[String]) -> (Cow<'_, [String]>, Cow<'_, [String]>) {
+    let pos = args.iter().position(|x| x.starts_with("-"));
 
-    match dash_pos {
-        Some(pos) => (&args[0..pos], &args[pos..]),
-        None => (args, &[] as &[String]),
+    match pos {
+        Some(pos) => (Cow::from(&args[0..pos]), Cow::from(&args[pos..])),
+        None => (Cow::from(args), Cow::from(&[])),
     }
 }
 
@@ -79,27 +80,26 @@ impl CliOptions {
         let mut options = CliOptions::default();
 
         // split args into 2 groups: with or without starting with a dash
-        let (without_dash, with_dash) = split_args(args);
+        let (mut without_dash, mut with_dash) = split_args(args);
 
         // check first if DQY_FLAGS is present
         if let Ok(env) = std::env::var(ENV_FLAGS) {
-            let env_args: Vec<String> = env
-                .split_ascii_whitespace()
-                .map(|a| a.to_string())
-                .collect();
+            let env_args: Vec<String> = env.split_ascii_whitespace().map(|a| a.to_string()).collect();
 
-            //let (env_without_dash, env_with_dash) = split_args(&env_args);
+            let (env_without_dash, env_with_dash) = split_args(&env_args);
+            without_dash.to_mut().extend(env_without_dash.into_owned());
+            with_dash.to_mut().extend(env_with_dash.into_owned());
         }
 
-        trace!("options without dash:{:?}", without_dash);
-        trace!("options with dash:{:?}", with_dash);
+        // println!("options without dash:{:?}", without_dash);
+        // println!("options with dash:{:?}", with_dash);
 
         let mut server = "";
 
         //───────────────────────────────────────────────────────────────────────────────────
         // process the arguments not starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
-        for arg in without_dash {
+        for arg in without_dash.iter() {
             if let Some(s) = arg.strip_prefix('@') {
                 server = s;
 
@@ -401,13 +401,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_parser(clap::value_parser!(u16))
                     .help_heading("EDNS options")
             )
-            // hidden flag to allow threads to not crash in UT
-            .arg(
-                Arg::new("nolog")
-                    .long("nolog")
-                    .action(ArgAction::SetTrue)
-                    .hide(true)
-            )
             //───────────────────────────────────────────────────────────────────────────────────
             // Display options
             //───────────────────────────────────────────────────────────────────────────────────   
@@ -514,7 +507,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_name("TEMPLATE")
                     .value_parser(clap::value_parser!(PathBuf))
                     .help_heading("Display options")
-            )            
+            )
             .arg(
                 Arg::new("verbose")
                     .short('v')
@@ -550,7 +543,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 .help_heading("Display options"),
         );
 
-        let matches = cmd.get_matches_from(with_dash);
+        let matches = cmd.get_matches_from(with_dash.iter());
 
         //───────────────────────────────────────────────────────────────────────────────────
         // QTypes, QClass
@@ -606,10 +599,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.transport.transport_mode = Protocol::DoH;
 
             // set HTTP version
-            let v = matches
-                .get_one::<String>("https-version")
-                .unwrap()
-                .to_string();
+            let v = matches.get_one::<String>("https-version").unwrap().to_string();
 
             match v.as_str() {
                 "v1" => options.transport.https_version = Some(version::Version::HTTP_11),
@@ -663,23 +653,18 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // }
 
         // only keep ipv4 or ipv6 addresses if -4 or -6 is provided
-        options
-            .transport
-            .endpoint
-            .retain(&options.transport.ip_version);
+        options.transport.endpoint.retain(&options.transport.ip_version);
 
         //───────────────────────────────────────────────────────────────────────────────────
         // timeout
         //───────────────────────────────────────────────────────────────────────────────────
-        options.transport.timeout =
-            Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap());
+        options.transport.timeout = Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap());
 
         //───────────────────────────────────────────────────────────────────────────────────
         // internal domain name processing (IDNA)
         //───────────────────────────────────────────────────────────────────────────────────
         if options.protocol.domain.len() != options.protocol.domain.chars().count() {
-            options.protocol.domain =
-                idna::domain_to_ascii(options.protocol.domain.as_str()).unwrap();
+            options.protocol.domain = idna::domain_to_ascii(options.protocol.domain.as_str()).unwrap();
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -753,15 +738,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.edns.nsid = matches.get_flag("nsid");
         options.edns.padding = matches.get_one::<u16>("padding").copied();
 
-        options.edns.dau = matches
-            .get_many::<u8>("dau")
-            .map(|v| v.copied().collect::<Vec<u8>>());
-        options.edns.dhu = matches
-            .get_many::<u8>("dhu")
-            .map(|v| v.copied().collect::<Vec<u8>>());
-        options.edns.n3u = matches
-            .get_many::<u8>("n3u")
-            .map(|v| v.copied().collect::<Vec<u8>>());
+        options.edns.dau = matches.get_many::<u8>("dau").map(|v| v.copied().collect::<Vec<u8>>());
+        options.edns.dhu = matches.get_many::<u8>("dhu").map(|v| v.copied().collect::<Vec<u8>>());
+        options.edns.n3u = matches.get_many::<u8>("n3u").map(|v| v.copied().collect::<Vec<u8>>());
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage display options
@@ -787,7 +766,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // manage misc. options
         //───────────────────────────────────────────────────────────────────────────────────
-        if matches.contains_id("verbose") && !matches.get_flag("nolog") {
+        if matches.contains_id("verbose") {
             let level = match matches.get_count("verbose") {
                 0 => log::LevelFilter::Off,
                 1 => log::LevelFilter::Info,
@@ -827,8 +806,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 
         // for some types, use TCP instead of UDP right away
         if options.protocol.qtype.contains(&QType::ANY)
-            || options.protocol.qtype.contains(&QType::AXFR)
-                && options.transport.transport_mode == Protocol::Udp
+            || options.protocol.qtype.contains(&QType::AXFR) && options.transport.transport_mode == Protocol::Udp
         {
             options.transport.transport_mode = Protocol::Tcp;
         }
@@ -850,12 +828,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 fn validate_qtypes(s: &str) -> std::result::Result<QType, String> {
     let qt_upper = s.to_uppercase();
 
-    QType::from_str(&qt_upper)
-        .map_err(|e| format!("can't convert value '{e}' to a valid query type"))
+    QType::from_str(&qt_upper).map_err(|e| format!("can't convert value '{e}' to a valid query type"))
 }
 
 // Initialize write logger: either create it or use it
 fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error::Result<()> {
+    if level == log::LevelFilter::Off {
+        return Ok(());
+    }
+
     // initialize logger
     let writable = OpenOptions::new().create(true).append(true).open(logfile)?;
 
@@ -874,35 +855,25 @@ fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error
 
 // Initialize terminal logger
 fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
-    TermLogger::init(
-        level,
-        Config::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    )?;
+    if level == log::LevelFilter::Off {
+        return Ok(());
+    }
+    TermLogger::init(level, Config::default(), TerminalMode::Stderr, ColorChoice::Auto)?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::env::set_var;
+
+    use crate::dns::rfc::domain::ROOT;
+
     use super::*;
-
-    fn args_to_options(args: &str) -> crate::error::Result<CliOptions> {
-        let args: Vec<_> = args
-            .split_ascii_whitespace()
-            .map(|a| a.to_string())
-            .collect();
-        CliOptions::options(&args)
-    }
-
-    // nolog is passed to prevent env_logger to be initialized
-    // otherwise UT threads crashes with the following error:
-    // Builder::init should not be called after logger initialized: SetLoggerError(())
 
     #[test]
     fn empty() {
-        let opts = args_to_options("--nolog");
+        let opts = CliOptions::from_str("");
         println!("opts={:?}", opts);
         assert!(opts.is_ok());
         let opts = opts.unwrap();
@@ -910,14 +881,14 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, ".");
+        assert_eq!(&opts.protocol.domain, ROOT);
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
-    // #[test]
+    #[test]
     fn with_domain1() {
-        let opts = args_to_options("-d www.google.com --nolog");
+        let opts = CliOptions::from_str("-d www.google.com");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -929,9 +900,9 @@ mod tests {
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
 
-    // #[test]
+    #[test]
     fn with_domain2() {
-        let opts = args_to_options("-t AAAA -c CH -d www.google.com --nolog");
+        let opts = CliOptions::from_str("-t AAAA -c CH -d www.google.com");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -945,7 +916,7 @@ mod tests {
 
     #[test]
     fn with_no_dash() {
-        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com --nolog");
+        let opts = CliOptions::from_str("@1.1.1.1 A AAAA MX www.google.com");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -960,7 +931,7 @@ mod tests {
 
     #[test]
     fn with_ipv6() {
-        let opts = args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com -6 --nolog");
+        let opts = CliOptions::from_str("@2606:4700:4700::1111 A AAAA MX www.google.com -6");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -975,8 +946,7 @@ mod tests {
 
     #[test]
     fn with_tcp() {
-        let opts =
-            args_to_options("@2606:4700:4700::1111 A AAAA MX www.google.com --tcp -6 --nolog");
+        let opts = CliOptions::from_str("@2606:4700:4700::1111 A AAAA MX www.google.com --tcp -6");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -990,7 +960,7 @@ mod tests {
 
     #[test]
     fn with_ptr() {
-        let opts = args_to_options("@1.1.1.1 A AAAA MX www.google.com -4 --tcp -x 1.2.3.4 --nolog");
+        let opts = CliOptions::from_str("@1.1.1.1 A AAAA MX www.google.com -4 --tcp -x 1.2.3.4");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
@@ -1004,13 +974,29 @@ mod tests {
 
     #[test]
     fn plus() {
-        let opts =
-            args_to_options("@1.1.1.1 A www.google.com --dnssec --set cd --unset aa --nolog");
+        let opts = CliOptions::from_str("@1.1.1.1 A www.google.com --dnssec --set cd --unset aa");
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
         assert!(opts.edns.dnssec);
         assert!(opts.flags.checking_disabled);
         assert!(!opts.flags.authorative_answer);
+    }
+
+    //#[test]
+    fn with_env() {
+        std::env::set_var("DQY_FLAGS", "@1.1.1.1 --dnssec");
+
+        let opts = CliOptions::from_str("www.google.com --set cd --unset aa");
+        assert!(opts.is_ok());
+        let opts = opts.unwrap();
+
+        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1");
+
+        std::env::set_var("DQY_FLAGS", "");
+
+        // assert!(opts.edns.dnssec);
+        // assert!(opts.flags.checking_disabled);
+        // assert!(!opts.flags.authorative_answer);
     }
 }

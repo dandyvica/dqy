@@ -7,9 +7,7 @@ use type2network_derive::FromNetwork;
 use enum_from::{EnumDisplay, EnumTryFrom};
 
 /// op codes: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-5
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, FromNetwork, EnumTryFrom, EnumDisplay, Serialize,
-)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, FromNetwork, EnumTryFrom, EnumDisplay, Serialize)]
 #[repr(u8)]
 #[from_network(TryFrom)]
 pub enum OpCode {

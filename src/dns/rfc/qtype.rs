@@ -10,17 +10,7 @@ use crate::show::ToColor;
 #[allow(clippy::unnecessary_cast)]
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
 #[derive(
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumFromStr,
-    EnumTryFrom,
-    EnumDisplay,
-    ToNetwork,
-    FromNetwork,
-    Serialize,
+    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork, Serialize,
 )]
 #[repr(u16)]
 #[from_network(TryFrom)]
@@ -56,9 +46,9 @@ pub enum QType {
     AAAA = 28,       // IP6 Address	[RFC3596]
     LOC = 29,        // Location Information	[RFC1876]
     NXT = 30,        // Next Domain (OBSOLETE)	[RFC2535][RFC3755]
-    EID = 31, // Endpoint Identifier	[Michael_Patton][http://ana-3.lcs.mit.edu/~jnc/nimrod/dns.txt]		1995-06
-    NIMLOC = 32, // Nimrod Locator	[1][Michael_Patton][http://ana-3.lcs.mit.edu/~jnc/nimrod/dns.txt]		1995-06
-    SRV = 33,    // Server Selection	[1][RFC2782]
+    EID = 31,        // Endpoint Identifier	[Michael_Patton][http://ana-3.lcs.mit.edu/~jnc/nimrod/dns.txt]		1995-06
+    NIMLOC = 32,     // Nimrod Locator	[1][Michael_Patton][http://ana-3.lcs.mit.edu/~jnc/nimrod/dns.txt]		1995-06
+    SRV = 33,        // Server Selection	[1][RFC2782]
     ATMA = 34, // ATM Address	[ ATM Forum Technical Committee, "ATM Name System, V2.0", Doc ID: AF-DANS-0152.000, July 2000. Available from and held in escrow by IANA.]
     NAPTR = 35, // Naming Authority Pointer	[RFC3403]
     KX = 36,   // Key Exchanger	[RFC2230]
@@ -83,14 +73,14 @@ pub enum QType {
     HIP = 55,        // Host Identity Protocol	[RFC8005]
     NINFO = 56,      // NINFO	[Jim_Reid]	NINFO/ninfo-completed-template	2008-01-21
     RKEY = 57,       // RKEY	[Jim_Reid]	RKEY/rkey-completed-template	2008-01-21
-    TALINK = 58, // Trust Anchor LINK	[Wouter_Wijngaards]	TALINK/talink-completed-template	2010-02-17
-    CDS = 59,    // Child DS	[RFC7344]	CDS/cds-completed-template	2011-06-06
-    CDNSKEY = 60, // DNSKEY(s) the Child wants reflected in DS	[RFC7344]		2014-06-16
+    TALINK = 58,     // Trust Anchor LINK	[Wouter_Wijngaards]	TALINK/talink-completed-template	2010-02-17
+    CDS = 59,        // Child DS	[RFC7344]	CDS/cds-completed-template	2011-06-06
+    CDNSKEY = 60,    // DNSKEY(s) the Child wants reflected in DS	[RFC7344]		2014-06-16
     OPENPGPKEY = 61, // OpenPGP Key	[RFC7929]	OPENPGPKEY/openpgpkey-completed-template	2014-08-12
-    CSYNC = 62,  // Child-To-Parent Synchronization	[RFC7477]		2015-01-27
-    ZONEMD = 63, // Message Digest Over Zone Data	[RFC8976]	ZONEMD/zonemd-completed-template	2018-12-12
-    SVCB = 64, // Service Binding	[draft-ietf-dnsop-svcb-https-00]	SVCB/svcb-completed-template	2020-06-30
-    HTTPS = 65, // HTTPS Binding	[draft-ietf-dnsop-svcb-https-00]	HTTPS/https-completed-template	2020-06-30
+    CSYNC = 62,      // Child-To-Parent Synchronization	[RFC7477]		2015-01-27
+    ZONEMD = 63,     // Message Digest Over Zone Data	[RFC8976]	ZONEMD/zonemd-completed-template	2018-12-12
+    SVCB = 64,       // Service Binding	[draft-ietf-dnsop-svcb-https-00]	SVCB/svcb-completed-template	2020-06-30
+    HTTPS = 65,      // HTTPS Binding	[draft-ietf-dnsop-svcb-https-00]	HTTPS/https-completed-template	2020-06-30
     // Unassigned	66-98
     SPF = 99,     // [RFC7208]
     UINFO = 100,  // [IANA-Reserved]
@@ -110,11 +100,11 @@ pub enum QType {
     AXFR = 252,     // transfer of an entire zone	[RFC1035][RFC5936]
     MAILB = 253,    // mailbox-related RRs (MB, MG or MR)	[RFC1035]
     MAILA = 254,    // mail agent RRs (OBSOLETE - see MX)	[RFC1035]
-    ANY = 255, // A request for some or all records the server has available	[RFC1035][RFC6895][RFC8482]
-    URI = 256, // URI	[RFC7553]	URI/uri-completed-template	2011-02-22
-    CAA = 257, // Certification Authority Restriction	[RFC8659]	CAA/caa-completed-template	2011-04-07
-    AVC = 258, // Application Visibility and Control	[Wolfgang_Riedel]	AVC/avc-completed-template	2016-02-26
-    DOA = 259, // Digital Object Architecture	[draft-durand-doa-over-dns]	DOA/doa-completed-template	2017-08-30
+    ANY = 255,      // A request for some or all records the server has available	[RFC1035][RFC6895][RFC8482]
+    URI = 256,      // URI	[RFC7553]	URI/uri-completed-template	2011-02-22
+    CAA = 257,      // Certification Authority Restriction	[RFC8659]	CAA/caa-completed-template	2011-04-07
+    AVC = 258,      // Application Visibility and Control	[Wolfgang_Riedel]	AVC/avc-completed-template	2016-02-26
+    DOA = 259,      // Digital Object Architecture	[draft-durand-doa-over-dns]	DOA/doa-completed-template	2017-08-30
     AMTRELAY = 260, // Automatic Multicast Tunneling Relay	[RFC8777]	AMTRELAY/amtrelay-completed-template	2019-02-06
     // Unassigned	261-32767
     TA = 32768, // DNSSEC Trust Authorities	[Sam_Weiler][http://cameo.library.cmu.edu/][ Deploying DNSSEC Without a Signed Root. Technical Report 1999-19, Information Networking Institute, Carnegie Mellon University, April 2004.]		2005-12-13

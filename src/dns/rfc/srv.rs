@@ -20,11 +20,7 @@ pub struct SRV {
 
 impl fmt::Display for SRV {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.priority, self.weight, self.port, self.target
-        )?;
+        write!(f, "{} {} {} {}", self.priority, self.weight, self.port, self.target)?;
 
         Ok(())
     }

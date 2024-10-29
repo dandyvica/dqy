@@ -135,31 +135,15 @@ impl fmt::Display for ProtocolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ProtocolError::DomainNameTooLong => f.write_str("domain name is longer than 255 bytes"),
-            ProtocolError::DomainLabelTooLong => {
-                f.write_str("domain label is longer than 63 bytes")
-            }
-            ProtocolError::EmptyDomainName => {
-                f.write_str("trying to create a domain from an empty string")
-            }
-            ProtocolError::UnknowOpCode => {
-                f.write_str("opcode found in message was not recognized")
-            }
-            ProtocolError::UnknowPacketType => {
-                f.write_str("patcket type found in message was not recognized")
-            }
-            ProtocolError::CantCreateDomainName => {
-                f.write_str("domain name can't be created from RR")
-            }
-            ProtocolError::CantCreateNSEC3Types => {
-                f.write_str("can't extract types from NSEC or NSEC3 RR")
-            }
+            ProtocolError::DomainLabelTooLong => f.write_str("domain label is longer than 63 bytes"),
+            ProtocolError::EmptyDomainName => f.write_str("trying to create a domain from an empty string"),
+            ProtocolError::UnknowOpCode => f.write_str("opcode found in message was not recognized"),
+            ProtocolError::UnknowPacketType => f.write_str("patcket type found in message was not recognized"),
+            ProtocolError::CantCreateDomainName => f.write_str("domain name can't be created from RR"),
+            ProtocolError::CantCreateNSEC3Types => f.write_str("can't extract types from NSEC or NSEC3 RR"),
             ProtocolError::UnreachableResolvers => f.write_str("can't contact any resolver"),
-            ProtocolError::CantCreateSocketAddress => {
-                f.write_str("can't create a socket address from input")
-            }
-            ProtocolError::ErrorDuringTracing => {
-                f.write_str("during tracing, an unexpected error occured")
-            }
+            ProtocolError::CantCreateSocketAddress => f.write_str("can't create a socket address from input"),
+            ProtocolError::ErrorDuringTracing => f.write_str("during tracing, an unexpected error occured"),
             ProtocolError::ResponseError(rcode) => write!(f, "{rcode}"),
         }
     }

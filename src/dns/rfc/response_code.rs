@@ -6,9 +6,7 @@ use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
 // response codes: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork, Serialize,
-)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, EnumTryFrom, EnumDisplay, FromNetwork, Serialize)]
 #[repr(u8)]
 #[from_network(TryFrom)]
 pub enum ResponseCode {

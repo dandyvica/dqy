@@ -34,13 +34,7 @@ impl fmt::Display for SOA {
         write!(
             f,
             "{} {} {} {} {} {} {}",
-            self.mname,
-            self.rname,
-            self.serial,
-            self.refresh,
-            self.retry,
-            self.expire,
-            self.minimum
+            self.mname, self.rname, self.serial, self.refresh, self.retry, self.expire, self.minimum
         )
     }
 }

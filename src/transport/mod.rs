@@ -118,11 +118,7 @@ where
     stream.read_exact(&mut buf)?;
     let length = u16::from_be_bytes(buf) as usize;
 
-    trace!(
-        "about to read {} bytes in the TCP stream {:?}",
-        length,
-        stream
-    );
+    trace!("about to read {} bytes in the TCP stream {:?}", length, stream);
 
     // now read exact length
     stream.read_exact(&mut buffer[..length])?;

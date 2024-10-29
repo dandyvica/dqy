@@ -25,11 +25,7 @@ impl RRSet {
     pub fn ip_address<T: TryInto<DomainName>>(&self, qt: &QType, name: T) -> Option<IpAddr> {
         let name = name.try_into().ok()?;
 
-        let rr = self
-            .0
-            .iter()
-            .filter(|x| x.name == name && x.r#type == *qt)
-            .nth(0);
+        let rr = self.0.iter().filter(|x| x.name == name && x.r#type == *qt).nth(0);
 
         if let Some(rr) = rr {
             rr.ip_address()

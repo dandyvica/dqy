@@ -52,11 +52,10 @@ impl<'a> FromNetworkOrder<'a> for TypeBitMaps {
         let mut buf = vec![0u8; self.types_length as usize];
         buffer.read_exact(&mut buf)?;
 
-        let list = WindowList::try_from(buf.as_slice())
-            .map_err(|_| std::io::Error::other("can deserialize NSEC3 RR"))?;
+        let list =
+            WindowList::try_from(buf.as_slice()).map_err(|_| std::io::Error::other("can deserialize NSEC3 RR"))?;
 
-        self.types = Vec::<QType>::try_from(list)
-            .map_err(|_| std::io::Error::other("can deserialize NSEC3 RR"))?;
+        self.types = Vec::<QType>::try_from(list).map_err(|_| std::io::Error::other("can deserialize NSEC3 RR"))?;
 
         Ok(())
     }

@@ -52,18 +52,7 @@ use crate::{dns::buffer::Buffer, new_rd_length};
 // |           |                 | key")          |         |          |
 // +-----------+-----------------+----------------+---------+----------+
 #[allow(clippy::upper_case_acronyms)]
-#[derive(
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumFromStr,
-    EnumTryFrom,
-    EnumDisplay,
-    ToNetwork,
-    FromNetwork,
-)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork)]
 #[repr(u16)]
 #[allow(non_camel_case_types)]
 #[allow(clippy::unnecessary_cast)]

@@ -72,9 +72,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
             options.flags.recursion_desired = true;
 
             options.transport.endpoint = orig_ep.clone();
-            options.protocol.domain_name = rr
-                .ns_name()
-                .ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
+            options.protocol.domain_name = rr.ns_name().ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
 
             trace!(
                 "query:{} domain:{} server:{}",

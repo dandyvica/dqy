@@ -15,12 +15,7 @@ pub(super) struct EUI64(u64);
 
 impl fmt::Display for EUI64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let buf: Vec<_> = self
-            .0
-            .to_be_bytes()
-            .iter()
-            .map(|c| format!("{:x?}", c))
-            .collect();
+        let buf: Vec<_> = self.0.to_be_bytes().iter().map(|c| format!("{:x?}", c)).collect();
         write!(f, "{}", buf.join("-"))
     }
 }

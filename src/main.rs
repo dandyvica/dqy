@@ -67,10 +67,7 @@ fn get_messages_using_transport<T: Messenger>(
     Ok(messages)
 }
 
-pub fn get_messages(
-    info: Option<&mut QueryInfo>,
-    options: &CliOptions,
-) -> crate::error::Result<MessageList> {
+pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate::error::Result<MessageList> {
     info!(
         "qtype={:?} domain='{}' resolver=<{}>",
         options.protocol.qtype, options.protocol.domain_name, options.transport.endpoint
@@ -127,7 +124,7 @@ fn run() -> crate::error::Result<()> {
     // skip program name
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut options = CliOptions::options(&args)?;
-    debug!("{:#?}", options);
+    info!("{:#?}", options);
 
     //───────────────────────────────────────────────────────────────────────────────────
     // this will give user some information on how the protocol ran

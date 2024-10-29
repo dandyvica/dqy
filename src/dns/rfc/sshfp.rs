@@ -34,11 +34,7 @@ new_rd_length!(SSHFP);
 
 impl fmt::Display for SSHFP {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {:?}",
-            self.algorithm, self.fp_type, self.fingerprint
-        )
+        write!(f, "{} {} {:?}", self.algorithm, self.fp_type, self.fingerprint)
     }
 }
 

@@ -28,11 +28,7 @@ impl fmt::Display for QueryInfo {
             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
         }
         writeln!(f, "elapsed: {} ms", self.elapsed)?;
-        write!(
-            f,
-            "sent:{}, received:{} bytes",
-            self.bytes_sent, self.bytes_received
-        )
+        write!(f, "sent:{}, received:{} bytes", self.bytes_sent, self.bytes_received)
     }
 }
 

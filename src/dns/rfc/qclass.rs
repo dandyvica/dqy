@@ -7,17 +7,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
 #[derive(
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumFromStr,
-    EnumTryFrom,
-    EnumDisplay,
-    ToNetwork,
-    FromNetwork,
-    Serialize,
+    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork, Serialize,
 )]
 #[repr(u16)]
 #[from_network(TryFrom)]

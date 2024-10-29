@@ -120,11 +120,7 @@ pub struct OptTTL {
 
 impl fmt::Display for OptTTL {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "({} {} {})",
-            self.extended_rcode, self.version, self.flags
-        )
+        write!(f, "({} {} {})", self.extended_rcode, self.version, self.flags)
     }
 }
 
@@ -187,18 +183,7 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
     }
 }
 
-#[derive(
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumTryFrom,
-    EnumDisplay,
-    ToNetwork,
-    FromNetwork,
-    Serialize,
-)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork, Serialize)]
 #[repr(u16)]
 #[from_network(TryFrom)]
 pub enum OptOptionCode {

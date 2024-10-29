@@ -56,10 +56,7 @@ mod tests {
         1,
         RData::DHCID,
         (|x: &DHCID, _| {
-            assert_eq!(
-                &x.to_string(),
-                "AAIBMmFjOTc1NzMyMTk0ZWE1ZTBhN2MzN2M4MzE2NTFiM2M="
-            );
+            assert_eq!(&x.to_string(), "AAIBMmFjOTc1NzMyMTk0ZWE1ZTBhN2MzN2M4MzE2NTFiM2M=");
         })
     );
 }

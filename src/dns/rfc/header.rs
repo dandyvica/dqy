@@ -87,9 +87,7 @@ mod tests {
         use std::io::Cursor;
         use type2network::{FromNetworkOrder, ToNetworkOrder};
 
-        let sample = vec![
-            0x49, 0x1e, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-        ];
+        let sample = vec![0x49, 0x1e, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
         let mut buffer = Cursor::new(sample.as_slice());
         let mut h = Header::default();
         assert!(h.deserialize_from(&mut buffer).is_ok());

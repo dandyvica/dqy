@@ -5,9 +5,7 @@ use type2network_derive::FromNetwork;
 
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 
-#[derive(
-    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
-)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork)]
 #[repr(u8)]
 #[from_network(TryFrom)]
 #[allow(non_camel_case_types)]
@@ -36,9 +34,7 @@ pub enum Algorithm {
 }
 
 // https://www.rfc-editor.org/rfc/rfc4034.html#appendix-A.1
-#[derive(
-    Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork,
-)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, EnumFromStr, EnumTryFrom, EnumDisplay, FromNetwork)]
 #[repr(u8)]
 #[from_network(TryFrom)]
 #[allow(non_camel_case_types)]

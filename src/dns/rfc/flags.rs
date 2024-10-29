@@ -101,10 +101,9 @@ impl TryFrom<u16> for Flags {
             qr
         );
 
-        flags.qr = PacketType::try_from(qr)
-            .map_err(|_| Error::Internal(ProtocolError::UnknowPacketType))?;
-        flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u8)
-            .map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
+        flags.qr = PacketType::try_from(qr).map_err(|_| Error::Internal(ProtocolError::UnknowPacketType))?;
+        flags.op_code =
+            OpCode::try_from((value >> 11 & 0b1111) as u8).map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
 
         flags.bitflags.authorative_answer = (value >> 10) & 1 == 1;
         flags.bitflags.truncation = (value >> 9) & 1 == 1;
@@ -114,8 +113,8 @@ impl TryFrom<u16> for Flags {
         flags.bitflags.authentic_data = (value >> 5 & 1) == 1;
         flags.bitflags.checking_disabled = (value >> 4 & 1) == 1;
 
-        flags.response_code = ResponseCode::try_from((value & 0b1111) as u8)
-            .map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
+        flags.response_code =
+            ResponseCode::try_from((value & 0b1111) as u8).map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
 
         Ok(flags)
     }
@@ -151,9 +150,8 @@ impl<'a> FromNetworkOrder<'a> for Flags {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&[u8]>) -> Result<()> {
         // read as u16
         let flags = buffer.read_u16::<BigEndian>()?;
-        *self = Flags::try_from(flags).map_err(|_| {
-            std::io::Error::new(std::io::ErrorKind::Other, "error converting flags")
-        })?;
+        *self = Flags::try_from(flags)
+            .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "error converting flags"))?;
 
         Ok(())
     }
