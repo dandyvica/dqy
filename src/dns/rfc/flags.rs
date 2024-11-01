@@ -7,7 +7,7 @@ use type2network::{FromNetworkOrder, ToNetworkOrder};
 
 use super::packet_type::PacketType;
 use crate::dns::rfc::{opcode::OpCode, response_code::ResponseCode};
-use crate::error::{Error, ProtocolError};
+use crate::error::{Dns, Error};
 
 // Flags: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.1
 // 1  1  1  1  1  1
@@ -101,9 +101,8 @@ impl TryFrom<u16> for Flags {
             qr
         );
 
-        flags.qr = PacketType::try_from(qr).map_err(|_| Error::Internal(ProtocolError::UnknowPacketType))?;
-        flags.op_code =
-            OpCode::try_from((value >> 11 & 0b1111) as u8).map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
+        flags.qr = PacketType::try_from(qr).map_err(|_| Error::Dns(Dns::UnknowPacketType))?;
+        flags.op_code = OpCode::try_from((value >> 11 & 0b1111) as u8).map_err(|_| Error::Dns(Dns::UnknowOpCode))?;
 
         flags.bitflags.authorative_answer = (value >> 10) & 1 == 1;
         flags.bitflags.truncation = (value >> 9) & 1 == 1;
@@ -114,7 +113,7 @@ impl TryFrom<u16> for Flags {
         flags.bitflags.checking_disabled = (value >> 4 & 1) == 1;
 
         flags.response_code =
-            ResponseCode::try_from((value & 0b1111) as u8).map_err(|_| Error::Internal(ProtocolError::UnknowOpCode))?;
+            ResponseCode::try_from((value & 0b1111) as u8).map_err(|_| Error::Dns(Dns::UnknowOpCode))?;
 
         Ok(flags)
     }

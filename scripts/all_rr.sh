@@ -55,7 +55,6 @@ dqy nsap nsap.dns.netmeister.org.
 dqy nsap-ptr nsap-ptr.dns.netmeister.org. 
 dqy nsec nsec.dns.netmeister.org. 
 dqy nsec3 nsec3.dns.netmeister.org.
-dqy nsec3 nsec3.dns.netmeister.org.
 dqy nsec3param nsec3param.dns.netmeister.org. 
 dqy nxt nxt.dns.netmeister.org. 
 dqy openpgpkey openpgpkey.dns.netmeister.org.

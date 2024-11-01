@@ -3,7 +3,7 @@ use log::trace;
 use crate::args::CliOptions;
 use crate::dns::rfc::domain::ROOT;
 use crate::dns::rfc::{domain::ROOT_DOMAIN, qtype::QType};
-use crate::error::{Error, ProtocolError};
+use crate::error::{Dns, Error};
 use crate::get_messages;
 use crate::show::Show;
 use crate::transport::{endpoint::EndPoint, root_servers::get_root_server};
@@ -60,19 +60,15 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
 
         // no, so continue. If glue records, this means we have addresses
         if let Some(rr) = resp.random_glue_record(&orig_qt) {
-            ip = rr
-                .ip_address()
-                .ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
+            ip = rr.ip_address().ok_or(Error::Dns(Dns::ImpossibleToTrace))?;
         } else {
             // query regular resolver for resolving random ns server in the auth section
-            let rr = resp
-                .random_ns_record()
-                .ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
+            let rr = resp.random_ns_record().ok_or(Error::Dns(Dns::ImpossibleToTrace))?;
 
             options.flags.recursion_desired = true;
 
             options.transport.endpoint = orig_ep.clone();
-            options.protocol.domain_name = rr.ns_name().ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
+            options.protocol.domain_name = rr.ns_name().ok_or(Error::Dns(Dns::ImpossibleToTrace))?;
 
             trace!(
                 "query:{} domain:{} server:{}",
@@ -87,7 +83,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
             // find the ip address
             ip = resp
                 .ip_address(&orig_qt, &options.protocol.domain_name)
-                .ok_or(Error::Internal(ProtocolError::ErrorDuringTracing))?;
+                .ok_or(Error::Dns(Dns::ImpossibleToTrace))?;
 
             // reset to the original domain we're looking for
             options.protocol.domain_name = orig_domain.clone();

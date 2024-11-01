@@ -15,10 +15,14 @@ impl TcpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
         let handle = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
 
-        handle.set_read_timeout(Some(trp_options.timeout))?;
-        handle.set_write_timeout(Some(trp_options.timeout))?;
+        handle
+            .set_read_timeout(Some(trp_options.timeout))
+            .map_err(|e| crate::error::Error::Timeout(e, trp_options.timeout))?;
+        handle
+            .set_write_timeout(Some(trp_options.timeout))
+            .map_err(|e| crate::error::Error::Timeout(e, trp_options.timeout))?;
 
-        debug!("created TCP socket to {}", handle.peer_addr()?);
+        //debug!("created TCP socket to {}", handle.peer_addr()?);
         Ok(Self {
             netstat: (0, 0),
             handle,
@@ -28,9 +32,9 @@ impl TcpProtocol {
 
 impl Messenger for TcpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.write(buffer)?;
+        let sent = self.handle.write(buffer).map_err(|e| crate::error::Error::Buffer(e))?;
         self.netstat.0 = sent;
-        self.handle.flush()?;
+        self.handle.flush().map_err(|e| crate::error::Error::Buffer(e))?;
         Ok(sent)
     }
 

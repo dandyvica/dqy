@@ -1,9 +1,7 @@
-=========> {{info.server}}
+Hello {{ info.server }}
 
-{{#each messages as |m|}}
-ID={{m.response.header.id}}
-NAME
-{{#each m.response.answer as |a|}}
-{{a.name}}
-{{/each}}}}
-{{/each}}}}
+{% for m in messages %}
+{% for a in m.response.answer %}
+  {{a.name}} {{a.class}} {{a.type}} {{a.ttl}} {{a.rdata-}}
+{% endfor %}
+{% endfor %}

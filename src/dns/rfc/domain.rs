@@ -9,8 +9,7 @@ use serde::{Serialize, Serializer};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::ToNetwork;
 
-use crate::err_internal;
-use crate::error::{Error, ProtocolError};
+use crate::error::{Dns, Error};
 use crate::show::ToColor;
 
 pub const ROOT_DOMAIN: DomainName = DomainName { labels: vec![] };
@@ -114,7 +113,7 @@ impl DomainName {
 
     pub fn create_from_position(&mut self, pos: usize, buffer: &[u8]) -> crate::error::Result<usize> {
         let mut index = pos;
-        let at_index = *buffer.get(index).ok_or(err_internal!(CantCreateDomainName))?;
+        let at_index = *buffer.get(index).ok_or(Error::Dns(Dns::CantCreateDomainName))?;
 
         trace!(
             "from_position(): starting at position: 0x{:X?} ({}) with value: 0x{:X?} ({})",
@@ -126,7 +125,7 @@ impl DomainName {
 
         loop {
             // always check if out of bounds
-            let at_index = *buffer.get(index).ok_or(err_internal!(CantCreateDomainName))?;
+            let at_index = *buffer.get(index).ok_or(Error::Dns(Dns::CantCreateDomainName))?;
 
             // we reach the sentinel
             if at_index == 0 {
@@ -150,7 +149,7 @@ impl DomainName {
             //    domain header).  A zero offset specifies the first byte of the ID field,
             //    etc.
             if DomainName::is_pointer(at_index) {
-                let at_index_plus = *buffer.get(index + 1).ok_or(err_internal!(CantCreateDomainName))?;
+                let at_index_plus = *buffer.get(index + 1).ok_or(Error::Dns(Dns::CantCreateDomainName))?;
 
                 // get pointer which is on 2 bytes
                 let ptr = [at_index, at_index_plus];
@@ -176,7 +175,7 @@ impl DomainName {
 
             let limb = buffer
                 .get(index + 1..index + size + 1)
-                .ok_or(err_internal!(CantCreateDomainName))?;
+                .ok_or(Error::Dns(Dns::CantCreateDomainName))?;
 
             let label = Label(limb.to_vec());
 
@@ -185,7 +184,7 @@ impl DomainName {
             //let label_as_utf8: &str = label.into()?;
 
             if label.len() > 63 {
-                return Err(err_internal!(DomainLabelTooLong));
+                return Err(Error::Dns(Dns::DomainLabelTooLong));
             }
             // println!(
             //     "label_as_utf8={}, index={}, buffer[index]={:02X?}",
@@ -260,7 +259,7 @@ impl<'a> TryFrom<&'a str> for DomainName {
 
     fn try_from(domain: &'a str) -> std::result::Result<Self, Self::Error> {
         if domain.is_empty() {
-            return Err(err_internal!(EmptyDomainName));
+            return Err(Error::Dns(Dns::EmptyDomainName));
         }
 
         // root domain is a special case
@@ -279,10 +278,10 @@ impl<'a> TryFrom<&'a str> for DomainName {
 
         // test for correctness
         if dn.len() > 255 {
-            return Err(err_internal!(DomainNameTooLong));
+            return Err(Error::Dns(Dns::DomainNameTooLong));
         }
         if dn.labels.iter().any(|x| x.len() > 63) {
-            return Err(err_internal!(DomainLabelTooLong));
+            return Err(Error::Dns(Dns::DomainLabelTooLong));
         }
         Ok(dn)
     }

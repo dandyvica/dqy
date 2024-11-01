@@ -10,7 +10,7 @@ use reqwest::{
 
 use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions};
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 pub struct HttpsProtocol<'a> {
     // URL endpoint
@@ -34,8 +34,8 @@ impl<'a> HttpsProtocol<'a> {
         let cb = Self::client_builder(trp_options);
 
         let client = match trp_options.https_version {
-            Some(Version::HTTP_11) => cb.http1_only().build()?,
-            Some(Version::HTTP_2) => cb.http2_prior_knowledge().build()?,
+            Some(Version::HTTP_11) => cb.http1_only().build().map_err(|e| Error::Reqwest(e))?,
+            Some(Version::HTTP_2) => cb.http2_prior_knowledge().build().map_err(|e| Error::Reqwest(e))?,
             _ => unimplemented!("version {:?} of HTTP is not yet implemented", trp_options.https_version),
         };
 
@@ -88,13 +88,14 @@ impl<'a> Messenger for HttpsProtocol<'a> {
             .post(self.server)
             .header(CONTENT_LENGTH, buffer.len())
             .body(bytes_sent)
-            .send()?;
+            .send()
+            .map_err(|e| Error::Reqwest(e))?;
 
         // save remote address
         self.peer = resp.remote_addr();
 
         // and extract the bytes received
-        self.bytes_recv = resp.bytes()?;
+        self.bytes_recv = resp.bytes().map_err(|e| Error::Reqwest(e))?;
 
         Ok(buffer.len())
     }

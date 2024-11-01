@@ -36,6 +36,8 @@ mod cli_options;
 
 mod handlebars;
 
+mod templating;
+
 #[cfg(feature = "mlua")]
 mod lua;
 #[cfg(feature = "mlua")]
@@ -166,9 +168,10 @@ fn run() -> crate::error::Result<()> {
     // print out final results
     //───────────────────────────────────────────────────────────────────────────────────
     if let Some(tpl) = &options.display.hb_tpl {
-        render(&messages, &info, &tpl);
+        templating::render(&messages, &info, &tpl);
+    } else {
+        messages.show_all(&options.display, info);
     }
-    messages.show_all(&options.display, info);
 
     Ok(())
 }

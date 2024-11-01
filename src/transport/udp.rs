@@ -4,31 +4,26 @@ use log::debug;
 
 use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::Result;
+use crate::error::{Error, Network, Result};
 
 pub type UdpProtocol = TransportProtocol<UdpSocket>;
 
 impl UdpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
-        // let sock = if trp_options.ip_version == IPVersion::V4 {
-        //     trace!("binding UDP socket to 0.0.0.0:0");
-        //     UdpSocket::bind("0.0.0.0:0")?
-        // } else {
-        //     trace!("binding UDP socket to ::");
-        //     UdpSocket::bind("::")?
-        // };
-
         let unspec = Self::unspec(&trp_options.ip_version);
-        let sock = UdpSocket::bind(&unspec[..])?;
-        debug!("bound UDP socket to {}", sock.local_addr()?);
+        let sock = UdpSocket::bind(&unspec[..]).map_err(|e| Error::Network(e, Network::Bind))?;
+        //debug!("bound UDP socket to {}", sock.local_addr()?);
 
-        sock.set_read_timeout(Some(trp_options.timeout))?;
-        sock.set_write_timeout(Some(trp_options.timeout))?;
+        sock.set_read_timeout(Some(trp_options.timeout))
+            .map_err(|e| Error::Timeout(e, trp_options.timeout))?;
+        sock.set_write_timeout(Some(trp_options.timeout))
+            .map_err(|e| Error::Timeout(e, trp_options.timeout))?;
 
         // connect() will chose any socket address which is succesful
         // as TransportOptions impl ToSocketAddrs
-        sock.connect(&trp_options.endpoint.addrs[..])?;
-        debug!("created UDP socket to {}", sock.peer_addr()?);
+        sock.connect(&trp_options.endpoint.addrs[..])
+            .map_err(|e| Error::Network(e, Network::Connect))?;
+        //debug!("created UDP socket to {}", sock.peer_addr()?);
         Ok(Self {
             netstat: (0, 0),
             handle: sock,
@@ -51,13 +46,16 @@ impl UdpProtocol {
 
 impl Messenger for UdpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.send(buffer)?;
+        let sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
         self.netstat.0 = sent;
         Ok(sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = self.handle.recv(buffer)?;
+        let received = self
+            .handle
+            .recv(buffer)
+            .map_err(|e| Error::Network(e, Network::Receive))?;
         self.netstat.1 = received;
         Ok(received)
     }

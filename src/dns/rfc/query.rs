@@ -6,7 +6,7 @@ use serde::Serialize;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::error::Result;
+use crate::error::{Dns, Error, Result};
 use crate::transport::network::Messenger;
 
 use super::{
@@ -85,7 +85,9 @@ impl Query {
     pub fn send<T: Messenger>(&mut self, trp: &mut T) -> Result<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
-        let message_size = self.serialize_to(&mut buffer)? as u16;
+        let message_size = self
+            .serialize_to(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantSerialize))? as u16;
         trace!(
             "buffer to send before TCP length addition: {:0X?}, uses_leading_length={}",
             buffer,
@@ -148,6 +150,7 @@ mod tests {
     use crate::{
         dns::rfc::{opcode::OpCode, packet_type::PacketType, response_code::ResponseCode},
         dns::tests::get_packets,
+        error::{Dns, Error},
     };
 
     use type2network::FromNetworkOrder;
@@ -159,7 +162,10 @@ mod tests {
 
         // check query
         let mut query = Query::default();
-        query.header.deserialize_from(&mut buffer)?;
+        query
+            .header
+            .deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);
@@ -176,7 +182,10 @@ mod tests {
         assert_eq!(query.header.ns_count, 0);
         assert_eq!(query.header.ar_count, 0);
 
-        query.question.deserialize_from(&mut buffer)?;
+        query
+            .question
+            .deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
         assert_eq!(format!("{}", query.question.qname), "www.google.com.");
         assert_eq!(query.question.qtype, QType::A);
         assert_eq!(query.question.qclass, QClass::IN);
@@ -191,7 +200,10 @@ mod tests {
 
         // check query
         let mut query = Query::default();
-        query.header.deserialize_from(&mut buffer)?;
+        query
+            .header
+            .deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
         assert_eq!(query.header.flags.qr, PacketType::Query);
         assert_eq!(query.header.flags.op_code, OpCode::Query);

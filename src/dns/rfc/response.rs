@@ -8,6 +8,7 @@ use super::{
     domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
 };
 use crate::dns::rfc::response_code::ResponseCode;
+use crate::error::{Dns, Error};
 use crate::show::{DisplayOptions, Show};
 use crate::transport::network::Messenger;
 
@@ -91,7 +92,8 @@ impl Response {
         let mut cursor = Cursor::new(&buffer[..received]);
 
         // get response
-        self.deserialize_from(&mut cursor)?;
+        self.deserialize_from(&mut cursor)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
         trace!("response header: {}", self.header);
         trace!("response query: {}", self.question);
         trace!("response answer: {:?}", self.answer);
@@ -276,7 +278,8 @@ mod tests {
         let mut buffer = std::io::Cursor::new(&pcap.1[0x2A..]);
 
         let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer)?;
+        resp.deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);
@@ -322,7 +325,8 @@ mod tests {
 
         // check response
         let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer)?;
+        resp.deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
         assert_eq!(resp.header.flags.qr, PacketType::Response);
         assert_eq!(resp.header.flags.op_code, OpCode::Query);

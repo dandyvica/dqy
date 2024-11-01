@@ -89,8 +89,11 @@ impl Show for RRSet {
 mod tests {
 
     use crate::{
-        dns::rfc::{domain::DomainName, qtype::QType, response::Response},
-        dns::tests::get_packets,
+        dns::{
+            rfc::{domain::DomainName, qtype::QType, response::Response},
+            tests::get_packets,
+        },
+        error::{Dns, Error},
     };
     use type2network::FromNetworkOrder;
 
@@ -100,7 +103,8 @@ mod tests {
         let mut buffer = std::io::Cursor::new(&pcap.1[0x2A..]);
 
         let mut resp = Response::default();
-        resp.deserialize_from(&mut buffer)?;
+        resp.deserialize_from(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
         // no anwser is response => this is a referral
         assert!(resp.is_referral());

@@ -7,10 +7,7 @@ use super::rfc::{query::Query, response::Response, response_code::ResponseCode};
 use log::{error, trace};
 use serde::Serialize;
 
-use crate::{
-    error::ProtocolError,
-    show::{DisplayOptions, QueryInfo, Show, ShowAll},
-};
+use crate::show::{DisplayOptions, QueryInfo, Show, ShowAll};
 
 #[derive(Debug, Serialize)]
 pub struct Message {

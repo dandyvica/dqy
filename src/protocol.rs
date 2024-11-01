@@ -26,7 +26,7 @@ impl DnsProtocol {
 
         // send query using the chosen transport
         let bytes = query.send(trp)?;
-        debug!("sent query of {} bytes to remote address {}", bytes, trp.peer()?);
+        //debug!("sent query of {} bytes to remote address {}", bytes, trp.peer()?);
 
         Ok(query)
     }

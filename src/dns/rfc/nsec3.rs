@@ -8,6 +8,7 @@ use serde::Serialize;
 
 use crate::{
     dns::buffer::{serialize_buffer, Buffer},
+    error::{Dns, Error},
     new_rd_length,
 };
 
@@ -65,8 +66,11 @@ impl fmt::Display for NSEC3 {
 #[cfg(test)]
 mod tests {
     use crate::{
-        dns::rfc::{rdata::RData, response::Response},
-        dns::tests::get_packets,
+        dns::{
+            rfc::{rdata::RData, response::Response},
+            tests::get_packets,
+        },
+        error::{Dns, Error},
     };
 
     use type2network::FromNetworkOrder;
@@ -83,7 +87,8 @@ mod tests {
             println!("{:X?}", resp_buffer);
 
             let mut resp = Response::default();
-            resp.deserialize_from(&mut resp_buffer)?;
+            resp.deserialize_from(&mut resp_buffer)
+                .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
             let answer = resp.authority.unwrap();
 

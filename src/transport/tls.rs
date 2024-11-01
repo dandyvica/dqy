@@ -10,7 +10,7 @@ use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 
 use super::network::{Messenger, Protocol};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{Error, Result};
+use crate::error::{Error, Network, Result};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
@@ -24,11 +24,15 @@ impl TlsProtocol {
         let config = Self::config(root_store);
 
         let stream = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
-        debug!("DoT: created TLS-TCP socket to {}", stream.peer_addr()?);
+        //debug!("DoT: created TLS-TCP socket to {}", stream.peer_addr()?);
 
         // in case we use the host resolver, server name is empty. We need to fill it in
         let server = if trp_options.endpoint.server.is_empty() {
-            stream.peer_addr()?.ip().to_string()
+            stream
+                .peer_addr()
+                .map_err(|e| Error::Network(e, Network::PeerAddr))?
+                .ip()
+                .to_string()
         } else {
             trp_options.endpoint.server.clone()
         };
@@ -40,7 +44,7 @@ impl TlsProtocol {
             .try_into()
             .map_err(|_e| Error::Tls(rustls::Error::EncryptError))?;
 
-        let conn = ClientConnection::new(Arc::new(config), server_name)?;
+        let conn = ClientConnection::new(Arc::new(config), server_name).map_err(|e| Error::Tls(e))?;
 
         let tls_stream = StreamOwned::new(conn, stream);
 
@@ -66,7 +70,10 @@ impl TlsProtocol {
 
 impl Messenger for TlsProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.write(buffer)?;
+        let sent = self
+            .handle
+            .write(buffer)
+            .map_err(|e| Error::Network(e, Network::Send))?;
         self.netstat.0 = sent;
         Ok(sent)
     }

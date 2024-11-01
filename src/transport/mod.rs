@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
@@ -7,7 +7,7 @@ use endpoint::EndPoint;
 use http::version::Version;
 use log::trace;
 
-use crate::error::{Error, Result};
+use crate::error::{Error, Network, Result};
 use network::{IPVersion, Protocol};
 
 pub mod endpoint;
@@ -43,7 +43,7 @@ pub struct TransportOptions {
     // UPD, TCP, DoH or DoT
     pub transport_mode: Protocol,
 
-    // V4 or V6
+    // V4 or V6 or Any
     pub ip_version: IPVersion,
 
     // timeout for network operations
@@ -115,13 +115,17 @@ where
     // so read 2 first bytes
 
     let mut buf = [0u8; 2];
-    stream.read_exact(&mut buf)?;
+    stream
+        .read_exact(&mut buf)
+        .map_err(|e| Error::Network(e, Network::Read))?;
     let length = u16::from_be_bytes(buf) as usize;
 
     trace!("about to read {} bytes in the TCP stream {:?}", length, stream);
 
     // now read exact length
-    stream.read_exact(&mut buffer[..length])?;
+    stream
+        .read_exact(&mut buffer[..length])
+        .map_err(|e| Error::Network(e, Network::Read))?;
 
     trace!("inside tcp_read, buffer={:X?}", buffer);
 
@@ -133,7 +137,10 @@ pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) ->
     let mut stream: Option<TcpStream> = None;
 
     // find the first address for which the connexion succeeds
-    for addr in addrs.to_socket_addrs()? {
+    for addr in addrs
+        .to_socket_addrs()
+        .map_err(|e| Error::Network(e, Network::SocketAddr))?
+    {
         if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
             stream = Some(s);
             break;
@@ -142,8 +149,12 @@ pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) ->
 
     // if None, none of the connexions is OK
     if stream.is_none() {
-        let addresses: Vec<SocketAddr> = addrs.to_socket_addrs()?.collect();
-        return Err(Error::NoValidTCPConnection(addresses.to_vec()));
+        // let addresses: Vec<SocketAddr> = addrs
+        //     .to_socket_addrs()
+        //     .map_err(|e| Error::Network(e, Network::SocketAddr))?
+        //     .collect();
+        let err = std::io::Error::from(ErrorKind::AddrNotAvailable);
+        return Err(Error::Network(err, Network::Connect));
     }
 
     Ok(stream.unwrap())

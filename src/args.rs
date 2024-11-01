@@ -6,15 +6,17 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use clap::{Arg, ArgAction, Command};
+use clap::{error, Arg, ArgAction, Command};
 use http::*;
 use log::{debug, trace};
+use regex::Regex;
 use rustc_version_runtime::version;
 use simplelog::*;
 
 use crate::cli_options::{DnsProtocolOptions, EdnsOptions};
 use crate::dns::rfc::domain::DomainName;
 use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
+use crate::error::Error;
 use crate::show::DisplayOptions;
 use crate::transport::network::{IPVersion, Protocol};
 use crate::transport::{endpoint::EndPoint, TransportOptions};
@@ -63,30 +65,61 @@ impl FromStr for CliOptions {
     }
 }
 
-// Split vector of string according to the first dash found
-// Uses Cow to not recreate Vec<String> (might be overkill though 😀)
-fn split_args(args: &[String]) -> (Cow<'_, [String]>, Cow<'_, [String]>) {
-    let pos = args.iter().position(|x| x.starts_with("-"));
-
-    match pos {
-        Some(pos) => (Cow::from(&args[0..pos]), Cow::from(&args[pos..])),
-        None => (Cow::from(args), Cow::from(&[])),
-    }
-}
-
 impl CliOptions {
+    // process target resolver passed in arg after @ char
+    // different possibilities for naming:
+    //
+    // @1.1.1.1
+    // @1.1.1.1:53
+    // 2606:4700:4700::1111
+    // @a.root-servers.net.
+    // @[2606:4700:4700::1111]:53
+    // @https://cloudflare-dns.com/dns-query
+    // @https://104.16.249.249/dns-query
+    // @https://2606:4700::6810:f9f9/dns-query
+    // @one.one.one.one
+    // @one.one.one.one:53
+    fn analyze_resolver(server: &str, trp_options: &mut TransportOptions) -> crate::error::Result<EndPoint> {
+        // if https:// is found in the server, it's DoH
+        if server.starts_with("https://") {
+            trp_options.transport_mode = Protocol::DoH;
+            trp_options.doh = true;
+            EndPoint::try_from(server)
+        }
+        // this is a pattern like: @[2606:4700:4700::1111]:53
+        else {
+            let re = Regex::new(r"\]:\d+$").unwrap();
+            if re.is_match(server) {
+                EndPoint::try_from(server)
+            } else {
+                EndPoint::try_from((server, trp_options.port))
+            }
+        }
+    }
+
+    // Split vector of string according to the first dash found
+    // Uses Cow to not recreate Vec<String> (might be overkill though 😀)
+    fn split_args(args: &[String]) -> (Cow<'_, [String]>, Cow<'_, [String]>) {
+        let pos = args.iter().position(|x| x.starts_with("-"));
+
+        match pos {
+            Some(pos) => (Cow::from(&args[0..pos]), Cow::from(&args[pos..])),
+            None => (Cow::from(args), Cow::from(&[])),
+        }
+    }
+
     pub fn options(args: &[String]) -> crate::error::Result<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
 
         // split args into 2 groups: with or without starting with a dash
-        let (mut without_dash, mut with_dash) = split_args(args);
+        let (mut without_dash, mut with_dash) = Self::split_args(args);
 
         // check first if DQY_FLAGS is present
         if let Ok(env) = std::env::var(ENV_FLAGS) {
             let env_args: Vec<String> = env.split_ascii_whitespace().map(|a| a.to_string()).collect();
 
-            let (env_without_dash, env_with_dash) = split_args(&env_args);
+            let (env_without_dash, env_with_dash) = Self::split_args(&env_args);
             without_dash.to_mut().extend(env_without_dash.into_owned());
             with_dash.to_mut().extend(env_with_dash.into_owned());
         }
@@ -104,10 +137,10 @@ impl CliOptions {
                 server = s;
 
                 // if https:// is found in the server, it's DoH
-                if server.starts_with("https://") {
-                    options.transport.transport_mode = Protocol::DoH;
-                    options.transport.doh = true;
-                }
+                // if server.starts_with("https://") {
+                //     options.transport.transport_mode = Protocol::DoH;
+                //     options.transport.doh = true;
+                // }
 
                 // // manage address:port server
                 // if server.contains(":") {
@@ -546,6 +579,41 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         let matches = cmd.get_matches_from(with_dash.iter());
 
         //───────────────────────────────────────────────────────────────────────────────────
+        // port number is depending on transport mode or use one specified with --port
+        //───────────────────────────────────────────────────────────────────────────────────
+        options.transport.port = *matches
+            .get_one::<u16>("port")
+            .unwrap_or(&options.transport.transport_mode.default_port());
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // build the endpoint
+        //───────────────────────────────────────────────────────────────────────────────────
+        // resolver file is provided using --resolve-file
+        if let Some(path) = matches.get_one::<PathBuf>("resolve-file") {
+            // end point is build from these
+            options.transport.endpoint = EndPoint::try_from((path, options.transport.port))?;
+        }
+        // no server provided: we use the host resolver
+        else if server.is_empty() {
+            options.transport.endpoint = EndPoint::try_from(options.transport.port)?;
+        }
+        // server was provided (e.g.: 1.1.1.1 or one.one.one.one)
+        else {
+            // in case of https, don't resolve using ToSocketAddrs
+            // if options.transport.transport_mode == Protocol::DoH {
+            //     options.transport.endpoint = EndPoint {
+            //         server: server.to_string(),
+            //         ..Default::default()
+            //     };
+            // } else {
+            //     options.transport.endpoint = EndPoint::try_from((server, options.transport.port))?;
+            // }
+            options.transport.endpoint = Self::analyze_resolver(server, &mut options.transport)?;
+        }
+
+        // println!("ep={}", options.transport.endpoint);
+
+        //───────────────────────────────────────────────────────────────────────────────────
         // QTypes, QClass
         //───────────────────────────────────────────────────────────────────────────────────
         if options.protocol.qtype.is_empty() {
@@ -614,36 +682,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         options.transport.bufsize = *matches.get_one::<u16>("bufsize").unwrap();
 
-        //───────────────────────────────────────────────────────────────────────────────────
-        // port number is depending on transport mode or use one specified with --port
-        //───────────────────────────────────────────────────────────────────────────────────
-        options.transport.port = *matches
-            .get_one::<u16>("port")
-            .unwrap_or(&options.transport.transport_mode.default_port());
-        //───────────────────────────────────────────────────────────────────────────────────
-        // build the endpoint
-        //───────────────────────────────────────────────────────────────────────────────────
-        // resolver file is provided using --resolve-file
-        if let Some(path) = matches.get_one::<PathBuf>("resolve-file") {
-            // end point is build from these
-            options.transport.endpoint = EndPoint::try_from((path, options.transport.port))?;
-        }
-        // no server provided: we use the host resolver
-        else if server.is_empty() {
-            options.transport.endpoint = EndPoint::try_from(options.transport.port)?;
-        }
-        // server was provided (e.g.: 1.1.1.1 or one.one.one.one)
-        else {
-            // in case of https, don't resolve using ToSocketAddrs
-            if options.transport.transport_mode == Protocol::DoH {
-                options.transport.endpoint = EndPoint {
-                    server: server.to_string(),
-                    ..Default::default()
-                };
-            } else {
-                options.transport.endpoint = EndPoint::try_from((server, options.transport.port))?;
-            }
-        }
         // in case of https, don't resolve using ToSocketAddrs
         // if options.transport.transport_mode == Protocol::DoH {
         //     options.transport.endpoint = EndPoint {
@@ -676,7 +714,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.protocol.qclass = QClass::IN;
 
             // try to convert to a valid IP address
-            let addr = IpAddr::from_str(ip)?;
+            let addr = IpAddr::from_str(ip).map_err(|e| Error::IPParse(e, ip.to_string()))?;
 
             if addr.is_ipv4() {
                 let mut limbs: Vec<_> = ip.split('.').collect();
@@ -760,7 +798,8 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // handlebars template
         if let Some(path) = matches.get_one::<PathBuf>("tpl") {
             // read handlebars file as a string
-            options.display.hb_tpl = Some(std::fs::read_to_string(path)?);
+            options.display.hb_tpl =
+                Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -838,7 +877,11 @@ fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error
     }
 
     // initialize logger
-    let writable = OpenOptions::new().create(true).append(true).open(logfile)?;
+    let writable = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(logfile)
+        .map_err(|e| Error::OpenFile(e, logfile.to_path_buf()))?;
 
     WriteLogger::init(
         level,
@@ -848,7 +891,8 @@ fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error
             //     "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]"
             .build(),
         writable,
-    )?;
+    )
+    .map_err(|e| Error::Logger(e))?;
 
     Ok(())
 }
@@ -858,7 +902,8 @@ fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
     if level == log::LevelFilter::Off {
         return Ok(());
     }
-    TermLogger::init(level, Config::default(), TerminalMode::Stderr, ColorChoice::Auto)?;
+    TermLogger::init(level, Config::default(), TerminalMode::Stderr, ColorChoice::Auto)
+        .map_err(|e| Error::Logger(e))?;
 
     Ok(())
 }
@@ -870,6 +915,30 @@ mod tests {
     use crate::dns::rfc::domain::ROOT;
 
     use super::*;
+
+    #[test]
+    fn _split_args() {
+        let args = "@1.1.1.1 A www.google.com --stats --https --dnssec";
+        let v: Vec<_> = args.split(" ").map(|x| x.to_string()).collect();
+        let (without, with) = CliOptions::split_args(&v);
+
+        assert_eq!(without.join(" "), "@1.1.1.1 A www.google.com");
+        assert_eq!(with.join(" "), "--stats --https --dnssec");
+
+        let args = "@1.1.1.1 A www.google.com";
+        let v: Vec<_> = args.split(" ").map(|x| x.to_string()).collect();
+        let (without, with) = CliOptions::split_args(&v);
+
+        assert_eq!(without.join(" "), "@1.1.1.1 A www.google.com");
+        assert!(with.into_owned().is_empty());
+
+        let args = "-stats --https --dnssec";
+        let v: Vec<_> = args.split(" ").map(|x| x.to_string()).collect();
+        let (without, with) = CliOptions::split_args(&v);
+
+        assert_eq!(with.join(" "), "-stats --https --dnssec");
+        assert!(without.into_owned().is_empty());
+    }
 
     #[test]
     fn empty() {
@@ -926,7 +995,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1");
+        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1:53");
     }
 
     #[test]
@@ -941,7 +1010,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.endpoint.server, &"2606:4700:4700::1111");
+        assert_eq!(&opts.transport.endpoint.server, &"2606:4700:4700::1111:53");
     }
 
     #[test]

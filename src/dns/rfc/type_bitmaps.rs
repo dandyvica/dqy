@@ -8,8 +8,7 @@ use log::trace;
 use type2network::FromNetworkOrder;
 
 use super::qtype::QType;
-use crate::err_internal;
-use crate::error::{Error, ProtocolError};
+use crate::error::{Dns, Error};
 
 // https://datatracker.ietf.org/doc/html/rfc5155#section-3.2.1
 // https://datatracker.ietf.org/doc/html/rfc4034#section-4.1.2
@@ -113,18 +112,18 @@ impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
             let mut win = Window::default();
 
             // extract window number
-            win.id = *buf.get(i).ok_or(err_internal!(CantCreateNSEC3Types))?;
+            win.id = *buf.get(i).ok_or(Error::Dns(Dns::CantCreateNSEC3Types))?;
             i += 1;
 
             // length should be between 1 and 32
-            win.length = *buf.get(i).ok_or(err_internal!(CantCreateNSEC3Types))?;
+            win.length = *buf.get(i).ok_or(Error::Dns(Dns::CantCreateNSEC3Types))?;
             i += 1;
             debug_assert!((1..=32).contains(&win.length));
 
             // now just point to types bits data
             win.data = buf
                 .get(i..i + win.length as usize)
-                .ok_or(err_internal!(CantCreateNSEC3Types))?;
+                .ok_or(Error::Dns(Dns::CantCreateNSEC3Types))?;
             i += win.length as usize;
 
             v.push(win);

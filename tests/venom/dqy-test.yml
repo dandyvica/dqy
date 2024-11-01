@@ -1,0 +1,54 @@
+# tests to only check exit code = 0
+name: DQY binary test
+vars:
+  opts: -p 10053 --no-colors --short
+testcases:
+  - name: dqy A www.google.com
+    steps:
+    - script: dqy A www.google.com
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: dqy A www.google.com @1.1.1.1
+    steps:
+    - script: dqy A www.google.com @1.1.1.1
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: dqy A www.google.com @2606:4700:4700::1111
+    steps:
+    - script: dqy A www.google.com @2606:4700:4700::1111
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: dqy A AAAA www.google.com @one.one.one.one
+    steps:
+    - script: dqy A AAAA www.google.com @one.one.one.one
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: dqy A AAAA www.google.com @one.one.one.one -6
+    steps:
+    - script: dqy A AAAA www.google.com @one.one.one.one -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name:  dqy A AAAA www.google.com @one.one.one.one -6 --tcp
+    steps:
+    - script: dqy A AAAA www.google.com @one.one.one.one -6 --tcp
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: DQY test
+    steps:
+    - script: dqy A www.google.com https://cloudflare-dns.com/dns-query
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: DQY test
+    steps:
+    - script: dqy axfr @nsztm1.digi.ninja zonetransfer.me
+      assertions:
+      - result.code ShouldEqual 0
+      
+
