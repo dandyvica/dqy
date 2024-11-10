@@ -9,7 +9,7 @@ use std::{
     path::PathBuf,
 };
 
-use resolver::ResolverList;
+use resolving::ResolverList;
 
 use super::network::IPVersion;
 use super::root_servers::get_root_server;
@@ -20,8 +20,11 @@ pub struct EndPoint {
     // value of the endpoint (e.g.: 1.1.1.1 or one.one.one.one)
     pub server: String,
 
-    //value converted to a list of SocketAddr
+    // value converted to a list of SocketAddr
     pub addrs: Vec<SocketAddr>,
+
+    // possible SNI
+    pub sni: Option<String>,
 }
 
 impl EndPoint {
@@ -57,7 +60,7 @@ impl TryFrom<(&PathBuf, u16)> for EndPoint {
     fn try_from(value: (&PathBuf, u16)) -> Result<Self, Self::Error> {
         let resolvers = ResolverList::try_from(value.0.as_path()).map_err(|e| Error::Resolver(e))?;
         let ip_list = resolvers
-            .to_ip_list()
+            .to_ip_vec()
             .iter()
             .map(|ip| SocketAddr::from((*ip, value.1)))
             .collect();
@@ -65,6 +68,7 @@ impl TryFrom<(&PathBuf, u16)> for EndPoint {
         Ok(Self {
             server: String::new(),
             addrs: ip_list,
+            sni: None,
         })
     }
 }
@@ -93,6 +97,7 @@ impl TryFrom<&str> for EndPoint {
             Ok(Self {
                 server: value.to_string(),
                 addrs: addrs.collect(),
+                sni: None,
             })
         }
     }
@@ -118,7 +123,7 @@ impl TryFrom<u16> for EndPoint {
         // if no server, use host resolvers
         let resolvers = ResolverList::new().map_err(|e| Error::Resolver(e))?;
         let ip_list = resolvers
-            .to_ip_list()
+            .to_ip_vec()
             .iter()
             .map(|ip| SocketAddr::from((*ip, port)))
             .collect();
@@ -126,6 +131,7 @@ impl TryFrom<u16> for EndPoint {
         Ok(Self {
             server: String::new(),
             addrs: ip_list,
+            sni: None,
         })
     }
 }
@@ -139,6 +145,7 @@ impl TryFrom<(&IpAddr, u16)> for EndPoint {
         Ok(Self {
             server: String::new(),
             addrs: vec![sockaddr],
+            sni: None,
         })
     }
 }

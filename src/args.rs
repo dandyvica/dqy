@@ -240,7 +240,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             )
             //───────────────────────────────────────────────────────────────────────────────────
             // Protocol options
-            //───────────────────────────────────────────────────────────────────────────────────   
+            //───────────────────────────────────────────────────────────────────────────────────  
+            .arg(
+                Arg::new("alpn")
+                    .long("alpn")
+                    .long_help("Forces ALPN protocol to DoT.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("ALPN")
+                    .help_heading("Transport options")
+            )
             .arg(
                 Arg::new("4")
                     .short('4')
@@ -306,6 +314,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_name("RESOLV.CONF")
                     .value_parser(clap::value_parser!(PathBuf))
                     .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("sni")
+                    .long("sni")
+                    .long_help("Optional server name indication (SNI) for DoT.")
+                    .action(ArgAction::Set)
+                    .required(false)
+                    .value_name("SNI")
+                    .help_heading("Transport options")                    
             )
             .arg(
                 Arg::new("tcp")
@@ -532,15 +549,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_name("STATS")
                     .help_heading("Display options")
             )
-            .arg(
-                Arg::new("tpl")
-                    .long("tpl")
-                    .long_help("Name of the handlebars template to render to display results.")
-                    .action(ArgAction::Set)
-                    .value_name("TEMPLATE")
-                    .value_parser(clap::value_parser!(PathBuf))
-                    .help_heading("Display options")
-            )
+            // .arg(
+            //     Arg::new("tpl")
+            //         .long("tpl")
+            //         .long_help("Name of the handlebars template to render to display results.")
+            //         .action(ArgAction::Set)
+            //         .value_name("TEMPLATE")
+            //         .value_parser(clap::value_parser!(PathBuf))
+            //         .help_heading("Display options")
+            // )
             .arg(
                 Arg::new("verbose")
                     .short('v')
@@ -577,6 +594,29 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         );
 
         let matches = cmd.get_matches_from(with_dash.iter());
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // transport mode
+        //───────────────────────────────────────────────────────────────────────────────────
+        if matches.get_flag("tcp") || options.transport.tcp {
+            options.transport.transport_mode = Protocol::Tcp;
+        }
+        if matches.get_flag("tls") || options.transport.tls || options.transport.dot {
+            options.transport.transport_mode = Protocol::DoT;
+        }
+        if matches.get_flag("https") || options.transport.https || options.transport.doh {
+            options.transport.transport_mode = Protocol::DoH;
+
+            // set HTTP version
+            let v = matches.get_one::<String>("https-version").unwrap().to_string();
+
+            match v.as_str() {
+                "v1" => options.transport.https_version = Some(version::Version::HTTP_11),
+                "v2" => options.transport.https_version = Some(version::Version::HTTP_2),
+                "v3" => options.transport.https_version = Some(version::Version::HTTP_3),
+                _ => unimplemented!("this version of HTTP is not implemented"),
+            }
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // port number is depending on transport mode or use one specified with --port
@@ -652,29 +692,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
 
         if let Some(d) = matches.get_one::<String>("domain") {
             options.protocol.domain = d.to_string();
-        }
-
-        //───────────────────────────────────────────────────────────────────────────────────
-        // transport mode
-        //───────────────────────────────────────────────────────────────────────────────────
-        if matches.get_flag("tcp") || options.transport.tcp {
-            options.transport.transport_mode = Protocol::Tcp;
-        }
-        if matches.get_flag("tls") || options.transport.tls || options.transport.dot {
-            options.transport.transport_mode = Protocol::DoT;
-        }
-        if matches.get_flag("https") || options.transport.https || options.transport.doh {
-            options.transport.transport_mode = Protocol::DoH;
-
-            // set HTTP version
-            let v = matches.get_one::<String>("https-version").unwrap().to_string();
-
-            match v.as_str() {
-                "v1" => options.transport.https_version = Some(version::Version::HTTP_11),
-                "v2" => options.transport.https_version = Some(version::Version::HTTP_2),
-                "v3" => options.transport.https_version = Some(version::Version::HTTP_3),
-                _ => unimplemented!("this version of HTTP is not implemented"),
-            }
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -796,11 +813,11 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.stats = matches.get_flag("stats");
 
         // handlebars template
-        if let Some(path) = matches.get_one::<PathBuf>("tpl") {
-            // read handlebars file as a string
-            options.display.hb_tpl =
-                Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
-        }
+        // if let Some(path) = matches.get_one::<PathBuf>("tpl") {
+        //     // read handlebars file as a string
+        //     options.display.hb_tpl =
+        //         Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
+        // }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage misc. options
@@ -858,6 +875,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             trace!("using Lua code from {}", path.display());
             options.display.lua_code = Some(code);
         }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // SNI & ALPN
+        //───────────────────────────────────────────────────────────────────────────────────
+        if let Some(d) = matches.get_one::<String>("sni") {
+            options.transport.endpoint.sni = Some(d.to_string());
+        }
+        options.transport.alpn = matches.get_flag("alpn");
 
         Ok(options)
     }

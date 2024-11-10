@@ -7,12 +7,19 @@ use std::{
 
 use log::debug;
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
+use rustls_pki_types::ServerName;
 
-use super::network::{Messenger, Protocol};
+use super::{
+    endpoint::EndPoint,
+    network::{Messenger, Protocol},
+};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{Error, Network, Result};
+use crate::error::{Dns, Error, Network, Result};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
+
+//ALPN bytes as stated here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+const ALPN_DOT: &[u8] = b"dot";
 
 impl TlsProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
@@ -21,31 +28,19 @@ impl TlsProtocol {
         let root_store = Self::root_store();
 
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
-        let config = Self::config(root_store);
+        let mut config = Self::config(root_store);
 
-        let stream = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
-        //debug!("DoT: created TLS-TCP socket to {}", stream.peer_addr()?);
+        if trp_options.alpn {
+            config.alpn_protocols = vec![ALPN_DOT.to_vec()];
+        }
 
-        // in case we use the host resolver, server name is empty. We need to fill it in
-        let server = if trp_options.endpoint.server.is_empty() {
-            stream
-                .peer_addr()
-                .map_err(|e| Error::Network(e, Network::PeerAddr))?
-                .ip()
-                .to_string()
-        } else {
-            trp_options.endpoint.server.clone()
-        };
-        debug!("DoT: server is {}", server);
+        // as EndPoint addrs can contain several addresses, we get the first address for which
+        // we can create a TcpStream. This is the case when we pass e.g.: one.one.one.one:853
+        let (stream, addr) = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
+        debug!("DoT: created TLS-TCP socket to {}", addr);
 
-        // build ServerName type which is used by ClientConnection::new()
-        let server_name = server
-            .to_string()
-            .try_into()
-            .map_err(|_e| Error::Tls(rustls::Error::EncryptError))?;
-
+        let server_name = Self::build_server_name(&trp_options.endpoint, &addr)?;
         let conn = ClientConnection::new(Arc::new(config), server_name).map_err(|e| Error::Tls(e))?;
-
         let tls_stream = StreamOwned::new(conn, stream);
 
         Ok(Self {
@@ -54,6 +49,19 @@ impl TlsProtocol {
         })
     }
 
+    // build server name used by ClientConnection::new()
+    fn build_server_name(ep: &EndPoint, addr: &SocketAddr) -> Result<ServerName<'static>> {
+        // use SNI if set
+        if let Some(sni) = &ep.sni {
+            ServerName::try_from(sni.clone()).map_err(|_| Error::Dns(Dns::InvalidSNI))
+        }
+        // or target ip addr
+        else {
+            Ok(ServerName::from(addr.ip()))
+        }
+    }
+
+    // manage CAs
     fn root_store() -> RootCertStore {
         let mut root_store = rustls::RootCertStore::empty();
         root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
@@ -61,6 +69,7 @@ impl TlsProtocol {
         root_store
     }
 
+    // build a new client config
     fn config(root_store: RootCertStore) -> ClientConfig {
         ClientConfig::builder()
             .with_root_certificates(root_store)

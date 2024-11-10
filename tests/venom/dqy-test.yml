@@ -15,9 +15,9 @@ testcases:
       assertions:
       - result.code ShouldEqual 0
 
-  - name: dqy A www.google.com @2606:4700:4700::1111
+  - name: dqy A www.google.com @2606:4700:4700::1111 -6
     steps:
-    - script: dqy A www.google.com @2606:4700:4700::1111
+    - script: dqy A www.google.com @2606:4700:4700::1111 -6
       assertions:
       - result.code ShouldEqual 0
 
@@ -39,13 +39,13 @@ testcases:
       assertions:
       - result.code ShouldEqual 0
 
-  - name: DQY test
+  - name: dqy A www.google.com https://cloudflare-dns.com/dns-query
     steps:
     - script: dqy A www.google.com https://cloudflare-dns.com/dns-query
       assertions:
       - result.code ShouldEqual 0
 
-  - name: DQY test
+  - name: dqy axfr @nsztm1.digi.ninja zonetransfer.me
     steps:
     - script: dqy axfr @nsztm1.digi.ninja zonetransfer.me
       assertions:

@@ -64,6 +64,9 @@ pub enum Dns {
 
     // error during Serialization
     CantSerialize,
+
+    // SNI bad name
+    InvalidSNI,
 }
 
 #[derive(Error, Debug)]
@@ -105,7 +108,7 @@ pub enum Error {
 
     // Resolver errors
     #[error("resolver error ({0:?})")]
-    Resolver(#[source] resolver::Error),
+    Resolver(#[source] resolving::Error),
 
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
@@ -146,6 +149,7 @@ impl fmt::Display for Dns {
             Dns::UnreachableResolvers => f.write_str("can't contact any resolver"),
             Dns::CantCreateSocketAddress => f.write_str("can't create a socket address from input"),
             Dns::ImpossibleToTrace => f.write_str("during tracing, an unexpected error occured"),
+            Dns::InvalidSNI => f.write_str("SNI DNS name is invalid"),
             //Dns::ResponseError(rcode) => write!(f, "{rcode}"),
         }
     }
@@ -173,7 +177,7 @@ impl fmt::Display for Dns {
 // ErrFrom!(AddrParseError, Error::IPParse);
 // ErrFrom!(reqwest::Error, Error::Reqwest);
 // ErrFrom!(rustls::Error, Error::Tls);
-// ErrFrom!(resolver::error::Error, Error::Resolv);
+// ErrFrom!(resolving::error::Error, Error::Resolv);
 // ErrFrom!(Dns, Error::Internal);
 // ErrFrom!(log::SetLoggerError, Error::Logger);
 // ErrFrom!(ParseIntError, Error::IntegerParse);

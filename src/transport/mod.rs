@@ -81,6 +81,9 @@ pub struct TransportOptions {
     // keep bytes sent and received
     pub bytes_sent: usize,
     pub bytes_received: usize,
+
+    // set DoT ALPN
+    pub alpn: bool,
 }
 
 impl Default for TransportOptions {
@@ -102,6 +105,7 @@ impl Default for TransportOptions {
             port: 53,
             bytes_sent: 0,
             bytes_received: 0,
+            alpn: false,
         }
     }
 }
@@ -132,30 +136,18 @@ where
     Ok(length)
 }
 
-// A helper function to get the TcpStream which connects succesfully
-pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> Result<TcpStream> {
-    let mut stream: Option<TcpStream> = None;
-
+// Connect to the first address for which connection succeeds
+pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) -> Result<(TcpStream, SocketAddr)> {
     // find the first address for which the connexion succeeds
     for addr in addrs
         .to_socket_addrs()
         .map_err(|e| Error::Network(e, Network::SocketAddr))?
     {
         if let Ok(s) = TcpStream::connect_timeout(&addr, timeout) {
-            stream = Some(s);
-            break;
+            return Ok((s, addr));
         }
     }
 
-    // if None, none of the connexions is OK
-    if stream.is_none() {
-        // let addresses: Vec<SocketAddr> = addrs
-        //     .to_socket_addrs()
-        //     .map_err(|e| Error::Network(e, Network::SocketAddr))?
-        //     .collect();
-        let err = std::io::Error::from(ErrorKind::AddrNotAvailable);
-        return Err(Error::Network(err, Network::Connect));
-    }
-
-    Ok(stream.unwrap())
+    let err = std::io::Error::from(ErrorKind::AddrNotAvailable);
+    return Err(Error::Network(err, Network::Connect));
 }

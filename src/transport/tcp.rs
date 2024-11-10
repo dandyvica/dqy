@@ -13,7 +13,7 @@ pub type TcpProtocol = TransportProtocol<TcpStream>;
 
 impl TcpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
-        let handle = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
+        let (handle, _) = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
 
         handle
             .set_read_timeout(Some(trp_options.timeout))

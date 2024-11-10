@@ -32,7 +32,7 @@ mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true
 rand = "0.8.5"
 regex = "1.11.1"
 reqwest = { version = "0.12.9", default-features = false, features = ["rustls-tls-webpki-roots", "blocking", "http2"] }
-resolver = { git = "https://github.com/dandyvica/resolver.git" }
+resolving = { git = "https://github.com/dandyvica/resolving" }
 rustc_version_runtime = "0.3.0"
 rustls = { version = "0.23.15", default-features = false, features = ["std", "tls12", "ring"] }
 rustls-pki-types = "1.1.0"
