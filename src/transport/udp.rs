@@ -12,7 +12,11 @@ impl UdpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
         let unspec = Self::unspec(&trp_options.ip_version);
         let sock = UdpSocket::bind(&unspec[..]).map_err(|e| Error::Network(e, Network::Bind))?;
-        //debug!("bound UDP socket to {}", sock.local_addr()?);
+
+        debug!(
+            "bound UDP socket to {}",
+            sock.local_addr().map_err(|e| Error::Network(e, Network::LocalAddr))?
+        );
 
         sock.set_read_timeout(Some(trp_options.timeout))
             .map_err(|e| Error::Timeout(e, trp_options.timeout))?;
@@ -23,7 +27,12 @@ impl UdpProtocol {
         // as TransportOptions impl ToSocketAddrs
         sock.connect(&trp_options.endpoint.addrs[..])
             .map_err(|e| Error::Network(e, Network::Connect))?;
-        //debug!("created UDP socket to {}", sock.peer_addr()?);
+
+        debug!(
+            "created UDP socket to {}",
+            sock.peer_addr().map_err(|e| Error::Network(e, Network::PeerAddr))?
+        );
+
         Ok(Self {
             netstat: (0, 0),
             handle: sock,
@@ -48,6 +57,9 @@ impl Messenger for UdpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
         self.netstat.0 = sent;
+
+        debug!("sent {} bytes", sent);
+
         Ok(sent)
     }
 
@@ -57,6 +69,9 @@ impl Messenger for UdpProtocol {
             .recv(buffer)
             .map_err(|e| Error::Network(e, Network::Receive))?;
         self.netstat.1 = received;
+
+        debug!("received {} bytes", received);
+
         Ok(received)
     }
 

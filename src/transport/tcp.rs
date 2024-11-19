@@ -7,7 +7,7 @@ use log::debug;
 
 use super::network::{Messenger, Protocol};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::Result;
+use crate::error::{Error, Network, Result};
 
 pub type TcpProtocol = TransportProtocol<TcpStream>;
 
@@ -22,7 +22,11 @@ impl TcpProtocol {
             .set_write_timeout(Some(trp_options.timeout))
             .map_err(|e| crate::error::Error::Timeout(e, trp_options.timeout))?;
 
-        //debug!("created TCP socket to {}", handle.peer_addr()?);
+        debug!(
+            "created TCP socket to {}",
+            handle.peer_addr().map_err(|e| Error::Network(e, Network::PeerAddr))?
+        );
+
         Ok(Self {
             netstat: (0, 0),
             handle,

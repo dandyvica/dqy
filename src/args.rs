@@ -1,6 +1,7 @@
 //! Manage command line arguments here.
 use std::borrow::Cow;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
+use std::io::Read;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -135,19 +136,6 @@ impl CliOptions {
         for arg in without_dash.iter() {
             if let Some(s) = arg.strip_prefix('@') {
                 server = s;
-
-                // if https:// is found in the server, it's DoH
-                // if server.starts_with("https://") {
-                //     options.transport.transport_mode = Protocol::DoH;
-                //     options.transport.doh = true;
-                // }
-
-                // // manage address:port server
-                // if server.contains(":") {
-                //     let v: Vec<_> = server.split(":").collect();
-                //     server = v[0];
-                //     options.transport.port = v[1].parse::<u16>()?;
-                // }
                 continue;
             }
 
@@ -242,14 +230,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             // Protocol options
             //───────────────────────────────────────────────────────────────────────────────────  
             .arg(
-                Arg::new("alpn")
-                    .long("alpn")
-                    .long_help("Forces ALPN protocol to DoT.")
-                    .action(ArgAction::SetTrue)
-                    .value_name("ALPN")
-                    .help_heading("Transport options")
-            )
-            .arg(
                 Arg::new("4")
                     .short('4')
                     .long("ip4")
@@ -265,6 +245,23 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .long_help("Sets IP version 6. Only send queries to ipv6 enabled nameservers.")
                     .action(ArgAction::SetTrue)
                     .value_name("IPV6")
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("alpn")
+                    .long("alpn")
+                    .long_help("Forces ALPN protocol to DoT.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("ALPN")
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("cert")
+                    .long("cert")
+                    .long_help("Certificate PEM file when using DoT or DoH.")
+                    .action(ArgAction::Set)
+                    .value_name("CERT")
+                    .value_parser(clap::value_parser!(PathBuf))
                     .help_heading("Transport options")
             )
             .arg(
@@ -867,7 +864,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.transport.transport_mode = Protocol::Tcp;
         }
 
+        //───────────────────────────────────────────────────────────────────────────────────
         // open Lua script to load code
+        //───────────────────────────────────────────────────────────────────────────────────
         #[cfg(feature = "mlua")]
         if let Some(path) = matches.get_one::<PathBuf>("lua") {
             // open Lua script and load code
@@ -883,6 +882,20 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.transport.endpoint.sni = Some(d.to_string());
         }
         options.transport.alpn = matches.get_flag("alpn");
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Cert file
+        //───────────────────────────────────────────────────────────────────────────────────
+        if let Some(path) = matches.get_one::<PathBuf>("cert") {
+            // read PEM file
+            let mut buf = Vec::new();
+            let _ = File::open(path)
+                .map_err(|e| Error::OpenFile(e, path.to_path_buf()))?
+                .read_to_end(&mut buf)
+                .map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+
+            options.transport.cert = Some(buf);
+        }
 
         Ok(options)
     }

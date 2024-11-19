@@ -30,11 +30,12 @@ lazy_static = "1.4.0"
 log = "0.4.22"
 mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
 rand = "0.8.5"
+rcgen = "0.13.1"
 regex = "1.11.1"
 reqwest = { version = "0.12.9", default-features = false, features = ["rustls-tls-webpki-roots", "blocking", "http2"] }
 resolving = { git = "https://github.com/dandyvica/resolving" }
 rustc_version_runtime = "0.3.0"
-rustls = { version = "0.23.15", default-features = false, features = ["std", "tls12", "ring"] }
+rustls = { version = "0.23.17", default-features = false, features = ["std", "tls12", "ring"] }
 rustls-pki-types = "1.1.0"
 serde = { version = "1.0.195", features = [ "derive" ] }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }
@@ -54,3 +55,7 @@ strip = "debuginfo"
 [lints.clippy]
 upper_case_acronyms = "allow"
 unnecessary_cast = "allow"
+
+[[bin]]
+name = "certgen"
+path = "src/certgen.rs"

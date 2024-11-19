@@ -5,9 +5,9 @@ use std::{
     sync::Arc,
 };
 
-use log::debug;
+use log::{debug, info};
 use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
-use rustls_pki_types::ServerName;
+use rustls_pki_types::{CertificateDer, ServerName};
 
 use super::{
     endpoint::EndPoint,
@@ -25,7 +25,8 @@ impl TlsProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
-        let root_store = Self::root_store();
+        let root_store = Self::root_store(&trp_options.cert)?;
+        debug!("built root store with {} CAs", root_store.len());
 
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
         let mut config = Self::config(root_store);
@@ -37,9 +38,11 @@ impl TlsProtocol {
         // as EndPoint addrs can contain several addresses, we get the first address for which
         // we can create a TcpStream. This is the case when we pass e.g.: one.one.one.one:853
         let (stream, addr) = get_tcpstream_ok(&trp_options.endpoint.addrs[..], trp_options.timeout)?;
-        debug!("DoT: created TLS-TCP socket to {}", addr);
+        debug!("created TLS-TCP socket to {}", addr);
 
         let server_name = Self::build_server_name(&trp_options.endpoint, &addr)?;
+        debug!("server name: {:?}", server_name);
+
         let conn = ClientConnection::new(Arc::new(config), server_name).map_err(|e| Error::Tls(e))?;
         let tls_stream = StreamOwned::new(conn, stream);
 
@@ -62,11 +65,20 @@ impl TlsProtocol {
     }
 
     // manage CAs
-    fn root_store() -> RootCertStore {
+    fn root_store(cert: &Option<Vec<u8>>) -> Result<RootCertStore> {
         let mut root_store = rustls::RootCertStore::empty();
-        root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
-        root_store
+        // we've got a certificate here
+        if let Some(buf) = cert {
+            let cert = CertificateDer::from_slice(&buf);
+            root_store.add(cert).map_err(|e| Error::Tls(e))?;
+        }
+        // use root CAs
+        else {
+            root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+        }
+
+        Ok(root_store)
     }
 
     // build a new client config
@@ -84,6 +96,11 @@ impl Messenger for TlsProtocol {
             .write(buffer)
             .map_err(|e| Error::Network(e, Network::Send))?;
         self.netstat.0 = sent;
+
+        if let Some(cs) = self.handle.conn.negotiated_cipher_suite() {
+            info!("negociated ciphersuite: {:?}", cs);
+        }
+
         Ok(sent)
     }
 

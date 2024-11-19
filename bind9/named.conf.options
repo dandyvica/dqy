@@ -1,3 +1,12 @@
+tls local-tls {
+   cert-file "/etc/bind/cert.pem";
+   key-file "/etc/bind/key.pem";
+};
+
+http local {
+    endpoints { "/dns-query"; };
+};
+
 options {
 	directory "/var/cache/bind";
 	recursion no;
@@ -12,5 +21,12 @@ options {
 	//========================================================================
 	dnssec-validation auto;
 
-	listen-on { any; };
+	// regular udp/tcp
+	listen-on port 53 { any; };
+
+	// DoT
+	listen-on port 853 tls local-tls { any; };
+
+	// DoH
+	listen-on port 443 tls local-tls http local { any; };		
 };

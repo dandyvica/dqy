@@ -5,7 +5,8 @@ FROM ubuntu/bind9
 COPY db.dqy-test.dns /etc/bind
 COPY named.conf.local /etc/bind
 COPY named.conf.options /etc/bind
-# COPY rndc.key /etc/bind
+COPY cert/cert.pem /etc/bind
+COPY cert/key.pem /etc/bind
 
 RUN <<EOF
 apt update

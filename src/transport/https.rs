@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::Bytes;
 use http::version::*;
+use log::debug;
 use reqwest::{
     blocking::{Client, ClientBuilder},
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
@@ -31,16 +32,13 @@ pub struct HttpsProtocol<'a> {
 
 impl<'a> HttpsProtocol<'a> {
     pub fn new(trp_options: &'a TransportOptions) -> crate::error::Result<Self> {
-        let cb = Self::client_builder(trp_options);
-
-        let client = match trp_options.https_version {
-            Some(Version::HTTP_11) => cb.http1_only().build().map_err(|e| Error::Reqwest(e))?,
-            Some(Version::HTTP_2) => cb.http2_prior_knowledge().build().map_err(|e| Error::Reqwest(e))?,
-            _ => unimplemented!("version {:?} of HTTP is not yet implemented", trp_options.https_version),
-        };
+        let client = Self::client_builder(trp_options)?
+            .build()
+            .map_err(|e| Error::Reqwest(e))?;
 
         debug_assert!(!trp_options.endpoint.server.is_empty());
         let server = &trp_options.endpoint.server;
+        debug!("server: {}", server);
 
         Ok(Self {
             server,
@@ -59,35 +57,51 @@ impl<'a> HttpsProtocol<'a> {
         headers
     }
 
-    fn client_builder(trp_options: &'a TransportOptions) -> ClientBuilder {
+    fn client_builder(trp_options: &'a TransportOptions) -> Result<ClientBuilder> {
         // same headers for all requests
-        let cb = Client::builder()
+        let mut cb = Client::builder()
             .default_headers(Self::construct_headers())
             .timeout(trp_options.timeout)
-            .connect_timeout(trp_options.timeout);
+            .connect_timeout(trp_options.timeout)
+            .https_only(true)
+            .use_rustls_tls();
 
-        match trp_options.ip_version {
+        // do we have a PEM certificate?
+        if let Some(buf) = &trp_options.cert {
+            // load CERT
+            let cert = reqwest::Certificate::from_pem(&buf).map_err(|e| Error::Reqwest(e))?;
+            cb = cb.add_root_certificate(cert);
+        }
+
+        // set ip version to use
+        cb = match trp_options.ip_version {
             IPVersion::Any => cb,
             IPVersion::V4 => cb.local_address(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
             IPVersion::V6 => cb.local_address(IpAddr::V6(Ipv6Addr::UNSPECIFIED)),
-        }
+        };
+
+        // http version to use
+        cb = match trp_options.https_version {
+            Some(Version::HTTP_11) => cb.http1_only(),
+            Some(Version::HTTP_2) => cb.http2_prior_knowledge(),
+            // Some(Version::HTTP_3) => cb.http3_prior_knowledge().build().map_err(|e| Error::Reqwest(e))?,
+            _ => unimplemented!("version {:?} of HTTP is not yet implemented", trp_options.https_version),
+        };
+
+        Ok(cb)
     }
 }
 
 impl<'a> Messenger for HttpsProtocol<'a> {
     fn send(&mut self, buffer: &[u8]) -> crate::error::Result<usize> {
-        // need to copy bytes because body() prototype is: pub fn body<T: Into<Body>>(self, body: T) -> RequestBuilder
-        // and From<Body> is not implemented for &[u8]. See here: https://docs.rs/reqwest/latest/reqwest/blocking/struct.Body.html
-        // it can then be consumed by the body() method
-        let bytes_sent = Bytes::copy_from_slice(buffer);
-        self.stats.0 = bytes_sent.len();
+        self.stats.0 = buffer.len();
 
         // add buffer length as content-length header. header() method consume the RequestBuilder and returns a new one
         let resp = self
             .client
             .post(self.server)
             .header(CONTENT_LENGTH, buffer.len())
-            .body(bytes_sent)
+            .body(buffer.to_vec())
             .send()
             .map_err(|e| Error::Reqwest(e))?;
 

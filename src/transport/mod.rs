@@ -22,6 +22,10 @@ pub mod udp;
 // number of bytes sent and received for DNS operations
 type NetworkStat = (usize, usize);
 
+// default UDP buffer size
+const BUFFER_SIZE: u16 = 1232;
+const DEFAULT_TIMEOUT: u64 = 3000;
+
 pub struct TransportProtocol<T> {
     pub netstat: NetworkStat,
 
@@ -84,6 +88,12 @@ pub struct TransportOptions {
 
     // set DoT ALPN
     pub alpn: bool,
+
+    // optional certificate file as PEM
+    pub cert: Option<Vec<u8>>,
+
+    // encrypted client hello
+    pub ech: bool,
 }
 
 impl Default for TransportOptions {
@@ -91,10 +101,10 @@ impl Default for TransportOptions {
         Self {
             transport_mode: Protocol::default(),
             ip_version: IPVersion::default(),
-            timeout: Duration::from_millis(3000),
+            timeout: Duration::from_millis(DEFAULT_TIMEOUT),
             endpoint: EndPoint::default(),
             stats: false,
-            bufsize: 1232,
+            bufsize: BUFFER_SIZE,
             tls: false,
             dot: false,
             tcp: false,
@@ -106,6 +116,8 @@ impl Default for TransportOptions {
             bytes_sent: 0,
             bytes_received: 0,
             alpn: false,
+            cert: None,
+            ech: false,
         }
     }
 }
