@@ -144,7 +144,7 @@ pub struct OptOption {
 
 impl fmt::Display for OptOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}-{}-<{}>)", self.code, self.length, self.data)
+        write!(f, "{}   {}   {}", self.code, self.length, self.data)
     }
 }
 

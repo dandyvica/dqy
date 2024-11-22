@@ -1,4 +1,7 @@
 use std::fmt;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 
 use log::{debug, trace};
 use serde::Serialize;
@@ -82,7 +85,7 @@ impl Query {
     }
 
     // Send the query through the wire
-    pub fn send<T: Messenger>(&mut self, trp: &mut T) -> Result<usize> {
+    pub fn send<T: Messenger>(&mut self, trp: &mut T, path: &Option<PathBuf>) -> Result<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self
@@ -107,6 +110,12 @@ impl Query {
         // send packet through the wire
         let sent = trp.send(&buffer)?;
         debug!("sent {} bytes", sent);
+
+        // save query as raw bytes if requested
+        if let Some(path) = path {
+            let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+            f.write_all(&buffer).map_err(|e| Error::Buffer(e))?;
+        }
 
         Ok(sent)
     }

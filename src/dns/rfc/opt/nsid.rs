@@ -27,7 +27,7 @@ impl fmt::Display for NSID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0.is_some() {
             let buf = self.0.as_ref().unwrap();
-            write!(f, "{:?}", buf)?;
+            write!(f, "0x{:?} ", buf)?;
 
             f.write_str("\"")?;
             write!(f, "{}", buf)?;

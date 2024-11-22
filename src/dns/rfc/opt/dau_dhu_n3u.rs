@@ -45,6 +45,7 @@ macro_rules! opt {
     };
 }
 
+// https://www.rfc-editor.org/rfc/rfc6975.html
 // impl DAU, DHU, N3U
 opt!(DAU, u8);
 opt!(DHU, u8);

@@ -1,25 +1,27 @@
 name: DQY binary test
 vars:
-  opts: -p 10053 --no-colors --short
+  const: --no-colors --short
 testcases:
-  - name: Testing DNS records
+  - name: Testing DNS records with {{.const}} {{.opts}}
     steps:
-    - script: dqy A @localhost www.dqy-test.dns {{.opts}}
+
+    - script: dqy A {{.target}} a.dqy-test.dns {{.const}} {{.opts}}
+      type: exec
       assertions:
       - result.code ShouldEqual 0
       - result.systemout ShouldEqual "10.0.100.100"
       
-    - script: dqy AAAA @localhost www.dqy-test.dns {{.opts}}
+    - script: dqy AAAA {{.target}} aaaa.dqy-test.dns {{.const}} {{.opts}}
       assertions:
       - result.code ShouldEqual 0
       - result.systemout ShouldEqual "b567:6013:e52f:c164:cf0f:1276:aebd:f634"
 
-    - script: dqy TXT @localhost txt.dqy-test.dns {{.opts}}
+    - script: dqy TXT {{.target}} txt.dqy-test.dns {{.const}} {{.opts}}
       assertions:
       - result.code ShouldEqual 0
       - result.systemout ShouldEqual "local network"
 
-    - script: dqy HINFO @localhost hinfo.dqy-test.dns {{.opts}}
+    - script: dqy HINFO {{.target}} hinfo.dqy-test.dns {{.const}} {{.opts}}
       assertions:
       - result.code ShouldEqual 0
       - result.systemout ShouldEqual "x86_64 Linux"

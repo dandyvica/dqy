@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::path::PathBuf;
 use std::{fmt, net::SocketAddr};
 
 use serde::Serialize;
@@ -80,6 +81,18 @@ pub struct DisplayOptions {
     // Lua code if specified
     #[cfg(feature = "mlua")]
     pub lua_code: Option<String>,
+}
+
+//───────────────────────────────────────────────────────────────────────────────────
+// Dump options
+//───────────────────────────────────────────────────────────────────────────────────
+#[derive(Debug, Default, Clone)]
+pub struct DumpOptions {
+    // optional file containing Query raw data to save
+    pub write_query: Option<PathBuf>,
+
+    // optional file containing Query raw data to read
+    pub read_query: Option<PathBuf>,
 }
 
 pub trait Show: Display {

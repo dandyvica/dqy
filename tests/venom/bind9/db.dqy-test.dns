@@ -18,7 +18,8 @@ $TTL    604800
 
 ;
 @               IN      NS      dqy-test.dns.
-www             IN      A       10.0.100.100
-www             IN      AAAA    b567:6013:e52f:c164:cf0f:1276:aebd:f634
+a               IN      A       10.0.100.100
+aaaa            IN      AAAA    b567:6013:e52f:c164:cf0f:1276:aebd:f634
+cname           IN      CNAME   dqy-test.cname
 txt             IN      TXT     "local network"
 hinfo           IN      HINFO   "x86_64" "Linux"

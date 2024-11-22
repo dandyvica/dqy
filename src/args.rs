@@ -18,7 +18,7 @@ use crate::cli_options::{DnsProtocolOptions, EdnsOptions};
 use crate::dns::rfc::domain::DomainName;
 use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
 use crate::error::Error;
-use crate::show::DisplayOptions;
+use crate::show::{DisplayOptions, DumpOptions};
 use crate::transport::network::{IPVersion, Protocol};
 use crate::transport::{endpoint::EndPoint, TransportOptions};
 
@@ -55,6 +55,9 @@ pub struct CliOptions {
 
     // Display options
     pub display: DisplayOptions,
+
+    // Dump options to save query or response
+    pub dump: DumpOptions,
 }
 
 impl FromStr for CliOptions {
@@ -575,6 +578,24 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_parser(clap::value_parser!(PathBuf))
                     .help_heading("Miscellaneous options")
             )
+            .arg(
+                Arg::new("read-query")
+                    .long("rq")
+                    .long_help("Read query from file.")
+                    .action(ArgAction::Set)
+                    .value_name("FILE")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Miscellaneous options")
+            )
+            .arg(
+                Arg::new("write-query")
+                    .long("wq")
+                    .long_help("Write an answer packet to file. If several types are requested, the last answer packet if saved")
+                    .action(ArgAction::Set)
+                    .value_name("FILE")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Miscellaneous options")
+            )
             ;
 
         // add Lua option if feature lua
@@ -895,6 +916,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 .map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
 
             options.transport.cert = Some(buf);
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Dump options
+        //───────────────────────────────────────────────────────────────────────────────────
+        if let Some(path) = matches.get_one::<PathBuf>("write-query") {
+            options.dump.write_query = Some(path.to_path_buf());
         }
 
         Ok(options)
