@@ -41,68 +41,68 @@ use super::{
 #[allow(non_camel_case_types)]
 //pub(super) type OPT_OPTIONS = Vec<OptOption>;
 
-// OPT is a special (weird) case of RR
-#[derive(Debug, Default, ToNetwork, Serialize)]
-pub struct OPT {
-    pub name: u8,
-    pub r#type: QType,
-    pub payload: u16,
-    pub extended_rcode: u8,
-    pub version: u8,
-    pub flags: u16,
-    pub rd_length: u16,
-    pub options: Vec<OptOption>,
-}
+// // OPT is a special (weird) case of RR
+// #[derive(Debug, Default, ToNetwork, Serialize)]
+// pub struct OPT {
+//     pub name: u8,
+//     pub r#type: QType,
+//     pub payload: u16,
+//     pub extended_rcode: u8,
+//     pub version: u8,
+//     pub flags: u16,
+//     pub rd_length: u16,
+//     pub options: Vec<OptOption>,
+// }
 
-impl OPT {
-    pub fn new(bufsize: u16) -> Self {
-        Self {
-            r#type: QType::OPT,
-            payload: bufsize,
-            ..Default::default()
-        }
-    }
+// impl OPT {
+//     pub fn new(bufsize: u16) -> Self {
+//         Self {
+//             r#type: QType::OPT,
+//             payload: bufsize,
+//             ..Default::default()
+//         }
+//     }
 
-    // set DNSSEC bit to 1
-    pub fn set_dnssec(&mut self) {
-        self.flags = 0x8000;
-    }
+//     // set DNSSEC bit to 1
+//     pub fn set_dnssec(&mut self) {
+//         self.flags = 0x8000;
+//     }
 
-    pub fn add_option<T: OptionData>(&mut self, data: T) {
-        // build the option structure
-        let option = OptOption {
-            code: data.code(),
-            length: data.len(),
-            data: data.data(),
-        };
+//     pub fn add_option<T: OptionData>(&mut self, data: T) {
+//         // build the option structure
+//         let option = OptOption {
+//             code: data.code(),
+//             length: data.len(),
+//             data: data.data(),
+//         };
 
-        trace!("OPTION:{:?}", option);
+//         trace!("OPTION:{:?}", option);
 
-        // add in the list of options
-        self.rd_length += 4 + option.length;
-        self.options.push(option);
-    }
+//         // add in the list of options
+//         self.rd_length += 4 + option.length;
+//         self.options.push(option);
+//     }
 
-    //───────────────────────────────────────────────────────────────────────────────────
-    // builder pattern for adding lots of options to OPT RR
-    //───────────────────────────────────────────────────────────────────────────────────
-    // pub fn build(bufsize: u16) -> Self {
-    //     Self::new(bufsize)
-    // }
+//     //───────────────────────────────────────────────────────────────────────────────────
+//     // builder pattern for adding lots of options to OPT RR
+//     //───────────────────────────────────────────────────────────────────────────────────
+//     // pub fn build(bufsize: u16) -> Self {
+//     //     Self::new(bufsize)
+//     // }
 
-    // pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
-    //     self.add_option(data);
-    //     self
-    // }
+//     // pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
+//     //     self.add_option(data);
+//     //     self
+//     // }
 
-    // #[allow(clippy::field_reassign_with_default)]
-    // pub fn set_edns_nsid(&mut self) {
-    //     let mut nsid = OptOption::default();
-    //     nsid.code = OptOptionCode::NSID;
+//     // #[allow(clippy::field_reassign_with_default)]
+//     // pub fn set_edns_nsid(&mut self) {
+//     //     let mut nsid = OptOption::default();
+//     //     nsid.code = OptOptionCode::NSID;
 
-    //     self.push_option(nsid);
-    // }
-}
+//     //     self.push_option(nsid);
+//     // }
+// }
 
 // https://www.rfc-editor.org/rfc/rfc6891#section-6.1.3
 // +0 (MSB)                            +1 (LSB)
@@ -111,18 +111,18 @@ impl OPT {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 // 2: | DO|                           Z                               |
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork, Serialize)]
-pub struct OptTTL {
-    pub(super) extended_rcode: u8,
-    pub(super) version: u8,
-    pub(super) flags: u16,
-}
+//#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork, Serialize)]
+// pub struct OptTTL {
+//     pub(super) extended_rcode: u8,
+//     pub(super) version: u8,
+//     pub(super) flags: u16,
+// }
 
-impl fmt::Display for OptTTL {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} {} {})", self.extended_rcode, self.version, self.flags)
-    }
-}
+// impl fmt::Display for OptTTL {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "({} {} {})", self.extended_rcode, self.version, self.flags)
+//     }
+// }
 
 // https://www.rfc-editor.org/rfc/rfc6891#section-6.1.2
 //             +0 (MSB)                            +1 (LSB)
@@ -137,9 +137,9 @@ impl fmt::Display for OptTTL {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct OptOption {
-    pub(super) code: OptOptionCode,
+    pub(crate) code: OptionCode,
     pub(crate) length: u16,
-    pub(super) data: OptOptionData,
+    pub(crate) data: OptOptionData,
 }
 
 impl fmt::Display for OptOption {
@@ -155,23 +155,23 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
         self.length.deserialize_from(buffer)?;
 
         match self.code {
-            OptOptionCode::NSID => {
+            OptionCode::NSID => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
                 self.data = OptOptionData::NSID(NSID::from(buf));
             }
-            OptOptionCode::Padding => {
+            OptionCode::Padding => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
                 self.data = OptOptionData::Padding(Padding::from(buf));
             }
-            OptOptionCode::EdnsClientSubnet => {
+            OptionCode::EdnsClientSubnet => {
                 let mut subnet = ClientSubnet::default();
                 subnet.address = Buffer::with_capacity(self.length - 4);
                 subnet.deserialize_from(buffer)?;
                 self.data = OptOptionData::ClientSubnet(subnet);
             }
-            OptOptionCode::Extended => {
+            OptionCode::Extended => {
                 let mut extended = Extended::default();
                 extended.extra_text = Buffer::with_capacity(self.length - 2);
                 extended.deserialize_from(buffer)?;
@@ -186,7 +186,7 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
 #[derive(Debug, Default, Copy, Clone, PartialEq, EnumTryFrom, EnumDisplay, ToNetwork, FromNetwork, Serialize)]
 #[repr(u16)]
 #[from_network(TryFrom)]
-pub enum OptOptionCode {
+pub enum OptionCode {
     #[default]
     LLQ = 1, // Optional	[RFC8764]
     UL = 2,                // On-hold	[http://files.dns-sd.org/draft-sekar-dns-ul.txt]

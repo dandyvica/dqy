@@ -3,7 +3,7 @@ use std::io::Write;
 
 use log::{debug, info};
 
-use crate::error::Error;
+use crate::error::{self, Error};
 use crate::transport::network::{Messenger, Protocol};
 use crate::transport::tcp::TcpProtocol;
 use crate::{args::CliOptions, cli_options::FromOptions};
@@ -22,7 +22,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn send_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> crate::error::Result<Query> {
+    fn send_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> error::Result<Query> {
         // it's safe to unwrap here, see from_options() for Query
         let mut query = Query::from_options(options, qt).unwrap();
 

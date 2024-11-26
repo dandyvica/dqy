@@ -10,13 +10,17 @@ use crate::dns::rfc::{
     opt::{
         dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
         nsid::NSID,
-        opt_rr::OPT,
+        //opt_rr::OPT,
         padding::Padding,
     },
     qclass::QClass,
     qtype::QType,
     query::{MetaRR, Query},
+    resource_record::OPT,
 };
+
+// DNSSEC OK
+const DNSSEC_FLAG: u16 = 0x8000;
 
 //────────────────────────────────────────────────────────────────────────────────────────────
 // List of flags to set or not
@@ -124,7 +128,8 @@ impl FromOptions<u16> for OPT {
             return None;
         }
 
-        let mut opt = OPT::new(bufsize);
+        // create OPT record. flags is set for DNSSEC
+        let mut opt = OPT::new(bufsize, if edns.dnssec { Some(DNSSEC_FLAG) } else { None });
 
         //───────────────────────────────────────────────────────────────────────────────
         // add OPT options according to cli options
@@ -154,11 +159,6 @@ impl FromOptions<u16> for OPT {
         // edns-key-tag
         if let Some(list) = &edns.keytag {
             opt.add_option(EdnsKeyTag::from(list.as_slice()));
-        }
-
-        // dnssec flag ?
-        if edns.dnssec {
-            opt.set_dnssec();
         }
 
         Some(opt)

@@ -54,6 +54,9 @@ use super::{
     zonemd::ZONEMD,
 };
 
+#[derive(Debug, Serialize)]
+struct OptionList(Vec<OptOption>);
+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "rdata")]

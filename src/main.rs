@@ -46,13 +46,14 @@ use lua::LuaDisplay;
 const BUFFER_SIZE: usize = 4096;
 
 //───────────────────────────────────────────────────────────────────────────────────
-// get list of messages depending on transport
+// get list of messages using transport
 //───────────────────────────────────────────────────────────────────────────────────
 fn get_messages_using_transport<T: Messenger>(
     info: Option<&mut QueryInfo>,
     transport: &mut T,
     options: &CliOptions,
 ) -> crate::error::Result<MessageList> {
+    // BUFFER_SIZE is the size of the buffer used to received data
     let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
 
     // we want run info
@@ -68,6 +69,9 @@ fn get_messages_using_transport<T: Messenger>(
     Ok(messages)
 }
 
+//───────────────────────────────────────────────────────────────────────────────────
+// send all QTypes to domain and get responses for each query.
+//───────────────────────────────────────────────────────────────────────────────────
 pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate::error::Result<MessageList> {
     info!(
         "qtype={:?} domain='{}' resolver=<{}>",

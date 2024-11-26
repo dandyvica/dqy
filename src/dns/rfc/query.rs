@@ -13,7 +13,7 @@ use crate::error::{Dns, Error, Result};
 use crate::transport::network::Messenger;
 
 use super::{
-    domain::DomainName, flags::BitFlags, header::Header, opt::opt_rr::OPT, qclass::QClass, qtype::QType,
+    domain::DomainName, flags::BitFlags, header::Header, resource_record::OPT, qclass::QClass, qtype::QType,
     question::Question,
 };
 
@@ -24,7 +24,9 @@ pub enum MetaRR {
 
 impl Default for MetaRR {
     fn default() -> Self {
-        Self::OPT(OPT::default())
+        // https://datatracker.ietf.org/doc/html/rfc6891#section-6.2.5
+        // RFC recommends 4096 bytes to start with
+        Self::OPT(OPT::new(4096, None))
     }
 }
 
@@ -85,7 +87,9 @@ impl Query {
     }
 
     // Send the query through the wire
-    pub fn send<T: Messenger>(&mut self, trp: &mut T, path: &Option<PathBuf>) -> Result<usize> {
+    pub fn send<T: Messenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
+        trace!("==================== {:?}", self);
+
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self
@@ -112,7 +116,7 @@ impl Query {
         debug!("sent {} bytes", sent);
 
         // save query as raw bytes if requested
-        if let Some(path) = path {
+        if let Some(path) = save_path {
             let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
             f.write_all(&buffer).map_err(|e| Error::Buffer(e))?;
         }

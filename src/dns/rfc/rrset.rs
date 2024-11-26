@@ -76,11 +76,12 @@ impl Show for RRSet {
 
         for rr in &self.0 {
             // don't display OPT if not requested
-            if rr.r#type == QType::OPT && !display_options.show_opt {
-                continue;
-            } else {
-                rr.show(display_options, max_length);
-            }
+            // if rr.r#type == QType::OPT && !display_options.show_opt {
+            //     continue;
+            // } else {
+            //     rr.show(display_options, max_length);
+            // }
+            rr.show(display_options, max_length);
         }
     }
 }

@@ -15,7 +15,7 @@
 // 65001-65534	Reserved for Local/Experimental Use		[RFC6891]
 // 65535	Reserved for future expansion		[RFC6891]
 
-use self::opt_rr::{OptOptionCode, OptOptionData};
+use self::opt_rr::{OptionCode, OptOptionData};
 
 pub mod client_subnet;
 pub mod cookie;
@@ -27,7 +27,7 @@ pub mod padding;
 
 pub trait OptionData {
     // return the option code for the option data
-    fn code(&self) -> OptOptionCode;
+    fn code(&self) -> OptionCode;
 
     // return option data length
     fn len(&self) -> u16;
@@ -44,8 +44,8 @@ pub trait OptionData {
 macro_rules! opt_code {
     // to deserialize "simple" structs (like A)
     ($opt:ident) => {
-        fn code(&self) -> OptOptionCode {
-            OptOptionCode::$opt
+        fn code(&self) -> OptionCode {
+            OptionCode::$opt
         }
     };
 }

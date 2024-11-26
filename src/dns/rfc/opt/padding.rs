@@ -8,7 +8,7 @@ use serde::Serialize;
 use crate::{dns::buffer::Buffer, opt_code, opt_data};
 
 use super::{
-    opt_rr::{OptOptionCode, OptOptionData},
+    opt_rr::{OptionCode, OptOptionData},
     OptionData,
 };
 
