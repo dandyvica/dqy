@@ -15,17 +15,19 @@
 // 65001-65534	Reserved for Local/Experimental Use		[RFC6891]
 // 65535	Reserved for future expansion		[RFC6891]
 
-use self::opt_rr::{OptionCode, OptOptionData};
+use self::opt_rr::{OptionCode, OptionData};
 
 pub mod client_subnet;
 pub mod cookie;
-pub mod dau_dhu_n3u;
+//pub mod dau_dhu_n3u;
 pub mod extended;
 pub mod nsid;
 pub mod opt_rr;
 pub mod padding;
+pub mod report_chanel;
+pub mod zoneversion;
 
-pub trait OptionData {
+pub trait OptionDataValue {
     // return the option code for the option data
     fn code(&self) -> OptionCode;
 
@@ -36,13 +38,12 @@ pub trait OptionData {
     }
 
     // return the option data enum arm
-    fn data(self) -> OptOptionData;
+    fn data(self) -> Option<OptionData>;
 }
 
 // macro helpers to define code() et data() easily
 #[macro_export]
 macro_rules! opt_code {
-    // to deserialize "simple" structs (like A)
     ($opt:ident) => {
         fn code(&self) -> OptionCode {
             OptionCode::$opt
@@ -52,10 +53,15 @@ macro_rules! opt_code {
 
 #[macro_export]
 macro_rules! opt_data {
-    // to deserialize "simple" structs (like A)
     ($opt:ident) => {
-        fn data(self) -> OptOptionData {
-            OptOptionData::$opt(self)
+        fn data(self) -> Option<OptionData> {
+            Some(OptionData::$opt(self))
+        }
+    };
+
+    () => {
+        fn data(self) -> Option<OptionData> {
+            None
         }
     };
 }

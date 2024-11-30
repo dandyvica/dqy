@@ -13,8 +13,8 @@ use crate::error::{Dns, Error, Result};
 use crate::transport::network::Messenger;
 
 use super::{
-    domain::DomainName, flags::BitFlags, header::Header, resource_record::OPT, qclass::QClass, qtype::QType,
-    question::Question,
+    domain::DomainName, flags::BitFlags, header::Header, qclass::QClass, qtype::QType, question::Question,
+    resource_record::OPT,
 };
 
 #[derive(Debug, ToNetwork, Serialize)]
@@ -88,8 +88,6 @@ impl Query {
 
     // Send the query through the wire
     pub fn send<T: Messenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
-        trace!("==================== {:?}", self);
-
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self

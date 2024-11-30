@@ -5,10 +5,11 @@ use log::trace;
 
 use crate::args::CliOptions;
 use crate::dns::rfc::domain::ROOT;
+use crate::dns::rfc::opt::zoneversion::ZONEVERSION;
 use crate::dns::rfc::{
     domain::{DomainName, ROOT_DOMAIN},
     opt::{
-        dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
+        //dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
         nsid::NSID,
         //opt_rr::OPT,
         padding::Padding,
@@ -62,6 +63,9 @@ pub struct EdnsOptions {
 
     // add NSID option if true
     pub nsid: bool,
+
+    // add ZONEVERSION option if true
+    pub zoneversion: bool,
 
     // padding if the form of +padding=20
     pub padding: Option<u16>,
@@ -145,21 +149,26 @@ impl FromOptions<u16> for OPT {
             opt.add_option(Padding::new(len));
         }
 
-        // DAU, DHU & N3U
-        if let Some(list) = &edns.dau {
-            opt.add_option(DAU::from(list.as_slice()));
-        }
-        if let Some(list) = &edns.dhu {
-            opt.add_option(DHU::from(list.as_slice()));
-        }
-        if let Some(list) = &edns.n3u {
-            opt.add_option(N3U::from(list.as_slice()));
+        // ZONEVERSION
+        if edns.zoneversion {
+            opt.add_option(ZONEVERSION::default());
         }
 
+        // DAU, DHU & N3U
+        // if let Some(list) = &edns.dau {
+        //     opt.add_option(DAU::from(list.as_slice()));
+        // }
+        // if let Some(list) = &edns.dhu {
+        //     opt.add_option(DHU::from(list.as_slice()));
+        // }
+        // if let Some(list) = &edns.n3u {
+        //     opt.add_option(N3U::from(list.as_slice()));
+        // }
+
         // edns-key-tag
-        if let Some(list) = &edns.keytag {
-            opt.add_option(EdnsKeyTag::from(list.as_slice()));
-        }
+        // if let Some(list) = &edns.keytag {
+        //     opt.add_option(EdnsKeyTag::from(list.as_slice()));
+        // }
 
         Some(opt)
     }

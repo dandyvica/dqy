@@ -24,7 +24,7 @@ new_rd_length!(DHCID);
 
 impl fmt::Display for DHCID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.data.to_b64())
+        write!(f, "{}", self.data.to_base64())
     }
 }
 
@@ -33,7 +33,7 @@ impl Serialize for DHCID {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.data.to_b64())
+        serializer.serialize_str(&self.data.to_base64())
     }
 }
 

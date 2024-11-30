@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use clap::{error, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command};
 use http::*;
 use log::{debug, trace};
 use regex::Regex;
@@ -451,6 +451,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_parser(clap::value_parser!(u16))
                     .help_heading("EDNS options")
             )
+            .arg(
+                Arg::new("zoneversion")
+                    .long("zoneversion")
+                    .long_help("Sets the EDNS ZONEVERSION option in the OPT record.")
+                    .long_help("Sets the EDNS NSID option in the OPT record.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("EDNS options")
+            )
             //───────────────────────────────────────────────────────────────────────────────────
             // Display options
             //───────────────────────────────────────────────────────────────────────────────────   
@@ -809,6 +817,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.edns.no_opt = matches.get_flag("no-opt");
         options.edns.dnssec = matches.get_flag("dnssec");
         options.edns.nsid = matches.get_flag("nsid");
+        options.edns.zoneversion = matches.get_flag("zoneversion");
         options.edns.padding = matches.get_one::<u16>("padding").copied();
 
         options.edns.dau = matches.get_many::<u8>("dau").map(|v| v.copied().collect::<Vec<u8>>());

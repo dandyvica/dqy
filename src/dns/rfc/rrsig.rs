@@ -68,7 +68,7 @@ impl fmt::Display for RRSIG {
             self.sign_expiration,
             self.sign_inception,
             self.key_tag,
-            self.signature.to_b64()
+            self.signature.to_base64()
         )
     }
 }
@@ -90,7 +90,7 @@ impl Serialize for RRSIG {
         seq.serialize_entry("sign_inception", &self.sign_inception.to_string())?;
         seq.serialize_entry("name", &self.name)?;
 
-        seq.serialize_entry("signature", &self.signature.to_b64())?;
+        seq.serialize_entry("signature", &self.signature.to_base64())?;
         seq.end()
     }
 }

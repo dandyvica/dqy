@@ -45,7 +45,7 @@ pub mod query;
 pub mod rdata;
 pub mod response;
 pub mod rp;
-pub mod rrset;
+pub mod rrlist;
 pub mod rrsig;
 pub mod soa;
 pub mod srv;

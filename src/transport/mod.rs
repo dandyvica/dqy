@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::io::{ErrorKind, Read};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use endpoint::EndPoint;

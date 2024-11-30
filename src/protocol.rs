@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::io::Write;
-
 use log::{debug, info};
 
 use crate::error::{self, Error};

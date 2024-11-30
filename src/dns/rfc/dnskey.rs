@@ -78,7 +78,7 @@ impl fmt::Display for DNSKEY {
             self.flags,
             self.protocol,
             self.algorithm,
-            self.key.to_b64()
+            self.key.to_base64()
         )
     }
 }
@@ -97,7 +97,7 @@ impl Serialize for DNSKEY {
         seq.serialize_entry("flags", &self.flags)?;
         seq.serialize_entry("protocol", &self.protocol)?;
         seq.serialize_entry("algorithm", &self.algorithm.to_string())?;
-        seq.serialize_entry("key", &self.key.to_b64())?;
+        seq.serialize_entry("key", &self.key.to_base64())?;
         seq.end()
     }
 }

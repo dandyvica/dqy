@@ -8,8 +8,8 @@ use serde::Serialize;
 use crate::{dns::buffer::Buffer, opt_code, opt_data};
 
 use super::{
-    opt_rr::{OptionCode, OptOptionData},
-    OptionData,
+    opt_rr::{OptionCode, OptionData},
+    OptionDataValue,
 };
 
 // https://www.rfc-editor.org/rfc/rfc7830.html
@@ -46,7 +46,7 @@ impl fmt::Display for Padding {
     }
 }
 
-impl OptionData for Padding {
+impl OptionDataValue for Padding {
     // return the option code for the option data
     opt_code!(Padding);
 

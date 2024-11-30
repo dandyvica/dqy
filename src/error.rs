@@ -1,16 +1,11 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
-use std::fmt::Display;
-use std::net::{AddrParseError, SocketAddr};
-use std::num::ParseIntError;
+use std::net::AddrParseError;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::str;
 use std::time::Duration;
 use std::{fmt, io};
 
 use thiserror::Error;
-
-use crate::dns::rfc::response_code::ResponseCode;
 
 /// A specific custom `Result` for all functions
 pub type Result<T> = std::result::Result<T, self::Error>;

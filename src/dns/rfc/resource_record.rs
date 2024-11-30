@@ -1,16 +1,15 @@
 use std::{fmt, io::Cursor, net::IpAddr};
 
-use bytes::buf;
 use colored::Colorize;
 use serde::Serialize;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::ROOT_DOMAIN;
-use super::opt::OptionData;
+use super::opt::OptionDataValue;
 // use super::opt::opt_rr::OPT;
 use super::{domain::DomainName, qclass::QClass, qtype::QType, rdata::RData};
-use crate::dns::rfc::opt::opt_rr::OptOption;
+use crate::dns::rfc::opt::opt_rr::{OptOption, OptionList};
 use crate::show::{DisplayOptions, ToColor};
 
 use log::{debug, trace};
@@ -212,6 +211,10 @@ const LENGTH: usize = 5;
 const CLASS: usize = 4;
 const TTL_INT: usize = 7;
 const TTL_STRING: usize = 12;
+const PAYLOAD: usize = 5;
+const EXTCODE: usize = 5;
+const VERSION: usize = 5;
+const FLAGS: usize = 5;
 
 // don't use Show trait to provide extra length used to align output
 // use this function
@@ -244,7 +247,6 @@ impl ResourceRecord {
         None
     }
 
-    // local function to print out RR
     fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize) {
         for f in fmt.split(",") {
             match f.trim() {
@@ -266,6 +268,28 @@ impl ResourceRecord {
                     }
                 }
                 "rdata" => print!("{}", self.r_data.to_color()),
+
+                // OPT specific data
+                "payload" => {
+                    if let Some(r) = self.opt_or_class_ttl.opt() {
+                        print!("{:<PAYLOAD$}", r.payload)
+                    }
+                }
+                "extcode" => {
+                    if let Some(r) = self.opt_or_class_ttl.opt() {
+                        print!("{:<EXTCODE$}", r.extended_rcode)
+                    }
+                }
+                "version" => {
+                    if let Some(r) = self.opt_or_class_ttl.opt() {
+                        print!("EDNS{:<VERSION$}", r.version)
+                    }
+                }
+                "flags" => {
+                    if let Some(r) = self.opt_or_class_ttl.opt() {
+                        print!("{:<FLAGS$}", r.flags)
+                    }
+                }
                 _ => (),
             }
         }
@@ -285,15 +309,18 @@ impl ResourceRecord {
         if display_options.short {
             println!("{}", self.r_data.to_color());
         } else if self.r#type != QType::OPT {
-            const ALL_FIELDS: &str = "name,type,length,class,ttl,length,rdata";
+            const ALL_FIELDS: &str = "name,type,class,ttl,length,rdata";
             self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
             println!();
         } else {
-            if let RData::OPT(opt) = &self.r_data {
-                for option in opt {
-                    println!("{}", option);
-                }
-            }
+            const ALL_FIELDS: &str = "name,type,length,payload,extcode,version,flags,length,rdata";
+            // if let RData::OPT(opt) = &self.r_data {
+            //     for option in opt {
+            //         println!("{}", option);
+            //     }
+            // }
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
+            println!();
         }
     }
 }
@@ -314,12 +341,12 @@ impl OPT {
             r#type: QType::OPT,
             opt_or_class_ttl: OptOrClassTtl::Opt(opt_payload),
             rd_length: 0,
-            r_data: RData::OPT(Vec::new()), // no options added yet
+            r_data: RData::OPT(OptionList::default()), // no options added yet
         }
     }
 
-    // add another option in OPT record
-    pub fn add_option<T: OptionData>(&mut self, data: T) {
+    // add another option in OPT record? Only valid for queries
+    pub fn add_option<T: OptionDataValue>(&mut self, data: T) {
         // build the option structure
         let option = OptOption {
             code: data.code(),
@@ -334,9 +361,8 @@ impl OPT {
         if let RData::OPT(opt) = &mut self.r_data {
             opt.push(option);
         }
-    }    
+    }
 }
-
 
 impl fmt::Display for ResourceRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -345,8 +371,6 @@ impl fmt::Display for ResourceRecord {
             "{:<28} {:<10} {} {:<10}",
             self.name.to_string(),
             self.r#type.to_string(),
-            // self.class.to_string(),
-            // self.ttl.to_string(),
             self.opt_or_class_ttl,
             self.rd_length
         )?;
@@ -401,7 +425,7 @@ impl<'a> FromNetworkOrder<'a> for ResourceRecord {
         // a specific processing when OPT record has no options (rd_length == 0)
         // because by default RData enum is UNKNOWN
         else if self.r#type == QType::OPT {
-            self.r_data = RData::OPT(Vec::new());
+            self.r_data = RData::OPT(OptionList::default());
         }
 
         Ok(())

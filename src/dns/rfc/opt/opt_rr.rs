@@ -1,4 +1,8 @@
-use std::{fmt, io::Cursor};
+use std::{
+    fmt,
+    io::Cursor,
+    ops::{Deref, DerefMut},
+};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -9,22 +13,23 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use serde::Serialize;
 
-use crate::{
-    dns::buffer::Buffer,
-    dns::rfc::{
+use crate::dns::{
+    buffer::Buffer,
+    rfc::{
+        domain::DomainName,
         opt::nsid::NSID,
-        qtype::QType,
-        // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
+        //qtype::QType, // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
     },
 };
 
 use super::{
+    //client_subnet::ClientSubnet,
     client_subnet::ClientSubnet,
     cookie::COOKIE,
-    dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
     extended::Extended,
     padding::Padding,
-    OptionData,
+    report_chanel::ReportChannel,
+    zoneversion::{ZONEVERSION, ZV},
 };
 
 // This OPT is the one which is sent in the query (additional record)
@@ -38,92 +43,6 @@ use super::{
 // | RDLEN      | u_int16_t    | length of all RDATA          |
 // | RDATA      | octet stream | {attribute,value} pairs      |
 // +------------+--------------+------------------------------+
-#[allow(non_camel_case_types)]
-//pub(super) type OPT_OPTIONS = Vec<OptOption>;
-
-// // OPT is a special (weird) case of RR
-// #[derive(Debug, Default, ToNetwork, Serialize)]
-// pub struct OPT {
-//     pub name: u8,
-//     pub r#type: QType,
-//     pub payload: u16,
-//     pub extended_rcode: u8,
-//     pub version: u8,
-//     pub flags: u16,
-//     pub rd_length: u16,
-//     pub options: Vec<OptOption>,
-// }
-
-// impl OPT {
-//     pub fn new(bufsize: u16) -> Self {
-//         Self {
-//             r#type: QType::OPT,
-//             payload: bufsize,
-//             ..Default::default()
-//         }
-//     }
-
-//     // set DNSSEC bit to 1
-//     pub fn set_dnssec(&mut self) {
-//         self.flags = 0x8000;
-//     }
-
-//     pub fn add_option<T: OptionData>(&mut self, data: T) {
-//         // build the option structure
-//         let option = OptOption {
-//             code: data.code(),
-//             length: data.len(),
-//             data: data.data(),
-//         };
-
-//         trace!("OPTION:{:?}", option);
-
-//         // add in the list of options
-//         self.rd_length += 4 + option.length;
-//         self.options.push(option);
-//     }
-
-//     //───────────────────────────────────────────────────────────────────────────────────
-//     // builder pattern for adding lots of options to OPT RR
-//     //───────────────────────────────────────────────────────────────────────────────────
-//     // pub fn build(bufsize: u16) -> Self {
-//     //     Self::new(bufsize)
-//     // }
-
-//     // pub fn with_option<T: OptionData>(mut self, data: T) -> Self {
-//     //     self.add_option(data);
-//     //     self
-//     // }
-
-//     // #[allow(clippy::field_reassign_with_default)]
-//     // pub fn set_edns_nsid(&mut self) {
-//     //     let mut nsid = OptOption::default();
-//     //     nsid.code = OptOptionCode::NSID;
-
-//     //     self.push_option(nsid);
-//     // }
-// }
-
-// https://www.rfc-editor.org/rfc/rfc6891#section-6.1.3
-// +0 (MSB)                            +1 (LSB)
-//    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// 0: |         EXTENDED-RCODE        |            VERSION            |
-//    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-// 2: | DO|                           Z                               |
-//    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-//#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, ToNetwork, FromNetwork, Serialize)]
-// pub struct OptTTL {
-//     pub(super) extended_rcode: u8,
-//     pub(super) version: u8,
-//     pub(super) flags: u16,
-// }
-
-// impl fmt::Display for OptTTL {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "({} {} {})", self.extended_rcode, self.version, self.flags)
-//     }
-// }
-
 // https://www.rfc-editor.org/rfc/rfc6891#section-6.1.2
 //             +0 (MSB)                            +1 (LSB)
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
@@ -139,12 +58,16 @@ use super::{
 pub struct OptOption {
     pub(crate) code: OptionCode,
     pub(crate) length: u16,
-    pub(crate) data: OptOptionData,
+    pub(crate) data: Option<OptionData>,
 }
 
 impl fmt::Display for OptOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}   {}   {}", self.code, self.length, self.data)
+        if let Some(data) = &self.data {
+            write!(f, "{}   {}   {}", self.code, self.length, data)
+        } else {
+            write!(f, "{}   {}", self.code, self.length)
+        }
     }
 }
 
@@ -158,27 +81,50 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
             OptionCode::NSID => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
-                self.data = OptOptionData::NSID(NSID::from(buf));
+                self.data = Some(OptionData::NSID(NSID::from(buf)));
             }
             OptionCode::Padding => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
-                self.data = OptOptionData::Padding(Padding::from(buf));
+                self.data = Some(OptionData::Padding(Padding::from(buf)));
+            }
+            OptionCode::Extended => {
+                let mut info_code = 0u16;
+                info_code.deserialize_from(buffer)?;
+                let mut buf: Buffer = Buffer::with_capacity(self.length - 2);
+                buf.deserialize_from(buffer)?;
+                self.data = Some(OptionData::Extended(Extended::from((info_code, buf))));
+            }
+            OptionCode::ReportChannel => {
+                let mut agent_domain = DomainName::default();
+                agent_domain.deserialize_from(buffer)?;
+                self.data = Some(OptionData::ReportChanel(ReportChannel::from(agent_domain)));
+            }
+            OptionCode::ZONEVERSION => {
+                println!("inside ZV");
+                let mut zv = ZV::default();
+                zv.label_count.deserialize_from(buffer)?;
+                zv.r#type.deserialize_from(buffer)?;
+                let mut buf: Buffer = Buffer::with_capacity(self.length - 2);
+                buf.deserialize_from(buffer)?;
+                self.data = Some(OptionData::ZONEVERSION(ZONEVERSION::from(zv)));
             }
             OptionCode::EdnsClientSubnet => {
                 let mut subnet = ClientSubnet::default();
                 subnet.address = Buffer::with_capacity(self.length - 4);
                 subnet.deserialize_from(buffer)?;
-                self.data = OptOptionData::ClientSubnet(subnet);
+                self.data = Some(OptionData::ClientSubnet(subnet));
             }
-            OptionCode::Extended => {
-                let mut extended = Extended::default();
-                extended.extra_text = Buffer::with_capacity(self.length - 2);
-                extended.deserialize_from(buffer)?;
-                self.data = OptOptionData::Extended(extended);
-            }
+            // OptionCode::Extended => {
+            //     let mut extended = Extended::default();
+            //     extended.extra_text = Buffer::with_capacity(self.length - 2);
+            //     extended.deserialize_from(buffer)?;
+            //     self.data = OptOptionData::Extended(extended);
+            // }
             _ => unimplemented!("option code <{}> is not yet implemented", self.code),
         }
+
+        trace!("OptOption deserialize: {:#?}", self);
         Ok(())
     }
 }
@@ -205,37 +151,88 @@ pub enum OptionCode {
     Extended = 15,         // DNS Error	Standard	[RFC8914]
     EdnsClientTag = 16,    //	Optional	[draft-bellis-dnsop-edns-tags]
     EdnsServerTag = 17,    //	Optional	[draft-bellis-dnsop-edns-tags]
+    ReportChannel = 18,
+    ZONEVERSION = 19,
     Umbrella = 20292, // Ident	Optional	[https://developer.cisco.com/docs/cloud-security/#!integrating-network-devices/rdata-description][Cisco_CIE_DNS_team]
     DeviceID = 26946, // Optional	[https://developer.cisco.com/docs/cloud-security/#!network-devices-getting-started/response-codes][Cisco_CIE_DNS_team]
 }
 
 #[derive(Debug, ToNetwork, Serialize)]
-pub enum OptOptionData {
+pub enum OptionData {
     NSID(NSID),
     COOKIE(COOKIE),
     Padding(Padding),
     ClientSubnet(ClientSubnet),
-    DAU(DAU),
-    DHU(DHU),
-    N3U(N3U),
-    EdnsKeyTag(EdnsKeyTag),
+    // DAU(DAU),
+    // DHU(DHU),
+    // N3U(N3U),
+    // EdnsKeyTag(EdnsKeyTag),
     Extended(Extended),
+    ReportChanel(ReportChannel),
+    ZONEVERSION(ZONEVERSION),
 }
 
-impl Default for OptOptionData {
+impl Default for OptionData {
     fn default() -> Self {
-        OptOptionData::NSID(NSID::default())
+        OptionData::NSID(NSID::default())
     }
 }
 
-impl fmt::Display for OptOptionData {
+impl fmt::Display for OptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OptOptionData::NSID(n) => write!(f, "{}", n)?,
-            OptOptionData::Padding(p) => write!(f, "{}", p)?,
-            OptOptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
+            OptionData::NSID(n) => write!(f, "{}", n)?,
+            OptionData::Padding(p) => write!(f, "{}", p)?,
+            OptionData::Extended(p) => write!(f, "{}", p)?,
+            OptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
+            OptionData::ReportChanel(p) => write!(f, "{}", p)?,
+            OptionData::ZONEVERSION(p) => write!(f, "{}", p)?,
             _ => unimplemented!("EDNS option not yet implemented"),
         }
+        Ok(())
+    }
+}
+
+// list of options which are appended to the RDATA for the OPT RR
+#[derive(Debug, Default, Serialize, ToNetwork, FromNetwork)]
+pub struct OptionList(Vec<OptOption>);
+
+impl OptionList {
+    pub fn new(v: Vec<OptOption>) -> Self {
+        Self(v)
+    }
+}
+
+impl Deref for OptionList {
+    type Target = Vec<OptOption>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for OptionList {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+// IntoIterator to benefit from already defined iterator on Vec
+impl<'a> IntoIterator for &'a OptionList {
+    type Item = &'a OptOption;
+    type IntoIter = std::slice::Iter<'a, OptOption>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+impl fmt::Display for OptionList {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for opt in &self.0 {
+            write!(f, "<{}>", opt)?;
+        }
+
         Ok(())
     }
 }

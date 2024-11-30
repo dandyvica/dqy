@@ -5,7 +5,8 @@ use serde::Serialize;
 use type2network::FromNetworkOrder;
 
 use super::{
-    domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord, rrset::RRSet,
+    domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord,
+    rrlist::RRList,
 };
 use crate::dns::rfc::response_code::ResponseCode;
 use crate::error::{Dns, Error};
@@ -22,9 +23,9 @@ pub enum ResponseSection {
 pub struct Response {
     pub header: Header,
     pub question: Question,
-    pub answer: Option<RRSet>,
-    pub(super) authority: Option<RRSet>,
-    pub(super) additional: Option<RRSet>,
+    pub answer: Option<RRList>,
+    pub(super) authority: Option<RRList>,
+    pub(super) additional: Option<RRList>,
 }
 
 // hide internal fields
@@ -209,17 +210,17 @@ impl<'a> FromNetworkOrder<'a> for Response {
         // vector to the number received
         if self.header.an_count > 0 {
             // self.answer = Some(Vec::with_capacity(self.header.an_count as usize));
-            self.answer = Some(RRSet::with_capacity(self.header.an_count as usize));
+            self.answer = Some(RRList::with_capacity(self.header.an_count as usize));
             self.answer.deserialize_from(buffer)?;
         }
 
         if self.header.ns_count > 0 {
-            self.authority = Some(RRSet::with_capacity(self.header.ns_count as usize));
+            self.authority = Some(RRList::with_capacity(self.header.ns_count as usize));
             self.authority.deserialize_from(buffer)?;
         }
 
         if self.header.ar_count > 0 {
-            self.additional = Some(RRSet::with_capacity(self.header.ar_count as usize));
+            self.additional = Some(RRList::with_capacity(self.header.ar_count as usize));
             self.additional.deserialize_from(buffer)?;
         }
 

@@ -8,7 +8,7 @@ use serde::Serialize;
 
 use crate::{
     dns::buffer::{serialize_buffer, Buffer},
-    error::{Dns, Error},
+    // error::{Dns, Error},
     new_rd_length,
 };
 

@@ -83,7 +83,7 @@ impl fmt::Display for IPSECKEY {
             self.gateway_type,
             self.algorithm,
             self.gateway,
-            self.public_key.to_b64()
+            self.public_key.to_base64()
         )
     }
 }
@@ -100,7 +100,7 @@ impl Serialize for IPSECKEY {
         seq.serialize_entry("gateway_type", &self.gateway_type)?;
         seq.serialize_entry("algorithm", &self.algorithm)?;
         seq.serialize_entry("gateway", &self.gateway.to_string())?;
-        seq.serialize_entry("public_key", &self.public_key.to_b64())?;
+        seq.serialize_entry("public_key", &self.public_key.to_base64())?;
         seq.end()
     }
 }

@@ -9,7 +9,6 @@ use serde::Serialize;
 use type2network::ToNetworkOrder;
 
 use type2network::FromNetworkOrder;
-use type2network_derive::FromNetwork;
 
 use crate::{dns::buffer::Buffer, show::ToColor};
 
@@ -39,7 +38,7 @@ use super::{
     nsec3::NSEC3,
     nsec3param::NSEC3PARAM,
     openpgpkey::OPENPGPKEY,
-    opt::opt_rr::OptOption,
+    opt::opt_rr::{OptOption, OptionList},
     ptr::PTR,
     qtype::QType,
     rp::RP,
@@ -53,9 +52,6 @@ use super::{
     uri::URI,
     zonemd::ZONEMD,
 };
-
-#[derive(Debug, Serialize)]
-struct OptionList(Vec<OptOption>);
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize)]
@@ -92,7 +88,7 @@ pub(super) enum RData {
     NSEC3(NSEC3),
     NSEC3PARAM(NSEC3PARAM),
     OPENPGPKEY(OPENPGPKEY),
-    OPT(Vec<OptOption>),
+    OPT(OptionList),
     PTR(PTR),
     RP(RP),
     RRSIG(RRSIG),
@@ -175,7 +171,7 @@ impl RData {
                     v.push(option);
                 }
 
-                Ok(RData::OPT(v))
+                Ok(RData::OPT(OptionList::new(v)))
             }
             QType::PTR => get_rr!(buffer, PTR, RData::PTR),
             QType::RP => get_rr!(buffer, RP, RData::RP),
@@ -205,9 +201,14 @@ impl Default for RData {
     }
 }
 
+// on serializing, only OPT is necessary to serialize
 impl ToNetworkOrder for RData {
-    fn serialize_to(&self, _buffer: &mut Vec<u8>) -> std::io::Result<usize> {
-        Ok(0)
+    fn serialize_to(&self, buffer: &mut Vec<u8>) -> std::io::Result<usize> {
+        if let RData::OPT(opt) = self {
+            opt.serialize_to(buffer)
+        } else {
+            Ok(0)
+        }
     }
 }
 
@@ -246,12 +247,13 @@ impl fmt::Display for RData {
             RData::NSEC3(a) => write!(f, "{}", a),
             RData::NSEC3PARAM(a) => write!(f, "{}", a),
             RData::OPENPGPKEY(a) => write!(f, "{}", a),
-            RData::OPT(a) => {
-                for opt in a {
-                    write!(f, "{}", opt)?;
-                }
-                Ok(())
-            }
+            RData::OPT(a) => write!(f, "{}", a),
+            //{
+            //     for opt in a {
+            //         write!(f, "{}", opt)?;
+            //     }
+            //     Ok(())
+            // }
             RData::PTR(a) => write!(f, "{}", a),
             RData::RP(a) => write!(f, "{}", a),
             RData::RRSIG(a) => write!(f, "{}", a),

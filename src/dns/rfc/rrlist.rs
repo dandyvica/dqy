@@ -13,10 +13,10 @@ use super::{domain::DomainName, qtype::QType, resource_record::ResourceRecord};
 use crate::show::{DisplayOptions, Show};
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct RRSet(Vec<ResourceRecord>);
+pub struct RRList(Vec<ResourceRecord>);
 
-impl RRSet {
-    // necessery for deserialization
+impl RRList {
+    // necessary for deserialization
     pub fn with_capacity(capa: usize) -> Self {
         Self(Vec::with_capacity(capa))
     }
@@ -48,7 +48,7 @@ impl RRSet {
     }
 }
 
-impl Deref for RRSet {
+impl Deref for RRList {
     type Target = Vec<ResourceRecord>;
 
     fn deref(&self) -> &Self::Target {
@@ -56,7 +56,7 @@ impl Deref for RRSet {
     }
 }
 
-impl fmt::Display for RRSet {
+impl fmt::Display for RRList {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for rr in &self.0 {
             writeln!(f, "{}", rr)?;
@@ -66,7 +66,7 @@ impl fmt::Display for RRSet {
     }
 }
 
-impl Show for RRSet {
+impl Show for RRList {
     fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
         // let max_length = if display_options.align_names {
         //     self.max_length()

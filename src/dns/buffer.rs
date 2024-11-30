@@ -22,18 +22,23 @@ impl Buffer {
     // }
 
     // some RRs need to convert the raw data into b16 or b64 hexa strings
-    pub fn to_b64(&self) -> String {
+    pub fn to_base64(&self) -> String {
         general_purpose::STANDARD.encode(self.as_ref())
     }
 
     // some RRs need to convert the raw data into b16 or b64 hexa strings
-    pub fn to_b16(&self) -> String {
+    pub fn to_base16(&self) -> String {
         base16::encode_upper(&self.as_ref())
     }
 
     // useful for JSON output
     pub fn to_hex(&self) -> String {
         format!("{:?}", self)
+    }
+
+    // fancier display
+    pub fn display(&self) -> String {
+        format!("0x{:?} \"{}\"", self, self)
     }
 }
 

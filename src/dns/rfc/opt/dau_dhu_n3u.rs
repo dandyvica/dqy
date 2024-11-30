@@ -6,8 +6,8 @@ use serde::Serialize;
 use crate::{opt_code, opt_data};
 
 use super::{
-    opt_rr::{OptionCode, OptOptionData},
-    OptionData,
+    opt_rr::{OptionData, OptionCode},
+    OptionDataValue,
 };
 
 // useful macro to auto define DAU, DHU & N3U which are the same

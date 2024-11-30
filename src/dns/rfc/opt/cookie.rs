@@ -3,7 +3,7 @@ use type2network_derive::ToNetwork;
 
 use serde::Serialize;
 
-// Cookie: https://www.rfc-editor.org/rfc/rfc5001.html
+// Cookie: https://www.rfc-editor.org/rfc/rfc7873
 #[derive(Debug, Default, ToNetwork, Serialize)]
 pub struct COOKIE {
     client_cookie: Vec<u8>,

@@ -3,7 +3,7 @@ use std::fmt;
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
-use crate::dns::buffer::Buffer;
+use crate::dns::rfc::domain::DomainName;
 use crate::{opt_code, opt_data};
 
 use serde::Serialize;
@@ -13,29 +13,25 @@ use super::{
     OptionDataValue,
 };
 
-// NSID: https://www.rfc-editor.org/rfc/rfc5001.html
+// ReportChanel: https://www.rfc-editor.org/rfc/rfc9567.html
 #[derive(Debug, Default, ToNetwork, Serialize)]
-pub struct NSID(Option<Buffer>);
+pub struct ReportChannel(DomainName);
 
-impl From<Buffer> for NSID {
-    fn from(buf: Buffer) -> Self {
-        Self(Some(buf))
+impl From<DomainName> for ReportChannel {
+    fn from(dn: DomainName) -> Self {
+        Self(dn)
     }
 }
 
-impl fmt::Display for NSID {
+impl fmt::Display for ReportChannel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(b) = &self.0 {
-            write!(f, "{}", b.display())?
-        }
-
-        Ok(())
+        write!(f, "{}", self.0)
     }
 }
 
-impl OptionDataValue for NSID {
+impl OptionDataValue for ReportChannel {
     // return the option code for the option data
-    opt_code!(NSID);
+    opt_code!(ReportChannel);
 
     // return option data length
     fn len(&self) -> u16 {
