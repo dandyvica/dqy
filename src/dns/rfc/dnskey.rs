@@ -72,10 +72,16 @@ new_rd_length!(DNSKEY);
 
 impl fmt::Display for DNSKEY {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let flags = match self.flags {
+            256 => "ZSK",
+            257 => "KSK",
+            _ => &format!("{}", self.flags),
+        };
+
         write!(
             f,
             "{} {} {} {}",
-            self.flags,
+            flags,
             self.protocol,
             self.algorithm,
             self.key.to_base64()
