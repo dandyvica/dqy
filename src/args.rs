@@ -386,6 +386,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("EDNS options")
             )
             .arg(
+                Arg::new("cookie")
+                    .long("cookie")
+                    .long_help("Sets EDNS COOKIE option in OPT record.")
+                    .action(ArgAction::SetTrue)
+                    .value_name("COOKIE")
+                    .help_heading("EDNS options")
+            )            
+            .arg(
                 Arg::new("dau")
                     .long("dau")
                     .long_help("Sets the EDNS DAU option in the OPT record.")
@@ -817,6 +825,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.edns.no_opt = matches.get_flag("no-opt");
         options.edns.dnssec = matches.get_flag("dnssec");
         options.edns.nsid = matches.get_flag("nsid");
+        options.edns.cookie = matches.get_flag("cookie");
         options.edns.zoneversion = matches.get_flag("zoneversion");
         options.edns.padding = matches.get_one::<u16>("padding").copied();
 

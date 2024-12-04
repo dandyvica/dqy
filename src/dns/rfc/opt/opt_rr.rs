@@ -81,11 +81,21 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
             OptionCode::NSID => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::NSID(NSID::from(buf)));
+            }
+            OptionCode::COOKIE => {
+                let mut cookie = COOKIE::default();
+                cookie.client_cookie.deserialize_from(buffer)?;
+                let mut buf: Buffer = Buffer::with_capacity(self.length - 8);
+                buf.deserialize_from(buffer)?;
+
+                self.data = Some(OptionData::COOKIE(cookie));
             }
             OptionCode::Padding => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::Padding(Padding::from(buf)));
             }
             OptionCode::Extended => {
@@ -93,11 +103,13 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 info_code.deserialize_from(buffer)?;
                 let mut buf: Buffer = Buffer::with_capacity(self.length - 2);
                 buf.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::Extended(Extended::from((info_code, buf))));
             }
             OptionCode::ReportChannel => {
                 let mut agent_domain = DomainName::default();
                 agent_domain.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::ReportChanel(ReportChannel::from(agent_domain)));
             }
             OptionCode::ZONEVERSION => {
@@ -107,20 +119,16 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 zv.r#type.deserialize_from(buffer)?;
                 let mut buf: Buffer = Buffer::with_capacity(self.length - 2);
                 buf.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::ZONEVERSION(ZONEVERSION::from(zv)));
             }
             OptionCode::EdnsClientSubnet => {
                 let mut subnet = ClientSubnet::default();
                 subnet.address = Buffer::with_capacity(self.length - 4);
                 subnet.deserialize_from(buffer)?;
+
                 self.data = Some(OptionData::ClientSubnet(subnet));
             }
-            // OptionCode::Extended => {
-            //     let mut extended = Extended::default();
-            //     extended.extra_text = Buffer::with_capacity(self.length - 2);
-            //     extended.deserialize_from(buffer)?;
-            //     self.data = OptOptionData::Extended(extended);
-            // }
             _ => unimplemented!("option code <{}> is not yet implemented", self.code),
         }
 
@@ -182,6 +190,7 @@ impl fmt::Display for OptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptionData::NSID(n) => write!(f, "{}", n)?,
+            OptionData::COOKIE(n) => write!(f, "{}", n)?,
             OptionData::Padding(p) => write!(f, "{}", p)?,
             OptionData::Extended(p) => write!(f, "{}", p)?,
             OptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,

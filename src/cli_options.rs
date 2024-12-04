@@ -5,6 +5,7 @@ use log::trace;
 
 use crate::args::CliOptions;
 use crate::dns::rfc::domain::ROOT;
+use crate::dns::rfc::opt::cookie::COOKIE;
 use crate::dns::rfc::opt::zoneversion::ZONEVERSION;
 use crate::dns::rfc::{
     domain::{DomainName, ROOT_DOMAIN},
@@ -63,6 +64,9 @@ pub struct EdnsOptions {
 
     // add NSID option if true
     pub nsid: bool,
+
+    // add COOKIE option
+    pub cookie: bool,
 
     // add ZONEVERSION option if true
     pub zoneversion: bool,
@@ -142,6 +146,14 @@ impl FromOptions<u16> for OPT {
         // NSID
         if edns.nsid {
             opt.add_option(NSID::default());
+        }
+
+        // COOKIE
+        if edns.cookie {
+            // initialize client cookie to a random number
+            let mut cookie = COOKIE::default();
+            cookie.client_cookie = rand::random();
+            opt.add_option(cookie);
         }
 
         // padding
