@@ -4,7 +4,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use crate::dns::buffer::Buffer;
-use crate::{opt_code, opt_data};
+use crate::{opt_code, opt_data, opt_len};
 
 use serde::Serialize;
 
@@ -38,9 +38,7 @@ impl OptionDataValue for NSID {
     opt_code!(NSID);
 
     // return option data length
-    fn len(&self) -> u16 {
-        0
-    }
+    opt_len!(0);
 
     // return None
     opt_data!();

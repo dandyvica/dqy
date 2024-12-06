@@ -58,7 +58,7 @@ impl TryFrom<(&PathBuf, u16)> for EndPoint {
     type Error = crate::error::Error;
 
     fn try_from(value: (&PathBuf, u16)) -> Result<Self, Self::Error> {
-        let resolvers = ResolverList::try_from(value.0.as_path()).map_err(|e| Error::Resolver(e))?;
+        let resolvers = ResolverList::try_from(value.0.as_path()).map_err(Error::Resolver)?;
         let ip_list = resolvers
             .to_ip_vec()
             .iter()
@@ -121,7 +121,7 @@ impl TryFrom<u16> for EndPoint {
 
     fn try_from(port: u16) -> Result<Self, Self::Error> {
         // if no server, use host resolvers
-        let resolvers = ResolverList::new().map_err(|e| Error::Resolver(e))?;
+        let resolvers = ResolverList::new().map_err(Error::Resolver)?;
         let ip_list = resolvers
             .to_ip_vec()
             .iter()

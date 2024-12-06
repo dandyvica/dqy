@@ -36,9 +36,9 @@ impl TcpProtocol {
 
 impl Messenger for TcpProtocol {
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.write(buffer).map_err(|e| crate::error::Error::Buffer(e))?;
+        let sent = self.handle.write(buffer).map_err(crate::error::Error::Buffer)?;
         self.netstat.0 = sent;
-        self.handle.flush().map_err(|e| crate::error::Error::Buffer(e))?;
+        self.handle.flush().map_err(crate::error::Error::Buffer)?;
         Ok(sent)
     }
 

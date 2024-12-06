@@ -247,10 +247,22 @@ impl ResourceRecord {
         None
     }
 
-    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize) {
+    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize, idna: bool) {
         for f in fmt.split(",") {
             match f.trim() {
-                "name" => print!("{:<name_length$} ", self.name.to_color()),
+                // except OPT
+                "name" => {
+                    if idna {
+                        let converted = idna::domain_to_unicode(&self.name.to_string());
+                        if converted.1.is_ok() {
+                            print!("{:<name_length$} ", converted.0.bright_green());
+                        } else {
+                            print!("{:<name_length$} ", self.name.to_color());
+                        }
+                    } else {
+                        print!("{:<name_length$} ", self.name.to_color());
+                    }
+                }
                 "type" => print!("{:<TYPE$} ", self.r#type.to_color()),
                 "length" => print!("{:<LENGTH$} ", self.rd_length),
                 "class" => {
@@ -300,7 +312,12 @@ impl ResourceRecord {
 
         // formatting display
         if !display_options.fmt.is_empty() {
-            self.display(&display_options.fmt, display_options.raw_ttl, name_length);
+            self.display(
+                &display_options.fmt,
+                display_options.raw_ttl,
+                name_length,
+                display_options.idna,
+            );
             println!();
             return;
         }
@@ -310,16 +327,11 @@ impl ResourceRecord {
             println!("{}", self.r_data.to_color());
         } else if self.r#type != QType::OPT {
             const ALL_FIELDS: &str = "name,type,class,ttl,length,rdata";
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.idna);
             println!();
         } else {
             const ALL_FIELDS: &str = "name,type,length,payload,extcode,version,flags,length,rdata";
-            // if let RData::OPT(opt) = &self.r_data {
-            //     for option in opt {
-            //         println!("{}", option);
-            //     }
-            // }
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length);
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.idna);
             println!();
         }
     }
@@ -331,9 +343,11 @@ pub type OPT = ResourceRecord;
 impl OPT {
     // OPT is a special case of RR
     pub fn new(bufsize: u16, flags: Option<u16>) -> Self {
-        let mut opt_payload = OptPayload::default();
-        opt_payload.payload = bufsize;
-        opt_payload.flags = flags.unwrap_or_default();
+        let opt_payload = OptPayload {
+            payload: bufsize,
+            flags: flags.unwrap_or_default(),
+            ..Default::default()
+        };
 
         // OPT qname is root
         Self {

@@ -66,7 +66,7 @@ pub struct EdnsOptions {
     pub nsid: bool,
 
     // add COOKIE option
-    pub cookie: bool,
+    pub cookie: Option<String>,
 
     // add ZONEVERSION option if true
     pub zoneversion: bool,
@@ -149,11 +149,8 @@ impl FromOptions<u16> for OPT {
         }
 
         // COOKIE
-        if edns.cookie {
-            // initialize client cookie to a random number
-            let mut cookie = COOKIE::default();
-            cookie.client_cookie = rand::random();
-            opt.add_option(cookie);
+        if let Some(cookie) = &edns.cookie {
+            opt.add_option(COOKIE::from(cookie.as_str()));
         }
 
         // padding

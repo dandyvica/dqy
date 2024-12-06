@@ -124,7 +124,7 @@ macro_rules! get_rr {
 
 impl RData {
     // according to QType, map buffer to RData
-    pub fn from_bytes<'a>(qt: &QType, length: u16, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<Self> {
+    pub fn from_bytes(qt: &QType, length: u16, buffer: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         match qt {
             // RData enum
             QType::A => get_rr!(buffer, A, RData::A),

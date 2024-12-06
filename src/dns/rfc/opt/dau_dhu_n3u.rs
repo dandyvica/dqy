@@ -11,6 +11,7 @@ use super::{
 };
 
 // useful macro to auto define DAU, DHU & N3U which are the same
+// https://www.rfc-editor.org/rfc/rfc6975.html
 macro_rules! opt {
     ($opt:ident, $t:ty) => {
         #[derive(Debug, Default, ToNetwork, Serialize)]

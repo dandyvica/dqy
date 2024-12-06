@@ -32,9 +32,7 @@ pub struct HttpsProtocol<'a> {
 
 impl<'a> HttpsProtocol<'a> {
     pub fn new(trp_options: &'a TransportOptions) -> crate::error::Result<Self> {
-        let client = Self::client_builder(trp_options)?
-            .build()
-            .map_err(|e| Error::Reqwest(e))?;
+        let client = Self::client_builder(trp_options)?.build().map_err(Error::Reqwest)?;
 
         debug_assert!(!trp_options.endpoint.server.is_empty());
         let server = &trp_options.endpoint.server;
@@ -69,7 +67,7 @@ impl<'a> HttpsProtocol<'a> {
         // do we have a PEM certificate?
         if let Some(buf) = &trp_options.cert {
             // load CERT
-            let cert = reqwest::Certificate::from_pem(&buf).map_err(|e| Error::Reqwest(e))?;
+            let cert = reqwest::Certificate::from_pem(buf).map_err(Error::Reqwest)?;
             cb = cb.add_root_certificate(cert);
         }
 
@@ -103,13 +101,13 @@ impl<'a> Messenger for HttpsProtocol<'a> {
             .header(CONTENT_LENGTH, buffer.len())
             .body(buffer.to_vec())
             .send()
-            .map_err(|e| Error::Reqwest(e))?;
+            .map_err(Error::Reqwest)?;
 
         // save remote address
         self.peer = resp.remote_addr();
 
         // and extract the bytes received
-        self.bytes_recv = resp.bytes().map_err(|e| Error::Reqwest(e))?;
+        self.bytes_recv = resp.bytes().map_err(Error::Reqwest)?;
 
         Ok(buffer.len())
     }

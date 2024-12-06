@@ -18,7 +18,7 @@ use crate::error::{Dns, Error, Network, Result};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
-//ALPN bytes as stated here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+// ALPN bytes as stated here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
 const ALPN_DOT: &[u8] = b"dot";
 
 impl TlsProtocol {
@@ -43,7 +43,7 @@ impl TlsProtocol {
         let server_name = Self::build_server_name(&trp_options.endpoint, &addr)?;
         debug!("server name: {:?}", server_name);
 
-        let conn = ClientConnection::new(Arc::new(config), server_name).map_err(|e| Error::Tls(e))?;
+        let conn = ClientConnection::new(Arc::new(config), server_name).map_err(Error::Tls)?;
         let tls_stream = StreamOwned::new(conn, stream);
 
         Ok(Self {
@@ -70,8 +70,8 @@ impl TlsProtocol {
 
         // we've got a certificate here
         if let Some(buf) = cert {
-            let cert = CertificateDer::from_slice(&buf);
-            root_store.add(cert).map_err(|e| Error::Tls(e))?;
+            let cert = CertificateDer::from_slice(buf);
+            root_store.add(cert).map_err(Error::Tls)?;
         }
         // use root CAs
         else {

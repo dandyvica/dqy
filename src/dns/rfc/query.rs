@@ -116,7 +116,7 @@ impl Query {
         // save query as raw bytes if requested
         if let Some(path) = save_path {
             let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
-            f.write_all(&buffer).map_err(|e| Error::Buffer(e))?;
+            f.write_all(&buffer).map_err(Error::Buffer)?;
         }
 
         Ok(sent)

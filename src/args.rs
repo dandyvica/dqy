@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
-use log::{debug, trace};
+use log::{debug, info, trace};
 use regex::Regex;
 use rustc_version_runtime::version;
 use simplelog::*;
@@ -65,7 +65,7 @@ impl FromStr for CliOptions {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
-        Ok(CliOptions::options(&args)?)
+        CliOptions::options(&args)
     }
 }
 
@@ -389,33 +389,36 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 Arg::new("cookie")
                     .long("cookie")
                     .long_help("Sets EDNS COOKIE option in OPT record.")
-                    .action(ArgAction::SetTrue)
+                    .action(ArgAction::Set)
                     .value_name("COOKIE")
-                    .help_heading("EDNS options")
-            )            
-            .arg(
-                Arg::new("dau")
-                    .long("dau")
-                    .long_help("Sets the EDNS DAU option in the OPT record.")
-                    .value_delimiter(',')
-                    .action(ArgAction::Set)
-                    .value_parser(clap::value_parser!(u8))
-                    .num_args(1..=255)
-                    .value_name("ALG-CODE")
+                    .num_args(0..=1)
+                    .default_missing_value("")
+                    .require_equals(true)
                     .help_heading("EDNS options")
             )
-            .arg(
-                Arg::new("dhu")
-                    .long("dhu")
-                    .long_help("Sets the EDNS DHU option in the OPT record.")
-                    .value_delimiter(',')
-                    .action(ArgAction::Set)
-                    .value_parser(clap::value_parser!(u8))
-                    .num_args(1..=255)
-                    .value_name("ALG-CODE")
-                    .value_parser(clap::value_parser!(u8))
-                    .help_heading("EDNS options")
-            )
+            // .arg(
+            //     Arg::new("dau")
+            //         .long("dau")
+            //         .long_help("Sets the EDNS DAU option in the OPT record.")
+            //         .value_delimiter(',')
+            //         .action(ArgAction::Set)
+            //         .value_parser(clap::value_parser!(u8))
+            //         .num_args(1..=255)
+            //         .value_name("ALG-CODE")
+            //         .help_heading("EDNS options")
+            // )
+            // .arg(
+            //     Arg::new("dhu")
+            //         .long("dhu")
+            //         .long_help("Sets the EDNS DHU option in the OPT record.")
+            //         .value_delimiter(',')
+            //         .action(ArgAction::Set)
+            //         .value_parser(clap::value_parser!(u8))
+            //         .num_args(1..=255)
+            //         .value_name("ALG-CODE")
+            //         .value_parser(clap::value_parser!(u8))
+            //         .help_heading("EDNS options")
+            // )
             .arg(
                 Arg::new("dnssec")
                     .long("dnssec")
@@ -424,18 +427,18 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .value_name("DNSSEC FLAG")
                     .help_heading("EDNS options")
             )
-            .arg(
-                Arg::new("n3u")
-                    .long("n3u")
-                    .long_help("Sets the EDNS N3U option in the OPT record.")
-                    .value_delimiter(',')
-                    .action(ArgAction::Set)
-                    .value_parser(clap::value_parser!(u8))
-                    .num_args(1..=255)
-                    .value_name("ALG-CODE")
-                    .value_parser(clap::value_parser!(u8))
-                    .help_heading("EDNS options")
-            )
+            // .arg(
+            //     Arg::new("n3u")
+            //         .long("n3u")
+            //         .long_help("Sets the EDNS N3U option in the OPT record.")
+            //         .value_delimiter(',')
+            //         .action(ArgAction::Set)
+            //         .value_parser(clap::value_parser!(u8))
+            //         .num_args(1..=255)
+            //         .value_name("ALG-CODE")
+            //         .value_parser(clap::value_parser!(u8))
+            //         .help_heading("EDNS options")
+            // )
             .arg(
                 Arg::new("no-opt")
                     .long("no-opt")
@@ -481,7 +484,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("fmt")
                     .long("fmt")
-                    .long_help("User-defined format for output. Specify a list of comma-separated fields. Poosible value: name, type, class, ttl, rdata. Ex: -fmt 'type,name,ttl, rdata'")
+                    .long_help("User-defined format for RR output. Specify a list of comma-separated fields. Possible values: name, type, length, class, ttl, rdata. For OPT record: payload, extcode, version, flags. Ex: -fmt 'type,name,ttl,rdata'")
                     .action(ArgAction::Set)
                     .value_name("FORMAT")
                     .help_heading("Display options")
@@ -490,6 +493,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 Arg::new("headers")
                     .long("headers")
                     .long_help("Show headers for each of the sections (answer, authorative, additional).")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
+                Arg::new("idna")
+                    .long("idna")
+                    .long_help("Convert back IDNA domain names to UTF-8 during display.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -673,15 +683,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         }
         // server was provided (e.g.: 1.1.1.1 or one.one.one.one)
         else {
-            // in case of https, don't resolve using ToSocketAddrs
-            // if options.transport.transport_mode == Protocol::DoH {
-            //     options.transport.endpoint = EndPoint {
-            //         server: server.to_string(),
-            //         ..Default::default()
-            //     };
-            // } else {
-            //     options.transport.endpoint = EndPoint::try_from((server, options.transport.port))?;
-            // }
             options.transport.endpoint = Self::analyze_resolver(server, &mut options.transport)?;
         }
 
@@ -753,7 +754,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // internal domain name processing (IDNA)
         //───────────────────────────────────────────────────────────────────────────────────
         if options.protocol.domain.len() != options.protocol.domain.chars().count() {
-            options.protocol.domain = idna::domain_to_ascii(options.protocol.domain.as_str()).unwrap();
+            options.protocol.domain = idna::domain_to_ascii(&options.protocol.domain).unwrap();
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -825,13 +826,21 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.edns.no_opt = matches.get_flag("no-opt");
         options.edns.dnssec = matches.get_flag("dnssec");
         options.edns.nsid = matches.get_flag("nsid");
-        options.edns.cookie = matches.get_flag("cookie");
         options.edns.zoneversion = matches.get_flag("zoneversion");
         options.edns.padding = matches.get_one::<u16>("padding").copied();
 
-        options.edns.dau = matches.get_many::<u8>("dau").map(|v| v.copied().collect::<Vec<u8>>());
-        options.edns.dhu = matches.get_many::<u8>("dhu").map(|v| v.copied().collect::<Vec<u8>>());
-        options.edns.n3u = matches.get_many::<u8>("n3u").map(|v| v.copied().collect::<Vec<u8>>());
+        // options.edns.dau = matches.get_many::<u8>("dau").map(|v| v.copied().collect::<Vec<u8>>());
+        // options.edns.dhu = matches.get_many::<u8>("dhu").map(|v| v.copied().collect::<Vec<u8>>());
+        // options.edns.n3u = matches.get_many::<u8>("n3u").map(|v| v.copied().collect::<Vec<u8>>());
+
+        // manage cookie option. Could be without cookie (no --cookie provided)
+        // or --cookie alone (means random cookie), or --cookie=hexstring
+        // --cookie or --cookie=hexstring was provided
+        if matches.contains_id("cookie") {
+            if let Some(cookie) = matches.get_one::<String>("cookie") {
+                options.edns.cookie = Some(cookie.clone());
+            }
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage display options
@@ -847,6 +856,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.short = matches.get_flag("short");
         options.display.show_opt = matches.get_flag("show-opt");
         options.display.stats = matches.get_flag("stats");
+        options.display.idna = matches.get_flag("idna");
 
         // handlebars template
         // if let Some(path) = matches.get_one::<PathBuf>("tpl") {
@@ -976,7 +986,7 @@ fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error
             .build(),
         writable,
     )
-    .map_err(|e| Error::Logger(e))?;
+    .map_err(Error::Logger)?;
 
     Ok(())
 }
@@ -986,8 +996,7 @@ fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
     if level == log::LevelFilter::Off {
         return Ok(());
     }
-    TermLogger::init(level, Config::default(), TerminalMode::Stderr, ColorChoice::Auto)
-        .map_err(|e| Error::Logger(e))?;
+    TermLogger::init(level, Config::default(), TerminalMode::Stderr, ColorChoice::Auto).map_err(Error::Logger)?;
 
     Ok(())
 }

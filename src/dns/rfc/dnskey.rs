@@ -127,7 +127,7 @@ mod tests {
         1,
         RData::DNSKEY,
         (|x: &DNSKEY, _| {
-            assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 XEn4q8CbG2a4Hw47Ih244BDkwY1tOuprXWKEzMyLPtjO9iIRVt4HLLbx9YaeaYzRcH91mvCstP8I5liQ0Mn1bA==");
+            assert_eq!(&x.to_string(), "KSK 3 ECDSAP256SHA256 XEn4q8CbG2a4Hw47Ih244BDkwY1tOuprXWKEzMyLPtjO9iIRVt4HLLbx9YaeaYzRcH91mvCstP8I5liQ0Mn1bA==");
         })
     );
 
@@ -138,7 +138,7 @@ mod tests {
         1,
         RData::CDNSKEY,
         (|x: &DNSKEY, _| {
-            assert_eq!(&x.to_string(), "257 3 ECDSAP256SHA256 JErBf5lZ1osSWg7r51+4VfEiWIdONph0L70X0ToT7DkbikKQIp+qvuOOZri7j3qVComv7tgTIBhKxeDQercdKQ==");
+            assert_eq!(&x.to_string(), "KSK 3 ECDSAP256SHA256 JErBf5lZ1osSWg7r51+4VfEiWIdONph0L70X0ToT7DkbikKQIp+qvuOOZri7j3qVComv7tgTIBhKxeDQercdKQ==");
         })
     );
 }

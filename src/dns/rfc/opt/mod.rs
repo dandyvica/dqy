@@ -33,6 +33,7 @@ pub trait OptionDataValue {
 
     // return option data length
     fn len(&self) -> u16;
+
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -44,18 +45,27 @@ pub trait OptionDataValue {
 // macro helpers to define code() et data() easily
 #[macro_export]
 macro_rules! opt_code {
-    ($opt:ident) => {
+    ($code:ident) => {
         fn code(&self) -> OptionCode {
-            OptionCode::$opt
+            OptionCode::$code
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! opt_len {
+    ($length:literal) => {
+        fn len(&self) -> u16 {
+            $length
         }
     };
 }
 
 #[macro_export]
 macro_rules! opt_data {
-    ($opt:ident) => {
+    ($data:ident) => {
         fn data(self) -> Option<OptionData> {
-            Some(OptionData::$opt(self))
+            Some(OptionData::$data(self))
         }
     };
 

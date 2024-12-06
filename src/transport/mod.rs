@@ -161,5 +161,5 @@ pub(crate) fn get_tcpstream_ok<A: ToSocketAddrs>(addrs: A, timeout: Duration) ->
     }
 
     let err = std::io::Error::from(ErrorKind::AddrNotAvailable);
-    return Err(Error::Network(err, Network::Connect));
+    Err(Error::Network(err, Network::Connect))
 }
