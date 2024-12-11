@@ -20,6 +20,7 @@ mod transport;
 use transport::{
     https::HttpsProtocol,
     network::{Messenger, Protocol},
+    quic::QuicProtocol,
     root_servers::init_root_map,
     tcp::TcpProtocol,
     tls::TlsProtocol,
@@ -43,7 +44,7 @@ mod lua;
 use lua::LuaDisplay;
 
 // the initial length of the Vec buffer
-const BUFFER_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = 8192;
 
 //───────────────────────────────────────────────────────────────────────────────────
 // get list of messages using transport
@@ -95,7 +96,27 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate
             get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::DoQ => {
-            unimplemented!("DoQ is not yet implemented")
+            //
+
+            //use futures::executor::block_on;
+            use tokio::runtime::Runtime;
+
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            let result = rt.block_on(async {
+                let mut transport = QuicProtocol::new(&options.transport).await.unwrap();
+                let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE)
+                    .await
+                    .unwrap();
+                return messages;
+            });
+
+            Ok(result)
+
+            //
+            //unimplemented!("DoQ is not yet implemented")
         }
     }
 }

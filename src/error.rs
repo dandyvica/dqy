@@ -5,6 +5,7 @@ use std::process::ExitCode;
 use std::time::Duration;
 use std::{fmt, io};
 
+use quinn::{ConnectionError, ReadError, ReadExactError, WriteError};
 use thiserror::Error;
 
 /// A specific custom `Result` for all functions
@@ -86,6 +87,10 @@ pub enum Error {
     #[error("TLS error ({0})")]
     Tls(#[source] rustls::Error),
 
+    // QUIC errors
+    #[error("QUIC error ({0})")]
+    Quic(QuicError),
+
     // Reqwest errors
     #[error("https error ({0})")]
     Reqwest(#[source] reqwest::Error),
@@ -110,6 +115,29 @@ pub enum Error {
     Lua(#[source] mlua::Error),
 }
 
+#[derive(Debug)]
+pub enum QuicError {
+    Connection(ConnectionError),
+    Read(ReadError),
+    ReadExact(ReadExactError),
+    Write(WriteError),
+    NoInitialCipherSuite,
+}
+
+impl fmt::Display for QuicError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            QuicError::Connection(e) => write!(f, "connection error: {}", e),
+            QuicError::Read(e) => write!(f, "read error: {}", e),
+            QuicError::ReadExact(e) => write!(f, "read error: {}", e),
+            QuicError::Write(e) => write!(f, "write error: {}", e),
+            QuicError::NoInitialCipherSuite => {
+                write!(f, "the initial cipher suite (AES-128-GCM-SHA256) is not available")
+            }
+        }
+    }
+}
+
 impl From<Error> for ExitCode {
     // Required method
     fn from(e: Error) -> Self {
@@ -124,6 +152,7 @@ impl From<Error> for ExitCode {
             Error::IPParse(_, _) => ExitCode::from(8),
             Error::Logger(_) => ExitCode::from(9),
             Error::Resolver(_) => ExitCode::from(10),
+            Error::Quic(_) => ExitCode::from(11),
             #[cfg(feature = "mlua")]
             Error::Lua(_) => ExitCode::from(10),
         }

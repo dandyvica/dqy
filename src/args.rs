@@ -87,7 +87,13 @@ impl CliOptions {
         // if https:// is found in the server, it's DoH
         if server.starts_with("https://") {
             trp_options.transport_mode = Protocol::DoH;
-            trp_options.doh = true;
+            //trp_options.doh = true;
+            EndPoint::try_from(server)
+        }
+        // if quic:// is found in the server, it's DoQ
+        else if server.starts_with("quic://") {
+            trp_options.transport_mode = Protocol::DoQ;
+            // trp_options.doq = true;
             EndPoint::try_from(server)
         }
         // this is a pattern like: @[2606:4700:4700::1111]:53
@@ -265,6 +271,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::Set)
                     .value_name("CERT")
                     .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Transport options")
+            )
+            .arg(
+                Arg::new("doq")
+                    .long("doq")
+                    .long_help("Sets transport to DNS over QUIC (DoQ).")
+                    .action(ArgAction::SetTrue)
+                    .value_name("doq")
                     .help_heading("Transport options")
             )
             .arg(
@@ -642,13 +656,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // transport mode
         //───────────────────────────────────────────────────────────────────────────────────
-        if matches.get_flag("tcp") || options.transport.tcp {
+        if matches.get_flag("tcp") {
             options.transport.transport_mode = Protocol::Tcp;
-        }
-        if matches.get_flag("tls") || options.transport.tls || options.transport.dot {
+        } 
+        if matches.get_flag("tls") {
             options.transport.transport_mode = Protocol::DoT;
-        }
-        if matches.get_flag("https") || options.transport.https || options.transport.doh {
+        } 
+        if matches.get_flag("https") || server.starts_with("https://") {
             options.transport.transport_mode = Protocol::DoH;
 
             // set HTTP version
@@ -660,6 +674,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 "v3" => options.transport.https_version = Some(version::Version::HTTP_3),
                 _ => unimplemented!("this version of HTTP is not implemented"),
             }
+        } 
+        if matches.get_flag("doq") || server.starts_with("quic://") {
+            options.transport.transport_mode = Protocol::DoQ;
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -682,11 +699,22 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.transport.endpoint = EndPoint::try_from(options.transport.port)?;
         }
         // server was provided (e.g.: 1.1.1.1 or one.one.one.one)
+        //
+        // all possible cases:
+        //
+        // @1.1.1.1
+        // @1.1.1.1:53
+        // @2606:4700:4700::1111
+        // @[2606:4700:4700::1111]:53
+        // @one.one.one.one
+        // @one.one.one.one:53
+        // @https://cloudflare-dns.com/dns-query
+        // @quic://dns.adguard.com
         else {
             options.transport.endpoint = Self::analyze_resolver(server, &mut options.transport)?;
         }
 
-        // println!("ep={}", options.transport.endpoint);
+        println!("ep={}", options.transport.endpoint);
 
         //───────────────────────────────────────────────────────────────────────────────────
         // QTypes, QClass

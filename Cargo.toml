@@ -29,6 +29,7 @@ idna = "1.0.3"
 lazy_static = "1.4.0"
 log = "0.4.22"
 mlua = { version = "0.9.4", features = [ "lua54", "serialize" ], optional = true }
+quinn = "0.11.6"
 rand = "0.8.5"
 rcgen = "0.13.1"
 regex = "1.11.1"
@@ -42,6 +43,8 @@ serde_json = { version = "1.0.111", features = ["preserve_order"] }
 simplelog = "0.12.2"
 tera = "1.20.0"
 thiserror = "1.0.65"
+tokio = { version = "1", features = ["full"] }
+tokio-macros = { version = "0.2.0-alpha.6" }
 type2network = { git = "https://github.com/dandyvica/type2network" }
 type2network_derive = { git = "https://github.com/dandyvica/type2network/" }
 webpki-roots = "0.26.0"

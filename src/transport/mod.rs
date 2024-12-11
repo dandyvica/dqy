@@ -10,14 +10,16 @@ use log::trace;
 use crate::error::{Error, Network, Result};
 use network::{IPVersion, Protocol};
 
+pub mod crypto;
 pub mod endpoint;
 pub mod https;
 pub mod network;
-// pub mod quic;
+pub mod quic;
 pub mod root_servers;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
+pub mod target;
 
 // number of bytes sent and received for DNS operations
 type NetworkStat = (usize, usize);
@@ -29,7 +31,7 @@ const DEFAULT_TIMEOUT: u64 = 3000;
 pub struct TransportProtocol<T> {
     pub netstat: NetworkStat,
 
-    //handle is either a socket or a stream
+    // handle is either a socket or a stream
     handle: T,
 }
 
@@ -63,21 +65,21 @@ pub struct TransportOptions {
     pub bufsize: u16,
 
     // true if TLS/DoT
-    pub tls: bool,
-    pub dot: bool,
+    // pub tls: bool,
+    // pub dot: bool,
 
     // true if TCP
-    pub tcp: bool,
+    //pub tcp: bool,
 
     // true if HTTPS/DOH
-    pub https: bool,
-    pub doh: bool,
+    // pub https: bool,
+    // pub doh: bool,
 
     // http version
     pub https_version: Option<Version>,
 
     // true if DNS over Quic
-    pub doq: bool,
+    //pub doq: bool,
 
     // ip port destination (53 for udp/tcp, 853 for DoT, 443 for DoH)
     pub port: u16,
@@ -105,13 +107,13 @@ impl Default for TransportOptions {
             endpoint: EndPoint::default(),
             stats: false,
             bufsize: BUFFER_SIZE,
-            tls: false,
-            dot: false,
-            tcp: false,
-            https: false,
-            doh: false,
+            // tls: false,
+            // dot: false,
+            // tcp: false,
+            // https: false,
+            // doh: false,
             https_version: None,
-            doq: false,
+            // doq: false,
             port: 53,
             bytes_sent: 0,
             bytes_received: 0,

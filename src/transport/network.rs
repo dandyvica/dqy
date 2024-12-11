@@ -1,4 +1,7 @@
-use std::{fmt, net::SocketAddr};
+use std::{
+    fmt,
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr},
+};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub enum IPVersion {
@@ -8,15 +11,18 @@ pub enum IPVersion {
     V6,
 }
 
-// impl IPVersion {
-//     // return the QType corresponding to the ip version, to get an ip address
-//     pub fn adress_qtype(&self) -> QType {
-//         match self {
-//             IPVersion::Any, IPVersion::V4 => QType::A,
-//             IPVersion::V6 => QType::AAAA
-//         }
-//     }
-// }
+// Bind to a socket either to IPV4, IPV6 or any of these 2
+// the bind() method will chose the first one which succeeds if IPVersion::Any is passed
+pub fn unspec(ver: &IPVersion) -> Vec<SocketAddr> {
+    match ver {
+        IPVersion::Any => vec![
+            SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)),
+            SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0)),
+        ],
+        IPVersion::V4 => vec![SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0))],
+        IPVersion::V6 => vec![SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0))],
+    }
+}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub enum Protocol {
@@ -81,3 +87,20 @@ pub trait Messenger {
     // return the network stats in the underlying structure
     fn netstat(&self) -> (usize, usize);
 }
+
+pub trait AsyncMessenger {
+    // send query using the underlying transport
+    async fn asend(&mut self, buffer: &[u8]) -> crate::error::Result<usize>;
+
+    // receive response using the underlying transport
+    async fn arecv(&mut self, buffer: &mut [u8]) -> crate::error::Result<usize>;
+
+    // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
+    // for the message length prepended in the query
+    fn uses_leading_length(&self) -> bool;
+
+    // return the transport mode (udp, tcp, etc)
+    fn mode(&self) -> Protocol;
+}
+
+// utility functions

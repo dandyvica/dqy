@@ -10,7 +10,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use crate::error::{Dns, Error, Result};
-use crate::transport::network::Messenger;
+use crate::transport::network::{AsyncMessenger, Messenger};
 
 use super::{
     domain::DomainName, flags::BitFlags, header::Header, qclass::QClass, qtype::QType, question::Question,
@@ -111,6 +111,42 @@ impl Query {
 
         // send packet through the wire
         let sent = trp.send(&buffer)?;
+        debug!("sent {} bytes", sent);
+
+        // save query as raw bytes if requested
+        if let Some(path) = save_path {
+            let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+            f.write_all(&buffer).map_err(Error::Buffer)?;
+        }
+
+        Ok(sent)
+    }
+
+    // Send the query through the wire, async version
+    pub async fn asend<T: AsyncMessenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
+        // convert to network bytes
+        let mut buffer: Vec<u8> = Vec::new();
+        let message_size = self
+            .serialize_to(&mut buffer)
+            .map_err(|_| Error::Dns(Dns::CantSerialize))? as u16;
+        trace!(
+            "buffer to send before TCP length addition: {:0X?}, uses_leading_length={}",
+            buffer,
+            trp.uses_leading_length()
+        );
+
+        // if using TCP, we need to prepend the message sent with length of message
+        if trp.uses_leading_length() {
+            let bytes = (message_size - 2).to_be_bytes();
+            buffer[..2].copy_from_slice(&bytes);
+
+            // not really necessary but to be aligned with what is sent
+            self.length = Some(message_size);
+        };
+        trace!("buffer to send: {:0X?}", buffer);
+
+        // send packet through the wire
+        let sent = trp.asend(&buffer).await?;
         debug!("sent {} bytes", sent);
 
         // save query as raw bytes if requested

@@ -6,10 +6,11 @@ use std::{
 };
 
 use log::{debug, info};
-use rustls::{ClientConfig, ClientConnection, RootCertStore, StreamOwned};
+use rustls::{crypto, ClientConfig, ClientConnection, RootCertStore, StreamOwned};
 use rustls_pki_types::{CertificateDer, ServerName};
 
 use super::{
+    crypto::{root_store, tls_config},
     endpoint::EndPoint,
     network::{Messenger, Protocol},
 };
@@ -25,11 +26,11 @@ impl TlsProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
         // First we load some root certificates. These are used to authenticate the server.
         // The recommended way is to depend on the webpki_roots crate which contains the Mozilla set of root certificates.
-        let root_store = Self::root_store(&trp_options.cert)?;
+        let root_store = root_store(&trp_options.cert)?;
         debug!("built root store with {} CAs", root_store.len());
 
         // Next, we make a ClientConfig. You’re likely to make one of these per process, and use it for all connections made by that process.
-        let mut config = Self::config(root_store);
+        let mut config = tls_config(root_store);
 
         if trp_options.alpn {
             config.alpn_protocols = vec![ALPN_DOT.to_vec()];
@@ -62,30 +63,6 @@ impl TlsProtocol {
         else {
             Ok(ServerName::from(addr.ip()))
         }
-    }
-
-    // manage CAs
-    fn root_store(cert: &Option<Vec<u8>>) -> Result<RootCertStore> {
-        let mut root_store = rustls::RootCertStore::empty();
-
-        // we've got a certificate here
-        if let Some(buf) = cert {
-            let cert = CertificateDer::from_slice(buf);
-            root_store.add(cert).map_err(Error::Tls)?;
-        }
-        // use root CAs
-        else {
-            root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        }
-
-        Ok(root_store)
-    }
-
-    // build a new client config
-    fn config(root_store: RootCertStore) -> ClientConfig {
-        ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_no_client_auth()
     }
 }
 

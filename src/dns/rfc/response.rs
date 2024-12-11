@@ -11,7 +11,7 @@ use super::{
 use crate::dns::rfc::response_code::ResponseCode;
 use crate::error::{Dns, Error};
 use crate::show::{DisplayOptions, Show};
-use crate::transport::network::Messenger;
+use crate::transport::network::{AsyncMessenger, Messenger};
 
 pub enum ResponseSection {
     Answer,
@@ -86,6 +86,27 @@ impl Response {
     pub fn recv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
+        debug!("received {} bytes", received);
+        trace!("received buffer {:X?}", &buffer[..received]);
+
+        // if using TCP, we get rid of 2 bytes which are the length of the message received
+        let mut cursor = Cursor::new(&buffer[..received]);
+
+        // get response
+        self.deserialize_from(&mut cursor)
+            .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
+        trace!("response header: {}", self.header);
+        trace!("response query: {}", self.question);
+        trace!("response answer: {:?}", self.answer);
+        trace!("response authority: {:?}", self.authority);
+
+        Ok(received)
+    }
+
+    // Receive message for DNS resolver
+    pub async fn arecv<T: AsyncMessenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
+        // receive packet from endpoint
+        let received = trp.arecv(buffer).await?;
         debug!("received {} bytes", received);
         trace!("received buffer {:X?}", &buffer[..received]);
 
