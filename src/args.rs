@@ -10,7 +10,6 @@ use std::time::Duration;
 use clap::{Arg, ArgAction, Command};
 use http::*;
 use log::{debug, info, trace};
-use regex::Regex;
 use rustc_version_runtime::version;
 use simplelog::*;
 
@@ -83,29 +82,29 @@ impl CliOptions {
     // @https://2606:4700::6810:f9f9/dns-query
     // @one.one.one.one
     // @one.one.one.one:53
-    fn analyze_resolver(server: &str, trp_options: &mut TransportOptions) -> crate::error::Result<EndPoint> {
-        // if https:// is found in the server, it's DoH
-        if server.starts_with("https://") {
-            trp_options.transport_mode = Protocol::DoH;
-            //trp_options.doh = true;
-            EndPoint::try_from(server)
-        }
-        // if quic:// is found in the server, it's DoQ
-        else if server.starts_with("quic://") {
-            trp_options.transport_mode = Protocol::DoQ;
-            // trp_options.doq = true;
-            EndPoint::try_from(server)
-        }
-        // this is a pattern like: @[2606:4700:4700::1111]:53
-        else {
-            let re = Regex::new(r"\]:\d+$").unwrap();
-            if re.is_match(server) {
-                EndPoint::try_from(server)
-            } else {
-                EndPoint::try_from((server, trp_options.port))
-            }
-        }
-    }
+    // fn analyze_resolver(server: &str, trp_options: &mut TransportOptions) -> crate::error::Result<EndPoint> {
+    //     // if https:// is found in the server, it's DoH
+    //     if server.starts_with("https://") {
+    //         trp_options.transport_mode = Protocol::DoH;
+    //         //trp_options.doh = true;
+    //         EndPoint::try_from(server)
+    //     }
+    //     // if quic:// is found in the server, it's DoQ
+    //     else if server.starts_with("quic://") {
+    //         trp_options.transport_mode = Protocol::DoQ;
+    //         // trp_options.doq = true;
+    //         EndPoint::try_from(server)
+    //     }
+    //     // this is a pattern like: @[2606:4700:4700::1111]:53
+    //     else {
+    //         let re = Regex::new(r"\]:\d+$").unwrap();
+    //         if re.is_match(server) {
+    //             EndPoint::try_from(server)
+    //         } else {
+    //             EndPoint::try_from((server, trp_options.port))
+    //         }
+    //     }
+    // }
 
     // Split vector of string according to the first dash found
     // Uses Cow to not recreate Vec<String> (might be overkill though 😀)
@@ -658,10 +657,10 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         if matches.get_flag("tcp") {
             options.transport.transport_mode = Protocol::Tcp;
-        } 
+        }
         if matches.get_flag("tls") {
             options.transport.transport_mode = Protocol::DoT;
-        } 
+        }
         if matches.get_flag("https") || server.starts_with("https://") {
             options.transport.transport_mode = Protocol::DoH;
 
@@ -674,7 +673,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 "v3" => options.transport.https_version = Some(version::Version::HTTP_3),
                 _ => unimplemented!("this version of HTTP is not implemented"),
             }
-        } 
+        }
         if matches.get_flag("doq") || server.starts_with("quic://") {
             options.transport.transport_mode = Protocol::DoQ;
         }
@@ -711,10 +710,11 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // @https://cloudflare-dns.com/dns-query
         // @quic://dns.adguard.com
         else {
-            options.transport.endpoint = Self::analyze_resolver(server, &mut options.transport)?;
+            options.transport.endpoint = EndPoint::new(server, options.transport.port)?;
         }
 
-        println!("ep={}", options.transport.endpoint);
+        trace!("ep={}", options.transport.endpoint);
+        // std::process::exit(0);
 
         //───────────────────────────────────────────────────────────────────────────────────
         // QTypes, QClass
@@ -745,14 +745,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // if no domain to query, by default set root (.)
         //───────────────────────────────────────────────────────────────────────────────────
-        // if options.protocol.domain.is_empty() {
-        //     options.protocol.domain = if let Some(d) = matches.get_one::<String>("domain") {
-        //         d.clone()
-        //     } else {
-        //         String::from(".")
-        //     };
-        // }
-
         if let Some(d) = matches.get_one::<String>("domain") {
             options.protocol.domain = d.to_string();
         }
@@ -761,14 +753,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // bufsize
         //───────────────────────────────────────────────────────────────────────────────────
         options.transport.bufsize = *matches.get_one::<u16>("bufsize").unwrap();
-
-        // in case of https, don't resolve using ToSocketAddrs
-        // if options.transport.transport_mode == Protocol::DoH {
-        //     options.transport.endpoint = EndPoint {
-        //         server: server.to_string(),
-        //         ..Default::default()
-        //     };
-        // }
 
         // only keep ipv4 or ipv6 addresses if -4 or -6 is provided
         options.transport.endpoint.retain(&options.transport.ip_version);
@@ -1116,7 +1100,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1:53");
+        assert_eq!(&opts.transport.endpoint.server_name, "1.1.1.1");
     }
 
     #[test]
@@ -1131,7 +1115,7 @@ mod tests {
         assert_eq!(&opts.protocol.domain, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
-        assert_eq!(&opts.transport.endpoint.server, &"2606:4700:4700::1111:53");
+        assert_eq!(&opts.transport.endpoint.server_name, &"2606:4700:4700::1111");
     }
 
     #[test]
@@ -1181,7 +1165,7 @@ mod tests {
         assert!(opts.is_ok());
         let opts = opts.unwrap();
 
-        assert_eq!(&opts.transport.endpoint.server, "1.1.1.1");
+        assert_eq!(&opts.transport.endpoint.server_name, "1.1.1.1");
 
         std::env::set_var("DQY_FLAGS", "");
 

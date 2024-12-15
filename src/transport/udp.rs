@@ -4,7 +4,7 @@ use log::debug;
 
 use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{Error, Network, Result};
+use crate::error::{self, Error, Network, Result};
 
 pub type UdpProtocol = TransportProtocol<UdpSocket>;
 
@@ -54,6 +54,13 @@ impl UdpProtocol {
 }
 
 impl Messenger for UdpProtocol {
+    async fn asend(&mut self, _: &[u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+    async fn arecv(&mut self, _: &mut [u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
         self.netstat.0 = sent;

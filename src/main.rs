@@ -96,15 +96,12 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate
             get_messages_using_transport(info, &mut transport, options)
         }
         Protocol::DoQ => {
-            //
-
-            //use futures::executor::block_on;
-            use tokio::runtime::Runtime;
-
+            // quinn crate doesn't provide blocking
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
                 .unwrap();
+
             let result = rt.block_on(async {
                 let mut transport = QuicProtocol::new(&options.transport).await.unwrap();
                 let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE)
@@ -114,9 +111,6 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate
             });
 
             Ok(result)
-
-            //
-            //unimplemented!("DoQ is not yet implemented")
         }
     }
 }

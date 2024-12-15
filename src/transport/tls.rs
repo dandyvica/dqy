@@ -15,7 +15,7 @@ use super::{
     network::{Messenger, Protocol},
 };
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{Dns, Error, Network, Result};
+use crate::error::{self, Dns, Error, Network, Result};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
@@ -67,6 +67,13 @@ impl TlsProtocol {
 }
 
 impl Messenger for TlsProtocol {
+    async fn asend(&mut self, _: &[u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+    async fn arecv(&mut self, _: &mut [u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self
             .handle

@@ -3,6 +3,8 @@ use std::{
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
 };
 
+use crate::error;
+
 #[derive(Debug, Default, Clone, PartialEq)]
 pub enum IPVersion {
     #[default]
@@ -64,12 +66,19 @@ impl fmt::Display for Protocol {
     }
 }
 
+#[allow(async_fn_in_trait)]
 pub trait Messenger {
     // send query using the underlying transport
-    fn send(&mut self, buffer: &[u8]) -> crate::error::Result<usize>;
+    fn send(&mut self, buffer: &[u8]) -> error::Result<usize>;
+
+    // async version
+    async fn asend(&mut self, buffer: &[u8]) -> error::Result<usize>;
 
     // receive response using the underlying transport
-    fn recv(&mut self, buffer: &mut [u8]) -> crate::error::Result<usize>;
+    fn recv(&mut self, buffer: &mut [u8]) -> error::Result<usize>;
+
+    // async version
+    async fn arecv(&mut self, buffer: &mut [u8]) -> error::Result<usize>;
 
     // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
     // for the message length prepended in the query
@@ -90,10 +99,10 @@ pub trait Messenger {
 
 pub trait AsyncMessenger {
     // send query using the underlying transport
-    async fn asend(&mut self, buffer: &[u8]) -> crate::error::Result<usize>;
+    async fn asend(&mut self, buffer: &[u8]) -> error::Result<usize>;
 
     // receive response using the underlying transport
-    async fn arecv(&mut self, buffer: &mut [u8]) -> crate::error::Result<usize>;
+    async fn arecv(&mut self, buffer: &mut [u8]) -> error::Result<usize>;
 
     // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
     // for the message length prepended in the query

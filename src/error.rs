@@ -1,5 +1,6 @@
 //! A dedicated error for all possible errors in DNS queries: I/O, DNS packet unconsistencies, etc
 use std::net::AddrParseError;
+use std::num::ParseIntError;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
@@ -68,9 +69,12 @@ pub enum Dns {
 
 #[derive(Error, Debug)]
 pub enum Error {
-    // I/O errors
+    // I/O errors for opening files
     #[error("cannot open file '{1}' ({0})")]
     OpenFile(#[source] io::Error, PathBuf),
+
+    #[error("error {0} when converting server name {1}")]
+    ToSocketAddrs(#[source] io::Error, String),
 
     #[error("write buffer error {0}")]
     Buffer(#[source] io::Error),
@@ -110,6 +114,10 @@ pub enum Error {
     // Resolver errors
     #[error("resolver error ({0:?})")]
     Resolver(#[source] resolving::Error),
+
+    // Conversion from string to int error
+    #[error("error converting {0} to integer")]
+    Conversion(#[source] ParseIntError, String),
 
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
@@ -153,6 +161,8 @@ impl From<Error> for ExitCode {
             Error::Logger(_) => ExitCode::from(9),
             Error::Resolver(_) => ExitCode::from(10),
             Error::Quic(_) => ExitCode::from(11),
+            Error::Conversion(_, _) => ExitCode::from(12),
+            Error::ToSocketAddrs(_, _) => ExitCode::from(13),
             #[cfg(feature = "mlua")]
             Error::Lua(_) => ExitCode::from(10),
         }

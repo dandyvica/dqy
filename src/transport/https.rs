@@ -11,7 +11,7 @@ use reqwest::{
 
 use super::network::{IPVersion, Messenger, Protocol};
 use super::{NetworkStat, TransportOptions};
-use crate::error::{Error, Result};
+use crate::error::{self, Error, Result};
 
 pub struct HttpsProtocol<'a> {
     // URL endpoint
@@ -34,8 +34,8 @@ impl<'a> HttpsProtocol<'a> {
     pub fn new(trp_options: &'a TransportOptions) -> crate::error::Result<Self> {
         let client = Self::client_builder(trp_options)?.build().map_err(Error::Reqwest)?;
 
-        debug_assert!(!trp_options.endpoint.server.is_empty());
-        let server = &trp_options.endpoint.server;
+        debug_assert!(!trp_options.endpoint.server_name.is_empty());
+        let server = &trp_options.endpoint.server_name;
         debug!("server: {}", server);
 
         Ok(Self {
@@ -91,6 +91,13 @@ impl<'a> HttpsProtocol<'a> {
 }
 
 impl<'a> Messenger for HttpsProtocol<'a> {
+    async fn asend(&mut self, _: &[u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+    async fn arecv(&mut self, _: &mut [u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+
     fn send(&mut self, buffer: &[u8]) -> crate::error::Result<usize> {
         self.stats.0 = buffer.len();
 

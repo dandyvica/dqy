@@ -8,8 +8,8 @@ A DNS query tool inspired by _dig_, _drill_ and _dog_.
 ## Features
 This tool is written in pure Rust with the following features:
 
-* depends only on _rustls_ (no _openssl_)
-* support upd, tcp, DoT and DoH protocols (DoQ to come later)
+* depends only on _rustls_ (no _openssl_ dependency)
+* support upd, tcp, DoT, DoH and DoQ protocols
 * available on: Linux (x64, ARM64, musl), Window, MacOs
 * IDNA support
 * possible outputs:
@@ -61,11 +61,10 @@ The following list of RRs is supported:
 * SVCB (*)
 * TLSA
 * TXT
-* UNKNOWN
 * URI
 * ZONEMD
 
-Those with (*) are not yet fully tested.
+Those with (*) are not yet fully tested. This will probably the case for v0.5
 
 ## JSON support
 The _--json_ and _--json-pretty_ options allows to display output data in JSON format with key:
@@ -117,7 +116,7 @@ Just type:
 $ dqy --help
 ```
 
-If no resolver is given, OS configured resolvers are fetched from:
+If no resolver is given, OS-configured resolvers are fetched from:
 * ```resolv.conf``` file form UNIX platforms
 * using the ```GetAdaptersAddresses``` Windows API for Windows platforms
 using the resolver crate: https://github.com/dandyvica/resolver

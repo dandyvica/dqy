@@ -7,7 +7,7 @@ use log::debug;
 
 use super::network::{Messenger, Protocol};
 use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{Error, Network, Result};
+use crate::error::{self, Error, Network, Result};
 
 pub type TcpProtocol = TransportProtocol<TcpStream>;
 
@@ -35,6 +35,13 @@ impl TcpProtocol {
 }
 
 impl Messenger for TcpProtocol {
+    async fn asend(&mut self, _: &[u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+    async fn arecv(&mut self, _: &mut [u8]) -> error::Result<usize> {
+        Ok(0)
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         let sent = self.handle.write(buffer).map_err(crate::error::Error::Buffer)?;
         self.netstat.0 = sent;

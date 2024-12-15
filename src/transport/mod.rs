@@ -16,10 +16,10 @@ pub mod https;
 pub mod network;
 pub mod quic;
 pub mod root_servers;
+// pub mod target;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
-pub mod target;
 
 // number of bytes sent and received for DNS operations
 type NetworkStat = (usize, usize);
