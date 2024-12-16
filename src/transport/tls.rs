@@ -6,16 +6,19 @@ use std::{
 };
 
 use log::{debug, info};
-use rustls::{crypto, ClientConfig, ClientConnection, RootCertStore, StreamOwned};
-use rustls_pki_types::{CertificateDer, ServerName};
+use rustls::{ClientConnection, StreamOwned};
+use rustls_pki_types::ServerName;
 
 use super::{
     crypto::{root_store, tls_config},
     endpoint::EndPoint,
     network::{Messenger, Protocol},
 };
-use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{self, Dns, Error, Network, Result};
+use super::{get_tcpstream_ok, TransportOptions, TransportProtocol};
+use crate::{
+    error::{self, Dns, Error, Network, Result},
+    transport::NetworkInfo,
+};
 
 pub type TlsProtocol = TransportProtocol<StreamOwned<ClientConnection, TcpStream>>;
 
@@ -47,9 +50,15 @@ impl TlsProtocol {
         let conn = ClientConnection::new(Arc::new(config), server_name).map_err(Error::Tls)?;
         let tls_stream = StreamOwned::new(conn, stream);
 
+        let peer = tls_stream.sock.peer_addr().ok();
+
         Ok(Self {
-            netstat: (0, 0),
             handle: tls_stream,
+            netinfo: NetworkInfo {
+                sent: 0,
+                received: 0,
+                peer,
+            },
         })
     }
 
@@ -75,23 +84,21 @@ impl Messenger for TlsProtocol {
     }
 
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self
+        self.netinfo.sent = self
             .handle
             .write(buffer)
             .map_err(|e| Error::Network(e, Network::Send))?;
-        self.netstat.0 = sent;
 
         if let Some(cs) = self.handle.conn.negotiated_cipher_suite() {
             info!("negociated ciphersuite: {:?}", cs);
         }
 
-        Ok(sent)
+        Ok(self.netinfo.sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = super::tcp_read(&mut self.handle, buffer)?;
-        self.netstat.1 = received;
-        Ok(received)
+        self.netinfo.received = super::tcp_read(&mut self.handle, buffer)?;
+        Ok(self.netinfo.received)
     }
 
     fn uses_leading_length(&self) -> bool {
@@ -102,15 +109,15 @@ impl Messenger for TlsProtocol {
         Protocol::DoT
     }
 
-    fn local(&self) -> std::io::Result<SocketAddr> {
-        self.handle.sock.local_addr()
+    fn network_info(&self) -> &NetworkInfo {
+        self.netinfo()
     }
 
-    fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.handle.sock.peer_addr()
-    }
+    // fn local(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.sock.local_addr()
+    // }
 
-    fn netstat(&self) -> NetworkStat {
-        self.stats()
-    }
+    // fn peer(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.sock.peer_addr()
+    // }
 }

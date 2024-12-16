@@ -10,7 +10,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use crate::error::{Dns, Error, Result};
-use crate::transport::network::{AsyncMessenger, Messenger};
+use crate::transport::network::Messenger;
 
 use super::{
     domain::DomainName, flags::BitFlags, header::Header, qclass::QClass, qtype::QType, question::Question,
@@ -123,7 +123,7 @@ impl Query {
     }
 
     // Send the query through the wire, async version
-    pub async fn asend<T: AsyncMessenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
+    pub async fn asend<T: Messenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
         // convert to network bytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self

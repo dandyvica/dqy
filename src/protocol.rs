@@ -1,7 +1,7 @@
 use log::{debug, info};
 
-use crate::error::{self, Error};
-use crate::transport::network::{AsyncMessenger, Messenger, Protocol};
+use crate::error::{self};
+use crate::transport::network::{Messenger, Protocol};
 use crate::transport::tcp::TcpProtocol;
 use crate::{args::CliOptions, cli_options::FromOptions};
 use crate::{
@@ -31,9 +31,9 @@ impl DnsProtocol {
         // send query using the chosen transport
         let bytes = query.send(trp, &options.dump.write_query)?;
         debug!(
-            "sent query of {} bytes to remote address {}",
+            "sent query of {} bytes to remote address {:?}",
             bytes,
-            trp.peer().map_err(|e| Error::Network(e, Network::PeerAddr))?
+            trp.network_info().peer
         );
 
         Ok(query)
@@ -42,7 +42,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver, async version
     //───────────────────────────────────────────────────────────────────────────────────
-    async fn asend_query<T: AsyncMessenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> error::Result<Query> {
+    async fn asend_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> error::Result<Query> {
         // it's safe to unwrap here, see from_options() for Query
         let mut query = Query::from_options(options, qt).unwrap();
 
@@ -53,6 +53,11 @@ impl DnsProtocol {
 
         // send query using the chosen transport
         let bytes = query.asend(trp, &options.dump.write_query).await?;
+        debug!(
+            "sent query of {} bytes to remote address {:?}",
+            bytes,
+            trp.network_info().peer
+        );
 
         Ok(query)
     }
@@ -72,7 +77,7 @@ impl DnsProtocol {
     // receive response from resolver, async version
     //───────────────────────────────────────────────────────────────────────────────────
     #[inline(always)]
-    async fn areceive_response<T: AsyncMessenger>(trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<Response> {
+    async fn areceive_response<T: Messenger>(trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<Response> {
         let mut response = Response::default();
         let _ = response.arecv(trp, buffer).await?;
 
@@ -121,7 +126,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // this sends and receives queries using a transport
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) async fn async_process_request<T: AsyncMessenger>(
+    pub(crate) async fn async_process_request<T: Messenger>(
         options: &CliOptions,
         trp: &mut T,
         buffer_size: usize,

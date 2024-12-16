@@ -1,5 +1,5 @@
 // Transport for sending DNS messages
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 use bytes::Bytes;
 use http::version::*;
@@ -9,11 +9,14 @@ use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_LENGTH, CONTENT_TYPE, USER_AGENT},
 };
 
-use super::network::{IPVersion, Messenger, Protocol};
-use super::{NetworkStat, TransportOptions};
+use super::{
+    network::{IPVersion, Messenger, Protocol},
+    TransportProtocol,
+};
+use super::{NetworkInfo, TransportOptions};
 use crate::error::{self, Error, Result};
 
-pub struct HttpsProtocol<'a> {
+pub struct _HttpsProtocol<'a> {
     // URL endpoint
     server: &'a str,
 
@@ -22,13 +25,9 @@ pub struct HttpsProtocol<'a> {
 
     // data received from Response
     bytes_recv: Bytes,
-
-    // peer address to which the client is connected
-    peer: Option<SocketAddr>,
-
-    // bytes sent & received
-    pub stats: NetworkStat,
 }
+
+pub type HttpsProtocol<'a> = TransportProtocol<_HttpsProtocol<'a>>;
 
 impl<'a> HttpsProtocol<'a> {
     pub fn new(trp_options: &'a TransportOptions) -> crate::error::Result<Self> {
@@ -38,12 +37,15 @@ impl<'a> HttpsProtocol<'a> {
         let server = &trp_options.endpoint.server_name;
         debug!("server: {}", server);
 
-        Ok(Self {
+        let inner = _HttpsProtocol {
             server,
             client,
             bytes_recv: Bytes::default(),
-            peer: None,
-            stats: (0, 0),
+        };
+
+        Ok(Self {
+            handle: inner,
+            netinfo: NetworkInfo::default(),
         })
     }
 
@@ -99,32 +101,33 @@ impl<'a> Messenger for HttpsProtocol<'a> {
     }
 
     fn send(&mut self, buffer: &[u8]) -> crate::error::Result<usize> {
-        self.stats.0 = buffer.len();
+        self.netinfo.sent = buffer.len();
 
         // add buffer length as content-length header. header() method consume the RequestBuilder and returns a new one
         let resp = self
+            .handle
             .client
-            .post(self.server)
+            .post(self.handle.server)
             .header(CONTENT_LENGTH, buffer.len())
             .body(buffer.to_vec())
             .send()
             .map_err(Error::Reqwest)?;
 
         // save remote address
-        self.peer = resp.remote_addr();
+        self.netinfo.peer = resp.remote_addr();
 
         // and extract the bytes received
-        self.bytes_recv = resp.bytes().map_err(Error::Reqwest)?;
+        self.handle.bytes_recv = resp.bytes().map_err(Error::Reqwest)?;
 
         Ok(buffer.len())
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = self.bytes_recv.len();
-        self.stats.1 = received;
+        let received = self.handle.bytes_recv.len();
+        self.netinfo.received = received;
 
         // copy Bytes to buffer
-        buffer[..received].copy_from_slice(&self.bytes_recv);
+        buffer[..received].copy_from_slice(&self.handle.bytes_recv);
 
         Ok(received)
     }
@@ -138,16 +141,16 @@ impl<'a> Messenger for HttpsProtocol<'a> {
         Protocol::DoH
     }
 
-    fn local(&self) -> std::io::Result<SocketAddr> {
-        Ok("0.0.0.0:0".parse().unwrap())
+    fn network_info(&self) -> &NetworkInfo {
+        self.netinfo()
     }
 
-    fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.peer
-            .ok_or(std::io::Error::other("unable to get remote peer from HTTPS response"))
-    }
+    // fn local(&self) -> std::io::Result<SocketAddr> {
+    //     Ok("0.0.0.0:0".parse().unwrap())
+    // }
 
-    fn netstat(&self) -> NetworkStat {
-        self.stats
-    }
+    // fn peer(&self) -> std::io::Result<SocketAddr> {
+    //     self.peer
+    //         .ok_or(std::io::Error::other("unable to get remote peer from HTTPS response"))
+    // }
 }

@@ -69,43 +69,6 @@ impl FromStr for CliOptions {
 }
 
 impl CliOptions {
-    // process target resolver passed in arg after @ char
-    // different possibilities for naming:
-    //
-    // @1.1.1.1
-    // @1.1.1.1:53
-    // 2606:4700:4700::1111
-    // @a.root-servers.net.
-    // @[2606:4700:4700::1111]:53
-    // @https://cloudflare-dns.com/dns-query
-    // @https://104.16.249.249/dns-query
-    // @https://2606:4700::6810:f9f9/dns-query
-    // @one.one.one.one
-    // @one.one.one.one:53
-    // fn analyze_resolver(server: &str, trp_options: &mut TransportOptions) -> crate::error::Result<EndPoint> {
-    //     // if https:// is found in the server, it's DoH
-    //     if server.starts_with("https://") {
-    //         trp_options.transport_mode = Protocol::DoH;
-    //         //trp_options.doh = true;
-    //         EndPoint::try_from(server)
-    //     }
-    //     // if quic:// is found in the server, it's DoQ
-    //     else if server.starts_with("quic://") {
-    //         trp_options.transport_mode = Protocol::DoQ;
-    //         // trp_options.doq = true;
-    //         EndPoint::try_from(server)
-    //     }
-    //     // this is a pattern like: @[2606:4700:4700::1111]:53
-    //     else {
-    //         let re = Regex::new(r"\]:\d+$").unwrap();
-    //         if re.is_match(server) {
-    //             EndPoint::try_from(server)
-    //         } else {
-    //             EndPoint::try_from((server, trp_options.port))
-    //         }
-    //     }
-    // }
-
     // Split vector of string according to the first dash found
     // Uses Cow to not recreate Vec<String> (might be overkill though 😀)
     fn split_args(args: &[String]) -> (Cow<'_, [String]>, Cow<'_, [String]>) {

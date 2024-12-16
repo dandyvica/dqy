@@ -145,7 +145,7 @@ impl ToNetworkOrder for Flags {
     }
 }
 
-impl<'a> FromNetworkOrder<'a> for Flags {
+impl FromNetworkOrder<'_> for Flags {
     fn deserialize_from(&mut self, buffer: &mut Cursor<&[u8]>) -> Result<()> {
         // read as u16
         let flags = buffer.read_u16::<BigEndian>()?;

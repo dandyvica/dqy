@@ -135,7 +135,7 @@ impl<'a> TryFrom<&'a [u8]> for WindowList<'a> {
     }
 }
 
-impl<'a> TryFrom<WindowList<'a>> for Vec<QType> {
+impl TryFrom<WindowList<'_>> for Vec<QType> {
     type Error = crate::error::Error;
 
     fn try_from(list: WindowList) -> Result<Self, Self::Error> {

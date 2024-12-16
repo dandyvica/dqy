@@ -11,7 +11,7 @@ use super::{
 use crate::dns::rfc::response_code::ResponseCode;
 use crate::error::{Dns, Error};
 use crate::show::{DisplayOptions, Show};
-use crate::transport::network::{AsyncMessenger, Messenger};
+use crate::transport::network::Messenger;
 
 pub enum ResponseSection {
     Answer,
@@ -104,7 +104,7 @@ impl Response {
     }
 
     // Receive message for DNS resolver
-    pub async fn arecv<T: AsyncMessenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
+    pub async fn arecv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
         // receive packet from endpoint
         let received = trp.arecv(buffer).await?;
         debug!("received {} bytes", received);

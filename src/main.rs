@@ -1,6 +1,7 @@
 //! A DNS resource query tool
 use std::{process::ExitCode, time::Instant};
 
+use error::Error;
 // use handlebars::render;
 use log::{debug, info};
 
@@ -53,18 +54,13 @@ fn get_messages_using_transport<T: Messenger>(
     info: Option<&mut QueryInfo>,
     transport: &mut T,
     options: &CliOptions,
-) -> crate::error::Result<MessageList> {
+) -> error::Result<MessageList> {
     // BUFFER_SIZE is the size of the buffer used to received data
     let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
 
     // we want run info
     if let Some(info) = info {
-        let stats = transport.netstat();
-
-        info.bytes_sent = stats.0;
-        info.bytes_received = stats.1;
-
-        info.server = transport.peer().ok();
+        info.netinfo = *transport.network_info();
     }
 
     Ok(messages)
@@ -73,7 +69,7 @@ fn get_messages_using_transport<T: Messenger>(
 //───────────────────────────────────────────────────────────────────────────────────
 // send all QTypes to domain and get responses for each query.
 //───────────────────────────────────────────────────────────────────────────────────
-pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate::error::Result<MessageList> {
+pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error::Result<MessageList> {
     info!(
         "qtype={:?} domain='{}' resolver=<{}>",
         options.protocol.qtype, options.protocol.domain_name, options.transport.endpoint
@@ -100,17 +96,14 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> crate
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
-                .unwrap();
+                .map_err(Error::Tokio)?;
 
-            let result = rt.block_on(async {
-                let mut transport = QuicProtocol::new(&options.transport).await.unwrap();
-                let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE)
-                    .await
-                    .unwrap();
-                return messages;
-            });
+            rt.block_on(async {
+                let mut transport = QuicProtocol::new(&options.transport).await?;
+                let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE).await?;
 
-            Ok(result)
+                Ok(messages)
+            })
         }
     }
 }
@@ -133,7 +126,7 @@ fn main() -> ExitCode {
 // core of processing
 //───────────────────────────────────────────────────────────────────────────────────
 #[allow(unused_assignments)]
-fn run() -> crate::error::Result<()> {
+fn run() -> error::Result<()> {
     let now = Instant::now();
 
     init_root_map();

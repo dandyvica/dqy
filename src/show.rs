@@ -1,35 +1,37 @@
+use std::fmt;
 use std::fmt::Display;
 use std::path::PathBuf;
-use std::{fmt, net::SocketAddr};
 
 use serde::Serialize;
+
+use crate::transport::NetworkInfo;
 
 //───────────────────────────────────────────────────────────────────────────────────
 // Gather some information which might be useful for the user
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Default, Serialize)]
 pub struct QueryInfo {
-    //resolver reached
-    pub server: Option<SocketAddr>,
-
     // elapsed time in ms
     pub elapsed: u128,
 
     // transport used (ex: Udp)
     pub mode: String,
 
-    // bytes sent and received during network operations
-    pub bytes_sent: usize,
-    pub bytes_received: usize,
+    // network info gathered during network operations
+    pub netinfo: NetworkInfo,
 }
 
 impl fmt::Display for QueryInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(peer) = self.server {
+        if let Some(peer) = self.netinfo.peer {
             write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
         }
         writeln!(f, "elapsed: {} ms", self.elapsed)?;
-        write!(f, "sent:{}, received:{} bytes", self.bytes_sent, self.bytes_received)
+        write!(
+            f,
+            "sent:{}, received:{} bytes",
+            self.netinfo.sent, self.netinfo.received
+        )
     }
 }
 

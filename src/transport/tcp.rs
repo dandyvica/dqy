@@ -1,13 +1,13 @@
-use std::{
-    io::Write,
-    net::{SocketAddr, TcpStream},
-};
+use std::{io::Write, net::TcpStream};
 
 use log::debug;
 
 use super::network::{Messenger, Protocol};
-use super::{get_tcpstream_ok, NetworkStat, TransportOptions, TransportProtocol};
-use crate::error::{self, Error, Network, Result};
+use super::{get_tcpstream_ok, TransportOptions, TransportProtocol};
+use crate::{
+    error::{self, Result},
+    transport::NetworkInfo,
+};
 
 pub type TcpProtocol = TransportProtocol<TcpStream>;
 
@@ -22,14 +22,16 @@ impl TcpProtocol {
             .set_write_timeout(Some(trp_options.timeout))
             .map_err(|e| crate::error::Error::Timeout(e, trp_options.timeout))?;
 
-        debug!(
-            "created TCP socket to {}",
-            handle.peer_addr().map_err(|e| Error::Network(e, Network::PeerAddr))?
-        );
+        let peer = handle.peer_addr().ok();
+        debug!("created TCP socket to {:?}", peer);
 
         Ok(Self {
-            netstat: (0, 0),
             handle,
+            netinfo: NetworkInfo {
+                sent: 0,
+                received: 0,
+                peer: peer,
+            },
         })
     }
 }
@@ -43,16 +45,14 @@ impl Messenger for TcpProtocol {
     }
 
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.write(buffer).map_err(crate::error::Error::Buffer)?;
-        self.netstat.0 = sent;
+        self.netinfo.sent = self.handle.write(buffer).map_err(crate::error::Error::Buffer)?;
         self.handle.flush().map_err(crate::error::Error::Buffer)?;
-        Ok(sent)
+        Ok(self.netinfo.sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = super::tcp_read(&mut self.handle, buffer)?;
-        self.netstat.1 = received;
-        Ok(received)
+        self.netinfo.received = super::tcp_read(&mut self.handle, buffer)?;
+        Ok(self.netinfo.received)
     }
 
     fn uses_leading_length(&self) -> bool {
@@ -63,15 +63,15 @@ impl Messenger for TcpProtocol {
         Protocol::Tcp
     }
 
-    fn local(&self) -> std::io::Result<SocketAddr> {
-        self.handle.local_addr()
+    fn network_info(&self) -> &NetworkInfo {
+        self.netinfo()
     }
 
-    fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.handle.peer_addr()
-    }
+    // fn local(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.local_addr()
+    // }
 
-    fn netstat(&self) -> NetworkStat {
-        self.stats()
-    }
+    // fn peer(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.peer_addr()
+    // }
 }

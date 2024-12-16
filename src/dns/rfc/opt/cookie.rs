@@ -9,7 +9,7 @@ use super::{
     opt_rr::{OptionCode, OptionData},
     OptionDataValue,
 };
-use crate::{dns::rfc::opt::cookie, opt_code, opt_data, opt_len};
+use crate::{opt_code, opt_data, opt_len};
 
 // Cookie: https://www.rfc-editor.org/rfc/rfc7873
 // https://www.rfc-editor.org/rfc/rfc9018

@@ -1,16 +1,17 @@
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+use std::net::UdpSocket;
 
 use log::debug;
 
-use super::network::{IPVersion, Messenger, Protocol};
-use super::{NetworkStat, TransportOptions, TransportProtocol};
+use super::network::{Messenger, Protocol};
+use super::{TransportOptions, TransportProtocol};
 use crate::error::{self, Error, Network, Result};
+use crate::transport::NetworkInfo;
 
 pub type UdpProtocol = TransportProtocol<UdpSocket>;
 
 impl UdpProtocol {
     pub fn new(trp_options: &TransportOptions) -> Result<Self> {
-        let unspec = Self::unspec(&trp_options.ip_version);
+        let unspec = trp_options.ip_version.unspecified_ip_vec();
         let sock = UdpSocket::bind(&unspec[..]).map_err(|e| Error::Network(e, Network::Bind))?;
 
         debug!(
@@ -28,29 +29,31 @@ impl UdpProtocol {
         sock.connect(&trp_options.endpoint.addrs[..])
             .map_err(|e| Error::Network(e, Network::Connect))?;
 
-        debug!(
-            "created UDP socket to {}",
-            sock.peer_addr().map_err(|e| Error::Network(e, Network::PeerAddr))?
-        );
+        let peer = sock.peer_addr().ok();
+        debug!("created UDP socket to {:?}", peer);
 
         Ok(Self {
-            netstat: (0, 0),
             handle: sock,
+            netinfo: NetworkInfo {
+                sent: 0,
+                received: 0,
+                peer,
+            },
         })
     }
 
-    // Bind to a socket either to IPV4, IPV6 or any of these 2
-    // the bind() method will chose the first one which succeeds if IPVersion::Any is passed
-    fn unspec(ver: &IPVersion) -> Vec<SocketAddr> {
-        match ver {
-            IPVersion::Any => vec![
-                SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)),
-                SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0)),
-            ],
-            IPVersion::V4 => vec![SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0))],
-            IPVersion::V6 => vec![SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0))],
-        }
-    }
+    // // Bind to a socket either to IPV4, IPV6 or any of these 2
+    // // the bind() method will chose the first one which succeeds if IPVersion::Any is passed
+    // fn unspec(ver: &IPVersion) -> Vec<SocketAddr> {
+    //     match ver {
+    //         IPVersion::Any => vec![
+    //             SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)),
+    //             SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0)),
+    //         ],
+    //         IPVersion::V4 => vec![SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0))],
+    //         IPVersion::V6 => vec![SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0))],
+    //     }
+    // }
 }
 
 impl Messenger for UdpProtocol {
@@ -62,24 +65,20 @@ impl Messenger for UdpProtocol {
     }
 
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
-        self.netstat.0 = sent;
+        self.netinfo.sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
+        debug!("sent {} bytes", self.netinfo.sent);
 
-        debug!("sent {} bytes", sent);
-
-        Ok(sent)
+        Ok(self.netinfo.sent)
     }
 
     fn recv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        let received = self
+        self.netinfo.received = self
             .handle
             .recv(buffer)
             .map_err(|e| Error::Network(e, Network::Receive))?;
-        self.netstat.1 = received;
+        debug!("received {} bytes", self.netinfo.received);
 
-        debug!("received {} bytes", received);
-
-        Ok(received)
+        Ok(self.netinfo.received)
     }
 
     fn uses_leading_length(&self) -> bool {
@@ -90,15 +89,15 @@ impl Messenger for UdpProtocol {
         Protocol::Udp
     }
 
-    fn local(&self) -> std::io::Result<SocketAddr> {
-        self.handle.local_addr()
+    fn network_info(&self) -> &NetworkInfo {
+        self.netinfo()
     }
 
-    fn peer(&self) -> std::io::Result<SocketAddr> {
-        self.handle.peer_addr()
-    }
+    // fn local(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.local_addr()
+    // }
 
-    fn netstat(&self) -> NetworkStat {
-        self.stats()
-    }
+    // fn peer(&self) -> std::io::Result<SocketAddr> {
+    //     self.handle.peer_addr()
+    // }
 }

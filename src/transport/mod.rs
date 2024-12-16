@@ -6,6 +6,7 @@ use std::time::Duration;
 use endpoint::EndPoint;
 use http::version::Version;
 use log::trace;
+use serde::Serialize;
 
 use crate::error::{Error, Network, Result};
 use network::{IPVersion, Protocol};
@@ -22,22 +23,30 @@ pub mod tls;
 pub mod udp;
 
 // number of bytes sent and received for DNS operations
-type NetworkStat = (usize, usize);
+//type NetworkStat = (usize, usize);
+
+#[derive(Debug, Default, Copy, Clone, Serialize)]
+pub struct NetworkInfo {
+    pub sent: usize,
+    pub received: usize,
+    pub peer: Option<SocketAddr>,
+}
 
 // default UDP buffer size
 const BUFFER_SIZE: u16 = 1232;
 const DEFAULT_TIMEOUT: u64 = 3000;
 
 pub struct TransportProtocol<T> {
-    pub netstat: NetworkStat,
-
     // handle is either a socket or a stream
     handle: T,
+
+    // network info gathered when sending/receiving data
+    pub netinfo: NetworkInfo,
 }
 
 impl<T> TransportProtocol<T> {
-    pub fn stats(&self) -> NetworkStat {
-        self.netstat
+    pub fn netinfo(&self) -> &NetworkInfo {
+        &self.netinfo
     }
 }
 

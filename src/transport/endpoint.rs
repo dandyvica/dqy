@@ -14,7 +14,7 @@ use regex::Regex;
 use resolving::ResolverList;
 
 use super::network::IPVersion;
-use crate::error::{Error, Result};
+use crate::error::{Dns, Error, Result};
 
 #[derive(Debug, Default, Clone)]
 pub struct EndPoint {
@@ -75,10 +75,15 @@ impl EndPoint {
             .map_err(|e| Error::ToSocketAddrs(e, t.server_name.clone()))?
             .collect();
 
+        // // if no ip address is resolved, the host name is probably bogus
+        // if t.addrs.is_empty() {
+        //     return Err(Error::Dns(Dns::DomainNameNotFound(t.server_name)));
+        // }
+
         Ok(t)
     }
 
-    // only keep IPV4 or IPV6 or both addresses
+    // only keep IPV4 or IPV6 or both addresses' version
     pub fn retain(&mut self, ver: &IPVersion) {
         match ver {
             IPVersion::Any => (),
@@ -89,9 +94,14 @@ impl EndPoint {
 
     // test if a string ip is IPV6. Used to disambiguate from cases where port is added
     fn is_ipv6(ip_str: &str) -> bool {
-        match IpAddr::from_str(ip_str) {
-            Ok(IpAddr::V6(addr)) => true,
-            _ => false,
+        matches!(IpAddr::from_str(ip_str), Ok(IpAddr::V6(_)))
+    }
+
+    // gives on random address of addr field
+    pub fn random(&self, ip_version: &IPVersion) -> Option<SocketAddr> {
+        match ip_version {
+            IPVersion::Any | IPVersion::V4 => self.addrs.iter().find(|sa| sa.is_ipv4()).copied(),
+            IPVersion::V6 => self.addrs.iter().find(|sa| sa.is_ipv6()).copied(),
         }
     }
 }
@@ -131,46 +141,6 @@ impl TryFrom<(&PathBuf, u16)> for EndPoint {
         })
     }
 }
-
-// build endpoint when using a couple name:port
-// e.g.: EndPoint::try_from("1.1.1.1:53") or https://2606:4700::6810:f9f9/dns-query
-// impl TryFrom<&str> for EndPoint {
-//     type Error = crate::error::Error;
-
-//     fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
-//         // e.g.: https://cloudflare-dns.com/dns-query
-//         if value.starts_with("https://") {
-//             Ok(Self {
-//                 server_name: value.to_string(),
-//                 ..Default::default()
-//             })
-//         }
-//         // e.g.: 1.1.1.1:53
-//         // or: [2606:4700:4700::1111]:53
-//         // or: one.one.one.one:53
-//         else {
-//             let addrs = value
-//                 .to_socket_addrs()
-//                 .map_err(|e| Error::Network(e, Network::SocketAddr))?;
-
-//             Ok(Self {
-//                 server_name: value.to_string(),
-//                 addrs: addrs.collect(),
-//                 sni: None,
-//             })
-//         }
-//     }
-// }
-
-// build endpoint when using a couple (name, port)
-// e.g.: EndPoint::try_from("1.1.1.1", 53) or EndPoint::try_from("one.one.one.one", 53)
-// impl TryFrom<(&str, u16)> for EndPoint {
-//     type Error = crate::error::Error;
-
-//     fn try_from(value: (&str, u16)) -> Result<Self, Self::Error> {
-//         EndPoint::try_from(format!("{}:{}", value.0, value.1).as_str())
-//     }
-// }
 
 // build a endpoint when no server is provided. So we need to take
 // the host resolver

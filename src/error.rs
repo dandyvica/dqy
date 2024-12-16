@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use std::time::Duration;
 use std::{fmt, io};
 
-use quinn::{ConnectionError, ReadError, ReadExactError, WriteError};
+use quinn::{ConnectError, ConnectionError, ReadError, ReadExactError, WriteError};
 use thiserror::Error;
 
 /// A specific custom `Result` for all functions
@@ -65,6 +65,8 @@ pub enum Dns {
 
     // SNI bad name
     InvalidSNI,
+    // Unknown domain when resolving gives no address
+    //DomainNameNotFound(String),
 }
 
 #[derive(Error, Debug)]
@@ -119,12 +121,17 @@ pub enum Error {
     #[error("error converting {0} to integer")]
     Conversion(#[source] ParseIntError, String),
 
+    // runtime tokio error
+    #[error("run time tokio error {0}")]
+    Tokio(#[source] io::Error),
+
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
 }
 
 #[derive(Debug)]
 pub enum QuicError {
+    Connect(ConnectError, String),
     Connection(ConnectionError),
     Read(ReadError),
     ReadExact(ReadExactError),
@@ -135,6 +142,7 @@ pub enum QuicError {
 impl fmt::Display for QuicError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            QuicError::Connect(e, s) => write!(f, "connect error: {}, server: {}", e, s),
             QuicError::Connection(e) => write!(f, "connection error: {}", e),
             QuicError::Read(e) => write!(f, "read error: {}", e),
             QuicError::ReadExact(e) => write!(f, "read error: {}", e),
@@ -163,6 +171,7 @@ impl From<Error> for ExitCode {
             Error::Quic(_) => ExitCode::from(11),
             Error::Conversion(_, _) => ExitCode::from(12),
             Error::ToSocketAddrs(_, _) => ExitCode::from(13),
+            Error::Tokio(_) => ExitCode::from(14),
             #[cfg(feature = "mlua")]
             Error::Lua(_) => ExitCode::from(10),
         }
@@ -172,6 +181,7 @@ impl From<Error> for ExitCode {
 impl fmt::Display for Dns {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            //Dns::DomainNameNotFound(s) => f.write_str("domain name '{}' not found"),
             Dns::DomainNameTooLong => f.write_str("domain name is longer than 255 bytes"),
             Dns::DomainLabelTooLong => f.write_str("domain label is longer than 63 bytes"),
             Dns::EmptyDomainName => f.write_str("trying to create a domain from an empty string"),

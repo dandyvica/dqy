@@ -196,7 +196,7 @@ impl fmt::Display for OptionData {
             OptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
             OptionData::ReportChanel(p) => write!(f, "{}", p)?,
             OptionData::ZONEVERSION(p) => write!(f, "{}", p)?,
-            _ => unimplemented!("EDNS option not yet implemented"),
+            //_ => unimplemented!("EDNS option not yet implemented"),
         }
         Ok(())
     }
