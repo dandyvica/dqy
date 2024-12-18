@@ -19,6 +19,7 @@ use super::{
     apl::APL,
     caa::CAA,
     cert::CERT,
+    char_string::CharacterString,
     cname::{CNAME, DNAME},
     csync::CSYNC,
     dhcid::DHCID,
@@ -50,6 +51,7 @@ use super::{
     tlsa::{SMIMEA, TLSA},
     txt::TXT,
     uri::URI,
+    wallet::WALLET,
     zonemd::ZONEMD,
 };
 
@@ -103,6 +105,7 @@ pub(super) enum RData {
     UNKNOWN(Buffer),
     URI(URI),
     ZONEMD(ZONEMD),
+    WALLET(WALLET),
 }
 
 // Macro used to ease the ResourceRecord implementation of the FromNetworkOrder trait
@@ -111,6 +114,7 @@ macro_rules! get_rr {
     ($buffer:ident, $t:ty, $arm:path) => {{
         let mut x = <$t>::default();
         x.deserialize_from($buffer)?;
+        trace!("{}", x);
         Ok($arm(x))
     }};
 
@@ -118,50 +122,51 @@ macro_rules! get_rr {
     ($buffer:ident, $t:ty, $arm:path, $e:expr) => {{
         let mut x = <$t>::new($e);
         x.deserialize_from($buffer)?;
+        trace!("{}", x);
         Ok($arm(x))
     }};
 }
 
 impl RData {
     // according to QType, map buffer to RData
-    pub fn from_bytes(qt: &QType, length: u16, buffer: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+    pub fn from_bytes(qt: &QType, rd_length: u16, buffer: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         match qt {
             // RData enum
             QType::A => get_rr!(buffer, A, RData::A),
             QType::AAAA => get_rr!(buffer, AAAA, RData::AAAA),
             QType::AFSDB => get_rr!(buffer, AFSDB, RData::AFSDB),
-            QType::APL => get_rr!(buffer, APL, RData::APL, length),
-            QType::CDNSKEY => get_rr!(buffer, CDNSKEY, RData::CDNSKEY, length),
-            QType::CAA => get_rr!(buffer, CAA, RData::CAA, length),
-            QType::CDS => get_rr!(buffer, CDS, RData::CDS, length),
-            QType::CERT => get_rr!(buffer, CERT, RData::CERT, length),
+            QType::APL => get_rr!(buffer, APL, RData::APL, rd_length),
+            QType::CDNSKEY => get_rr!(buffer, CDNSKEY, RData::CDNSKEY, rd_length),
+            QType::CAA => get_rr!(buffer, CAA, RData::CAA, rd_length),
+            QType::CDS => get_rr!(buffer, CDS, RData::CDS, rd_length),
+            QType::CERT => get_rr!(buffer, CERT, RData::CERT, rd_length),
             QType::CNAME => get_rr!(buffer, CNAME, RData::CNAME),
-            QType::CSYNC => get_rr!(buffer, CSYNC, RData::CSYNC, length),
-            QType::DHCID => get_rr!(buffer, DHCID, RData::DHCID, length),
+            QType::CSYNC => get_rr!(buffer, CSYNC, RData::CSYNC, rd_length),
+            QType::DHCID => get_rr!(buffer, DHCID, RData::DHCID, rd_length),
             QType::DNAME => get_rr!(buffer, DNAME, RData::DNAME),
-            QType::DLV => get_rr!(buffer, DLV, RData::DLV, length),
-            QType::DNSKEY => get_rr!(buffer, DNSKEY, RData::DNSKEY, length),
-            QType::DS => get_rr!(buffer, DS, RData::DS, length),
+            QType::DLV => get_rr!(buffer, DLV, RData::DLV, rd_length),
+            QType::DNSKEY => get_rr!(buffer, DNSKEY, RData::DNSKEY, rd_length),
+            QType::DS => get_rr!(buffer, DS, RData::DS, rd_length),
             QType::EUI48 => get_rr!(buffer, EUI48, RData::EUI48),
             QType::EUI64 => get_rr!(buffer, EUI64, RData::EUI64),
             QType::HINFO => get_rr!(buffer, HINFO, RData::HINFO),
-            QType::HIP => get_rr!(buffer, HIP, RData::HIP, length),
-            QType::HTTPS => get_rr!(buffer, HTTPS, RData::HTTPS, length),
-            QType::IPSECKEY => get_rr!(buffer, IPSECKEY, RData::IPSECKEY, length),
+            QType::HIP => get_rr!(buffer, HIP, RData::HIP, rd_length),
+            QType::HTTPS => get_rr!(buffer, HTTPS, RData::HTTPS, rd_length),
+            QType::IPSECKEY => get_rr!(buffer, IPSECKEY, RData::IPSECKEY, rd_length),
             QType::KX => get_rr!(buffer, KX, RData::KX),
             QType::LOC => get_rr!(buffer, LOC, RData::LOC),
             QType::MX => get_rr!(buffer, MX, RData::MX),
             QType::NAPTR => get_rr!(buffer, NAPTR, RData::NAPTR),
             QType::NS => get_rr!(buffer, NS, RData::NS),
-            QType::NSEC => get_rr!(buffer, NSEC, RData::NSEC, length),
-            QType::NSEC3 => get_rr!(buffer, NSEC3, RData::NSEC3, length),
+            QType::NSEC => get_rr!(buffer, NSEC, RData::NSEC, rd_length),
+            QType::NSEC3 => get_rr!(buffer, NSEC3, RData::NSEC3, rd_length),
             QType::NSEC3PARAM => get_rr!(buffer, NSEC3PARAM, RData::NSEC3PARAM),
-            QType::OPENPGPKEY => get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, length),
+            QType::OPENPGPKEY => get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, rd_length),
             QType::OPT => {
                 let mut v: Vec<OptOption> = Vec::new();
                 let mut current_length = 0u16;
 
-                while current_length < length {
+                while current_length < rd_length {
                     let mut option = OptOption::default();
                     option.deserialize_from(buffer)?;
                     trace!("option={:?}", option);
@@ -175,23 +180,43 @@ impl RData {
             }
             QType::PTR => get_rr!(buffer, PTR, RData::PTR),
             QType::RP => get_rr!(buffer, RP, RData::RP),
-            QType::RRSIG => get_rr!(buffer, RRSIG, RData::RRSIG, length),
-            QType::SMIMEA => get_rr!(buffer, SMIMEA, RData::SMIMEA, length),
+            QType::RRSIG => get_rr!(buffer, RRSIG, RData::RRSIG, rd_length),
+            QType::SMIMEA => get_rr!(buffer, SMIMEA, RData::SMIMEA, rd_length),
             QType::SRV => get_rr!(buffer, SRV, RData::SRV),
             QType::SOA => get_rr!(buffer, SOA, RData::SOA),
-            QType::SSHFP => get_rr!(buffer, SSHFP, RData::SSHFP, length),
-            QType::SVCB => get_rr!(buffer, SVCB, RData::SVCB, length),
-            QType::TLSA => get_rr!(buffer, TLSA, RData::TLSA, length),
-            QType::TXT => get_rr!(buffer, TXT, RData::TXT),
-            QType::URI => get_rr!(buffer, URI, RData::URI, length),
-            QType::ZONEMD => get_rr!(buffer, ZONEMD, RData::ZONEMD, length),
+            QType::SSHFP => get_rr!(buffer, SSHFP, RData::SSHFP, rd_length),
+            QType::SVCB => get_rr!(buffer, SVCB, RData::SVCB, rd_length),
+            QType::TLSA => get_rr!(buffer, TLSA, RData::TLSA, rd_length),
+            QType::TXT => Self::txt_deser(rd_length, buffer),
+            QType::URI => get_rr!(buffer, URI, RData::URI, rd_length),
+            QType::ZONEMD => get_rr!(buffer, ZONEMD, RData::ZONEMD, rd_length),
+            QType::WALLET => get_rr!(buffer, WALLET, RData::WALLET),
             _ => {
                 // allocate the buffer to hold the data
-                let mut buf = Buffer::with_capacity(length);
+                let mut buf = Buffer::with_capacity(rd_length);
                 buf.deserialize_from(buffer)?;
                 Ok(RData::UNKNOWN(buf))
             }
         }
+    }
+
+    // a specific deserialization like for TXT or OPT when RDATA contains a vector of the same type
+    // should be generalized with generics
+    fn txt_deser(rd_length: u16, buffer: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+        let mut v: Vec<CharacterString> = Vec::new();
+        let mut current_length = 0u16;
+
+        while current_length < rd_length {
+            let mut cs = CharacterString::default();
+            cs.deserialize_from(buffer)?;
+            trace!("value={:?}", cs);
+
+            current_length += cs.len() as u16 + 1;
+
+            v.push(cs);
+        }
+
+        Ok(RData::TXT(TXT(v)))
     }
 }
 
@@ -267,6 +292,7 @@ impl fmt::Display for RData {
             RData::URI(a) => write!(f, "{}", a),
             RData::UNKNOWN(a) => write!(f, "RR NOT YET IMPLEMENTED: {}", a),
             RData::ZONEMD(a) => write!(f, "{}", a),
+            RData::WALLET(a) => write!(f, "{}", a),
             _ => unimplemented!("not yet implemented"),
         }
     }

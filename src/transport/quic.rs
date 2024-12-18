@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use log::{debug, info, trace};
-use quinn::{crypto::rustls::QuicClientConfig, RecvStream, SendStream};
+use quinn::{crypto::rustls::QuicClientConfig, RecvStream, SendStream, VarInt};
 
 use super::{
     crypto::{root_store, tls_config},
@@ -34,7 +34,7 @@ impl QuicProtocol {
 
         // address to bind to
         let unspec = trp_options.ip_version.unspecified_ip();
-        println!("{}", unspec);
+        debug!("unspec ip={}", unspec);
 
         // create a Quinn config
         let qcc =
@@ -43,20 +43,16 @@ impl QuicProtocol {
         let mut quic_endpoint = quinn::Endpoint::client(unspec).map_err(|e| Error::Network(e, Network::Bind))?;
         quic_endpoint.set_default_client_config(client_config);
 
-        // let addr: SocketAddr = "[2a10:50c0::ad1:ff]:853".parse().unwrap();
-        // let host = "dns.adguard.com";
-
         let addr = trp_options.endpoint.random(&trp_options.ip_version);
         let host = &trp_options.endpoint.server_name;
-
-        println!("ep={:?}", addr);
-        // println!("host={}", host);
+        debug!("addr={:?} host={}", addr, host);
 
         let conn = quic_endpoint
             .connect(addr.unwrap(), host)
             .map_err(|e| Error::Quic(QuicError::Connect(e, host.clone())))?
             .await
             .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
+        debug!("conn: {:?}", conn);
 
         let (send, recv) = conn
             .open_bi()
@@ -65,6 +61,7 @@ impl QuicProtocol {
 
         Ok(Self {
             handle: (send, recv),
+            // handle: (send, recv),
             netinfo: NetworkInfo::default(),
         })
     }
@@ -85,8 +82,12 @@ impl Messenger for QuicProtocol {
             .write(buffer)
             .await
             .map_err(|e| Error::Quic(QuicError::Write(e)))?;
+        self.handle
+            .0
+            .finish()
+            .map_err(|e| Error::Quic(QuicError::CloseStream(e)))?;
         self.netinfo.sent = sent;
-        //println!("quic sent");
+        debug!("{} bytes sent", sent);
 
         // if let Some(cs) = self.handle.conn.negotiated_cipher_suite() {
         //     info!("negociated ciphersuite: {:?}", cs);
@@ -96,8 +97,6 @@ impl Messenger for QuicProtocol {
     }
 
     async fn arecv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        //println!("entering arecv()");
-
         let mut buf = [0u8; 2];
         self.handle
             .1
@@ -105,8 +104,7 @@ impl Messenger for QuicProtocol {
             .await
             .map_err(|e| Error::Quic(QuicError::ReadExact(e)))?;
         let length = u16::from_be_bytes(buf) as usize;
-
-        //println!("about to read {} bytes in the TCP stream", length);
+        debug!("about to read {} bytes in the TCP stream", length);
 
         // now read exact length
         self.handle
@@ -134,79 +132,4 @@ impl Messenger for QuicProtocol {
     fn network_info(&self) -> &NetworkInfo {
         self.netinfo()
     }
-
-    // fn local(&self) -> std::io::Result<SocketAddr> {
-    //     Err(std::io::Error::new(ErrorKind::Other, ""))
-    // }
-
-    // fn peer(&self) -> std::io::Result<SocketAddr> {
-    //     Err(std::io::Error::new(ErrorKind::Other, ""))
-    // }
 }
-
-// impl AsyncMessenger for QuicProtocol {
-//     async fn asend(&mut self, buffer: &[u8]) -> Result<usize> {
-//         let sent = self
-//             .handle
-//             .0
-//             .write(buffer)
-//             .await
-//             .map_err(|e| Error::Quic(QuicError::Write(e)))?;
-//         self.netstat.0 = sent;
-//         //println!("quic sent");
-
-//         // if let Some(cs) = self.handle.conn.negotiated_cipher_suite() {
-//         //     info!("negociated ciphersuite: {:?}", cs);
-//         // }
-
-//         Ok(sent)
-//     }
-
-//     async fn arecv(&mut self, buffer: &mut [u8]) -> Result<usize> {
-//         //println!("entering arecv()");
-
-//         let mut buf = [0u8; 2];
-//         self.handle
-//             .1
-//             .read_exact(&mut buf)
-//             .await
-//             .map_err(|e| Error::Quic(QuicError::ReadExact(e)))?;
-//         let length = u16::from_be_bytes(buf) as usize;
-
-//         //println!("about to read {} bytes in the TCP stream", length);
-
-//         // now read exact length
-//         self.handle
-//             .1
-//             .read_exact(&mut buffer[..length])
-//             .await
-//             .map_err(|e| Error::Quic(QuicError::ReadExact(e)))?;
-
-//         //println!("read {} bytes in the TCP stream", length);
-
-//         //println!("inside async recv, buffer={:X?}", buffer);
-
-//         self.netstat.1 = length;
-//         Ok(length)
-//     }
-
-//     fn uses_leading_length(&self) -> bool {
-//         true
-//     }
-
-//     fn mode(&self) -> Protocol {
-//         Protocol::DoQ
-//     }
-
-//     // fn local(&self) -> std::io::Result<SocketAddr> {
-//     //     self.handle.sock.local_addr()
-//     // }
-
-//     // fn peer(&self) -> std::io::Result<SocketAddr> {
-//     //     self.handle.sock.peer_addr()
-//     // }
-
-//     // fn netstat(&self) -> NetworkStat {
-//     //     self.stats()
-//     // }
-// }

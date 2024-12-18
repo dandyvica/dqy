@@ -38,7 +38,7 @@ const DEFAULT_TIMEOUT: u64 = 3000;
 
 pub struct TransportProtocol<T> {
     // handle is either a socket or a stream
-    handle: T,
+    pub handle: T,
 
     // network info gathered when sending/receiving data
     pub netinfo: NetworkInfo,

@@ -106,6 +106,7 @@ pub enum QType {
     AVC = 258,      // Application Visibility and Control	[Wolfgang_Riedel]	AVC/avc-completed-template	2016-02-26
     DOA = 259,      // Digital Object Architecture	[draft-durand-doa-over-dns]	DOA/doa-completed-template	2017-08-30
     AMTRELAY = 260, // Automatic Multicast Tunneling Relay	[RFC8777]	AMTRELAY/amtrelay-completed-template	2019-02-06
+    WALLET = 262,   // https://www.iana.org/assignments/dns-parameters/WALLET/wallet-completed-template
     // Unassigned	261-32767
     TA = 32768, // DNSSEC Trust Authorities	[Sam_Weiler][http://cameo.library.cmu.edu/][ Deploying DNSSEC Without a Signed Root. Technical Report 1999-19, Information Networking Institute, Carnegie Mellon University, April 2004.]		2005-12-13
     DLV = 32769, // DNSSEC Lookaside Validation (OBSOLETE)	[RFC8749][RFC4431]

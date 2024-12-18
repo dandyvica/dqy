@@ -6,7 +6,7 @@ use std::process::ExitCode;
 use std::time::Duration;
 use std::{fmt, io};
 
-use quinn::{ConnectError, ConnectionError, ReadError, ReadExactError, WriteError};
+use quinn::{ClosedStream, ConnectError, ConnectionError, ReadError, ReadExactError, WriteError};
 use thiserror::Error;
 
 /// A specific custom `Result` for all functions
@@ -133,6 +133,7 @@ pub enum Error {
 pub enum QuicError {
     Connect(ConnectError, String),
     Connection(ConnectionError),
+    CloseStream(ClosedStream),
     Read(ReadError),
     ReadExact(ReadExactError),
     Write(WriteError),
@@ -142,6 +143,7 @@ pub enum QuicError {
 impl fmt::Display for QuicError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            QuicError::CloseStream(e) => write!(f, "stream finish error: {}", e),
             QuicError::Connect(e, s) => write!(f, "connect error: {}, server: {}", e, s),
             QuicError::Connection(e) => write!(f, "connection error: {}", e),
             QuicError::Read(e) => write!(f, "read error: {}", e),

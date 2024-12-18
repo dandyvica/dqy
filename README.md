@@ -2,7 +2,7 @@
 
 Note: this is currently under development in my free time.
 
-# dqy
+# Dns QuerY (dqy)
 A DNS query tool inspired by _dig_, _drill_ and _dog_.
 
 ## Features
@@ -16,6 +16,7 @@ This tool is written in pure Rust with the following features:
     * plain vanilla ascii
     * Json (useful with ```jq```)
     * ability to call a Lua script to fine tune the output (when `mlua` feature is enabled)
+* OPT coverage
 
 ## Supported resource records
 The following list of RRs is supported:
@@ -63,14 +64,108 @@ The following list of RRs is supported:
 * TXT
 * URI
 * ZONEMD
+* WALLET
 
-Those with (*) are not yet fully tested. This will probably the case for v0.5
+Those with (*) are not yet fully tested. You can also use a `TYPEn` where `n` is an integer <=255 for the query type.
 
-## JSON support
+## General usage
+Usage is similar to __dig__, without support for options starting with `+`.
+Example:
+```console
+$ dqy A www.google.com
+```
+
+The only thing to remeber is that other options (those starting with `--` or `-` must be placed after qtype, domain and optional resolver):
+```console
+$ dqy A www.google.com @1.1.1.1 --stats
+```
+
+## Addressing queries to a specific resolver
+You can specify a resolver by prepending the ip address or host name by the character `@`:
+```console
+$ dqy A www.google.com @1.1.1.1
+$ dqy @a.gtld-servers.net ANY com.
+```
+Qtype, domain name and resolver can be specified in any order provided they are set before any dash option.
+
+## Transport options
+### Timeout
+For all network operations (apart from DoQ), a timeout can be set with `--timeout=n` (n is the value is miliseconds).
+
+### UDP
+By default, dqy uses UDP on port 53. If response is truncated, query is resend on TCP port 53 as stated in RFC1035.
+
+### TCP
+You can force to use TCP with the `--tcp` option: 
+```console
+$ dqy A www.google.com --tcp
+```
+
+### DoT (DNS over TLS)
+You can force to use DNQ over TLS on port 853 with the `--dot` option: 
+```console
+$ dqy A www.google.com @1.1.1.1 --dot
+```
+
+You can set the ALPN protocol to DoT with `--alpn`. The SNI can be added using `--sni=name`. A PEM self-signed certificated can be added using `--cert=file`.
+
+### DoH (DNS over HTTPS)
+You can force to use DNS over HTTPS on port 443 with `--https` option, or by prepending resolver address with `@https://`
+```console
+$ dqy A www.google.com @1.1.1.1 --dot
+$ dqy A www.google.com @https://doh.dns4all.eu/dns-query
+```
+
+### DoQ (DNS over QUIC)
+You can force to use DNS over HTTPS on port 853 with `--doq` option, or by prepending resolver address with `@quic://`
+```console
+$ dqy A www.google.com @dns.adguard.com --doq
+$ dqy A www.google.com @quic://dns.adguard.com
+```
+
+### Setting a specific port number
+You can use a specific port number with the `--port` option:
+```console
+$ dqy A www.google.com @127.0.0.1 --port 8053
+```
+
+## Statistics on query
+Adding --stats, you can get some figures about the query:
+```console
+$ dqy A www.google.com @8.8.8.8 --stats
+...
+endpoint: 8.8.8.8:53 (Udp)
+elapsed: 5 ms
+sent:43, received:59 bytes
+```
+
+## IDNA support
+International Domain Name are fully support too:
+```console
+$ dqy A 스타벅스코리아.com  
+$ dqy AAAA ουτοπία.δπθ.gr 
+```
+
+Using --puny gives the punycode string instead of the UTF-8 domain name.
+
+## Output options
+### JSON support
 The _--json_ and _--json-pretty_ options allows to display output data in JSON format with key:
 
 * messages: list of messages
 * info: meta-info like elpased time, endpoint address etc
+
+### Debugging mode
+You can ask for a info to trace mode using `-v` (info) to `-vvvvv` (trace). In addition the --log option allows to save debug output into a file.
+
+### Colors
+By default, output is colored. To dismiss colored output, just add `--no-colors`.
+
+### IPV4 and IPV6 transport
+You can force to use IPV4 using -4, and IPV6 -6. You can then verify usage with --stats:
+```console
+$ dqy A www.google.com @one.one.one.one -6 --stats
+```
 
 ## Lua scripting support
 Using `-l <Lua source file>`, all DNS data are sent as global variables to the Lua interpreter which makes it possible to format the output in a very flexible manner.

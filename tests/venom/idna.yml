@@ -1,0 +1,38 @@
+# test IDNA domains
+name: DQY binary test
+vars:
+  opts: -p 10053 --no-colors --short
+testcases:
+  - name: German
+    steps:
+    - script: dqy A münchen.de
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Cyrillic
+    steps:
+    - script: dqy A россия.рф
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Greek
+    steps:
+    - script: dqy AAAA ουτοπία.δπθ.gr
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Korean
+    steps:
+    - script: dqy A 스타벅스코리아.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Nordic
+    steps:
+    - script: dqy A www.øl.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Chinese
+    steps:
+    - script: dqy A 香港.中國
+      assertions:
+      - result.code ShouldEqual 0
+    - script: dqy A 中国.中国
+      assertions:
+      - result.code ShouldEqual 0

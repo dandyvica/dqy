@@ -473,9 +473,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Display options")
             )
             .arg(
-                Arg::new("idna")
-                    .long("idna")
-                    .long_help("Convert back IDNA domain names to UTF-8 during display.")
+                Arg::new("puny")
+                    .long("puny")
+                    .long_help("Print domain names as punycode instead of UTF-8.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -831,7 +831,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.short = matches.get_flag("short");
         options.display.show_opt = matches.get_flag("show-opt");
         options.display.stats = matches.get_flag("stats");
-        options.display.idna = matches.get_flag("idna");
+        options.display.puny = matches.get_flag("puny");
 
         // handlebars template
         // if let Some(path) = matches.get_one::<PathBuf>("tpl") {

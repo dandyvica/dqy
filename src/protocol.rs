@@ -2,6 +2,7 @@ use log::{debug, info};
 
 use crate::error::{self};
 use crate::transport::network::{Messenger, Protocol};
+use crate::transport::quic::QuicProtocol;
 use crate::transport::tcp::TcpProtocol;
 use crate::{args::CliOptions, cli_options::FromOptions};
 use crate::{
@@ -124,11 +125,10 @@ impl DnsProtocol {
     }
 
     //───────────────────────────────────────────────────────────────────────────────────
-    // this sends and receives queries using a transport
+    // specific to QUIC
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) async fn async_process_request<T: Messenger>(
+    pub(crate) async fn quic_process_request(
         options: &CliOptions,
-        trp: &mut T,
         buffer_size: usize,
     ) -> crate::error::Result<MessageList> {
         // we'll have the same number of messages than the number of types to query
@@ -136,22 +136,12 @@ impl DnsProtocol {
         let mut buffer = vec![0u8; buffer_size];
 
         for qtype in options.protocol.qtype.iter() {
+            // for QUIC, we need a specific stream for each query as stated in https://www.rfc-editor.org/rfc/rfc9250.html
+            let mut trp = QuicProtocol::new(&options.transport).await?;
+
             // send query, response is depending on TC flag if UDP
-            let mut query = Self::asend_query(options, qtype, trp).await?;
-            let mut response = Self::areceive_response(trp, &mut buffer).await?;
-
-            // check for the truncation (TC) header flag. If set and UDP, resend using TCP
-            if response.is_truncated() && trp.mode() == Protocol::Udp {
-                info!("query for {} caused truncation, resending using TCP", qtype);
-
-                // clear buffer using fill(), otherwise buffer will be empty if buffer.clear()
-                buffer.fill(0);
-
-                // resend using TCP
-                let mut tcp_transport = TcpProtocol::new(&options.transport)?;
-                query = Self::send_query(options, qtype, &mut tcp_transport)?;
-                response = Self::receive_response(&mut tcp_transport, &mut buffer)?;
-            }
+            let query = Self::asend_query(options, qtype, &mut trp).await?;
+            let response = Self::areceive_response(&mut trp, &mut buffer).await?;
 
             // struct Message is a convenient way to gather both query and response
             let msg = Message { query, response };

@@ -247,20 +247,23 @@ impl ResourceRecord {
         None
     }
 
-    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize, idna: bool) {
+    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize, puny: bool) {
         for f in fmt.split(",") {
             match f.trim() {
                 // except OPT
                 "name" => {
-                    if idna {
+                    // print punycodes
+                    if puny {
+                        print!("{:<name_length$} ", self.name.to_color());
+                    }
+                    // print as UTF-8
+                    else {
                         let converted = idna::domain_to_unicode(&self.name.to_string());
                         if converted.1.is_ok() {
                             print!("{:<name_length$} ", converted.0.bright_green());
                         } else {
                             print!("{:<name_length$} ", self.name.to_color());
                         }
-                    } else {
-                        print!("{:<name_length$} ", self.name.to_color());
                     }
                 }
                 "type" => print!("{:<TYPE$} ", self.r#type.to_color()),
@@ -316,7 +319,7 @@ impl ResourceRecord {
                 &display_options.fmt,
                 display_options.raw_ttl,
                 name_length,
-                display_options.idna,
+                display_options.puny,
             );
             println!();
             return;
@@ -327,11 +330,11 @@ impl ResourceRecord {
             println!("{}", self.r_data.to_color());
         } else if self.r#type != QType::OPT {
             const ALL_FIELDS: &str = "name,type,class,ttl,length,rdata";
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.idna);
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.puny);
             println!();
         } else {
             const ALL_FIELDS: &str = "name,type,length,payload,extcode,version,flags,length,rdata";
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.idna);
+            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.puny);
             println!();
         }
     }

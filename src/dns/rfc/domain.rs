@@ -9,7 +9,7 @@ use serde::{Serialize, Serializer};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::ToNetwork;
 
-use crate::error::{Dns, Error};
+use crate::error::{self, Dns, Error};
 use crate::show::ToColor;
 
 pub const ROOT_DOMAIN: DomainName = DomainName { labels: vec![] };
@@ -111,7 +111,7 @@ impl DomainName {
         self.labels.iter()
     }
 
-    pub fn create_from_position(&mut self, pos: usize, buffer: &[u8]) -> crate::error::Result<usize> {
+    pub fn create_from_position(&mut self, pos: usize, buffer: &[u8]) -> error::Result<usize> {
         let mut index = pos;
         let at_index = *buffer.get(index).ok_or(Error::Dns(Dns::CantCreateDomainName))?;
 

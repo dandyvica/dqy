@@ -99,8 +99,13 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error
                 .map_err(Error::Tokio)?;
 
             rt.block_on(async {
-                let mut transport = QuicProtocol::new(&options.transport).await?;
-                let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE).await?;
+                let messages = DnsProtocol::quic_process_request(options, BUFFER_SIZE).await?;
+                // transport.handle.0.finish().await.unwrap();
+
+                // we want run info
+                // if let Some(info) = info {
+                //     info.netinfo = *transport.network_info();
+                // }
 
                 Ok(messages)
             })

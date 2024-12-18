@@ -56,6 +56,7 @@ pub mod tlsa;
 pub mod txt;
 pub mod type_bitmaps;
 pub mod uri;
+pub mod wallet;
 pub mod zonemd;
 
 // a helper macro to generate the new() method for those struct having the rd_length field

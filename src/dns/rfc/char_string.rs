@@ -12,6 +12,13 @@ pub struct CharacterString {
     data: Vec<u8>,
 }
 
+impl CharacterString {
+    #[inline]
+    pub fn len(&self) -> u8 {
+        self.length
+    }
+}
+
 impl From<&str> for CharacterString {
     fn from(s: &str) -> Self {
         CharacterString {

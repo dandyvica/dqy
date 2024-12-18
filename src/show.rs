@@ -80,8 +80,8 @@ pub struct DisplayOptions {
     // content of the handlebars template file
     pub hb_tpl: Option<String>,
 
-    // convert punycode to UTF-8
-    pub idna: bool,
+    // print out punnycode values instead of UTF-8
+    pub puny: bool,
 
     // Lua code if specified
     #[cfg(feature = "mlua")]

@@ -9,11 +9,15 @@ use super::char_string::CharacterString;
 
 // MX RR
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub struct TXT(pub CharacterString);
+pub struct TXT(pub Vec<CharacterString>);
 
 impl fmt::Display for TXT {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        for cs in &self.0 {
+            write!(f, "{}", cs)?;
+        }
+
+        Ok(())
     }
 }
 
