@@ -66,6 +66,12 @@ impl fmt::Display for Buffer {
     }
 }
 
+impl fmt::UpperHex for Buffer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{:02X?}", self.0)
+    }
+}
+
 // a more efficient serialize_to() for Vec<u8>
 impl ToNetworkOrder for Buffer {
     fn serialize_to(&self, buffer: &mut Vec<u8>) -> std::io::Result<usize> {

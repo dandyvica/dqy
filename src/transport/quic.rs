@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use log::{debug, info, trace};
-use quinn::{crypto::rustls::QuicClientConfig, RecvStream, SendStream, VarInt};
+use quinn::{crypto::rustls::QuicClientConfig, Connection, RecvStream, SendStream, VarInt};
 
 use super::{
     crypto::{root_store, tls_config},
@@ -14,7 +14,12 @@ use crate::{
     transport::NetworkInfo,
 };
 
-pub type QuicProtocol = TransportProtocol<(SendStream, RecvStream)>;
+pub struct QuicConn {
+    conn: Connection,
+    send: Option<SendStream>,
+    recv: Option<RecvStream>,
+}
+pub type QuicProtocol = TransportProtocol<QuicConn>;
 
 // ALPN bytes as stated here: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
 const ALPN_DOQ: &[u8] = b"doq";
@@ -54,16 +59,28 @@ impl QuicProtocol {
             .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
         debug!("conn: {:?}", conn);
 
-        let (send, recv) = conn
+        Ok(Self {
+            handle: QuicConn {
+                conn,
+                send: None,
+                recv: None,
+            },
+            netinfo: NetworkInfo::default(),
+        })
+    }
+
+    pub async fn connect(&mut self) -> Result<()> {
+        let (send, recv) = self
+            .handle
+            .conn
             .open_bi()
             .await
             .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
 
-        Ok(Self {
-            handle: (send, recv),
-            // handle: (send, recv),
-            netinfo: NetworkInfo::default(),
-        })
+        self.handle.send = Some(send);
+        self.handle.recv = Some(recv);
+
+        Ok(())
     }
 }
 
@@ -76,16 +93,10 @@ impl Messenger for QuicProtocol {
     }
 
     async fn asend(&mut self, buffer: &[u8]) -> Result<usize> {
-        let sent = self
-            .handle
-            .0
-            .write(buffer)
-            .await
-            .map_err(|e| Error::Quic(QuicError::Write(e)))?;
-        self.handle
-            .0
-            .finish()
-            .map_err(|e| Error::Quic(QuicError::CloseStream(e)))?;
+        let send = self.handle.send.as_mut().unwrap();
+
+        let sent = send.write(buffer).await.map_err(|e| Error::Quic(QuicError::Write(e)))?;
+        send.finish().map_err(|e| Error::Quic(QuicError::CloseStream(e)))?;
         self.netinfo.sent = sent;
         debug!("{} bytes sent", sent);
 
@@ -97,19 +108,17 @@ impl Messenger for QuicProtocol {
     }
 
     async fn arecv(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        let recv = self.handle.recv.as_mut().unwrap();
+
         let mut buf = [0u8; 2];
-        self.handle
-            .1
-            .read_exact(&mut buf)
+        recv.read_exact(&mut buf)
             .await
             .map_err(|e| Error::Quic(QuicError::ReadExact(e)))?;
         let length = u16::from_be_bytes(buf) as usize;
         debug!("about to read {} bytes in the TCP stream", length);
 
         // now read exact length
-        self.handle
-            .1
-            .read_exact(&mut buffer[..length])
+        recv.read_exact(&mut buffer[..length])
             .await
             .map_err(|e| Error::Quic(QuicError::ReadExact(e)))?;
 

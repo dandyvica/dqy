@@ -193,81 +193,84 @@ mod tests {
 
     #[test]
     fn new() {
-        let ep = EndPoint::new("8.8.8.8", 53).unwrap();
-        assert_eq!(&ep.server_name, "8.8.8.8");
-        assert_eq!(ep.port, 53);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("8.8.8.8:53").unwrap()));
+        // test with IPV6 on GitHub actions is not possible yet
+        if std::env::var("GITHUB_REPOSITORY").is_err() {
+            let ep = EndPoint::new("8.8.8.8", 53).unwrap();
+            assert_eq!(&ep.server_name, "8.8.8.8");
+            assert_eq!(ep.port, 53);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("8.8.8.8:53").unwrap()));
 
-        let ep = EndPoint::new("2606:4700:4700::1111", 53).unwrap();
-        assert_eq!(&ep.server_name, "2606:4700:4700::1111");
-        assert_eq!(ep.port, 53);
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
+            let ep = EndPoint::new("2606:4700:4700::1111", 53).unwrap();
+            assert_eq!(&ep.server_name, "2606:4700:4700::1111");
+            assert_eq!(ep.port, 53);
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:53").unwrap()));
 
-        let ep = EndPoint::new("a.root-servers.net", 53).unwrap();
-        assert_eq!(&ep.server_name, "a.root-servers.net");
-        assert_eq!(ep.port, 53);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("198.41.0.4:53").unwrap()));
+            let ep = EndPoint::new("a.root-servers.net", 53).unwrap();
+            assert_eq!(&ep.server_name, "a.root-servers.net");
+            assert_eq!(ep.port, 53);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("198.41.0.4:53").unwrap()));
 
-        let ep = EndPoint::new("https://cloudflare-dns.com/dns-query", 443).unwrap();
-        assert_eq!(&ep.server_name, "https://cloudflare-dns.com/dns-query");
-        assert_eq!(ep.port, 443);
-        assert!(ep.addrs.is_empty());
+            let ep = EndPoint::new("https://cloudflare-dns.com/dns-query", 443).unwrap();
+            assert_eq!(&ep.server_name, "https://cloudflare-dns.com/dns-query");
+            assert_eq!(ep.port, 443);
+            assert!(ep.addrs.is_empty());
 
-        let ep = EndPoint::new("https://2606:4700::6810:f9f9/dns-query", 443).unwrap();
-        assert_eq!(&ep.server_name, "https://2606:4700::6810:f9f9/dns-query");
-        assert_eq!(ep.port, 443);
-        assert!(ep.addrs.is_empty());
+            let ep = EndPoint::new("https://2606:4700::6810:f9f9/dns-query", 443).unwrap();
+            assert_eq!(&ep.server_name, "https://2606:4700::6810:f9f9/dns-query");
+            assert_eq!(ep.port, 443);
+            assert!(ep.addrs.is_empty());
 
-        let ep = EndPoint::new("quic://dns.adguard.com", 53).unwrap();
-        assert_eq!(&ep.server_name, "dns.adguard.com");
-        assert_eq!(ep.port, 53);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.15.15:53").unwrap()));
-        assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.14.14:53").unwrap()));
+            let ep = EndPoint::new("quic://dns.adguard.com", 53).unwrap();
+            assert_eq!(&ep.server_name, "dns.adguard.com");
+            assert_eq!(ep.port, 53);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.15.15:53").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.14.14:53").unwrap()));
 
-        let ep = EndPoint::new("quic://94.140.15.15", 53).unwrap();
-        assert_eq!(&ep.server_name, "94.140.15.15");
-        assert_eq!(ep.port, 53);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.15.15:53").unwrap()));
+            let ep = EndPoint::new("quic://94.140.15.15", 53).unwrap();
+            assert_eq!(&ep.server_name, "94.140.15.15");
+            assert_eq!(ep.port, 53);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("94.140.15.15:53").unwrap()));
 
-        let ep = EndPoint::new("quic://2a10:50c0::ad2:ff", 853).unwrap();
-        assert_eq!(&ep.server_name, "2a10:50c0::ad2:ff");
-        assert_eq!(ep.port, 853);
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2a10:50c0::ad2:ff]:853").unwrap()));
+            let ep = EndPoint::new("quic://2a10:50c0::ad2:ff", 853).unwrap();
+            assert_eq!(&ep.server_name, "2a10:50c0::ad2:ff");
+            assert_eq!(ep.port, 853);
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2a10:50c0::ad2:ff]:853").unwrap()));
 
-        let ep = EndPoint::new("1.1.1.1:853", 53).unwrap();
-        assert_eq!(&ep.server_name, "1.1.1.1");
-        assert_eq!(ep.port, 853);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:853").unwrap()));
+            let ep = EndPoint::new("1.1.1.1:853", 53).unwrap();
+            assert_eq!(&ep.server_name, "1.1.1.1");
+            assert_eq!(ep.port, 853);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:853").unwrap()));
 
-        let ep = EndPoint::new("[2606:4700:4700::1111]:853", 53).unwrap();
-        assert_eq!(&ep.server_name, "2606:4700:4700::1111");
-        assert_eq!(ep.port, 853);
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
+            let ep = EndPoint::new("[2606:4700:4700::1111]:853", 53).unwrap();
+            assert_eq!(&ep.server_name, "2606:4700:4700::1111");
+            assert_eq!(ep.port, 853);
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
 
-        let ep = EndPoint::new("[2606:4700:4700::1111]:853", 53).unwrap();
-        assert_eq!(&ep.server_name, "2606:4700:4700::1111");
-        assert_eq!(ep.port, 853);
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
+            let ep = EndPoint::new("[2606:4700:4700::1111]:853", 53).unwrap();
+            assert_eq!(&ep.server_name, "2606:4700:4700::1111");
+            assert_eq!(ep.port, 853);
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
 
-        let ep = EndPoint::new("one.one.one.one:853", 53).unwrap();
-        assert_eq!(&ep.server_name, "one.one.one.one");
-        assert_eq!(ep.port, 853);
-        assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:853").unwrap()));
-        assert!(ep.addrs.contains(&SocketAddr::from_str("1.0.0.1:853").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:853").unwrap()));
-        assert!(ep
-            .addrs
-            .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
+            let ep = EndPoint::new("one.one.one.one:853", 53).unwrap();
+            assert_eq!(&ep.server_name, "one.one.one.one");
+            assert_eq!(ep.port, 853);
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.1.1.1:853").unwrap()));
+            assert!(ep.addrs.contains(&SocketAddr::from_str("1.0.0.1:853").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1001]:853").unwrap()));
+            assert!(ep
+                .addrs
+                .contains(&SocketAddr::from_str("[2606:4700:4700::1111]:853").unwrap()));
+        }
     }
 
     #[test]

@@ -1,17 +1,14 @@
 use log::{debug, info};
 
+use crate::dns::{
+    message::{Message, MessageList},
+    rfc::{qtype::QType, query::Query, response::Response},
+};
 use crate::error::{self};
 use crate::transport::network::{Messenger, Protocol};
 use crate::transport::quic::QuicProtocol;
 use crate::transport::tcp::TcpProtocol;
 use crate::{args::CliOptions, cli_options::FromOptions};
-use crate::{
-    dns::{
-        message::{Message, MessageList},
-        rfc::{qtype::QType, query::Query, response::Response},
-    },
-    error::Network,
-};
 
 // a unit struct with gathers all high level functions
 pub(crate) struct DnsProtocol;
@@ -135,9 +132,11 @@ impl DnsProtocol {
         let mut messages = Vec::with_capacity(options.protocol.qtype.len());
         let mut buffer = vec![0u8; buffer_size];
 
+        let mut trp = QuicProtocol::new(&options.transport).await?;
+
         for qtype in options.protocol.qtype.iter() {
             // for QUIC, we need a specific stream for each query as stated in https://www.rfc-editor.org/rfc/rfc9250.html
-            let mut trp = QuicProtocol::new(&options.transport).await?;
+            trp.connect().await?;
 
             // send query, response is depending on TC flag if UDP
             let query = Self::asend_query(options, qtype, &mut trp).await?;

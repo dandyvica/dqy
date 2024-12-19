@@ -93,7 +93,7 @@ mod tests {
                     println!("{:X?}", resp_buffer);
 
                     let mut resp = Response::default();
-                    resp.deserialize_from(&mut resp_buffer);
+                    let _ = resp.deserialize_from(&mut resp_buffer);
 
                     let answer = resp.answer.unwrap();
 

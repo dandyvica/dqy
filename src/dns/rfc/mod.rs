@@ -65,6 +65,7 @@ pub mod zonemd;
 macro_rules! new_rd_length {
     // this macro works also for struct with lifetimes
     // see: https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+    // length is transmitted when calling macro get_rr!() but is already deserialized
     ($rr:ident $(< $lf:lifetime >)? ) => {
         impl $(< $lf >)? $rr $(< $lf >)? {
             pub fn new(len: u16) -> Self {

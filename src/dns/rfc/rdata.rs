@@ -114,7 +114,7 @@ macro_rules! get_rr {
     ($buffer:ident, $t:ty, $arm:path) => {{
         let mut x = <$t>::default();
         x.deserialize_from($buffer)?;
-        trace!("{}", x);
+        trace!("get_rr: {}", x);
         Ok($arm(x))
     }};
 
@@ -122,7 +122,7 @@ macro_rules! get_rr {
     ($buffer:ident, $t:ty, $arm:path, $e:expr) => {{
         let mut x = <$t>::new($e);
         x.deserialize_from($buffer)?;
-        trace!("{}", x);
+        trace!("get_rr: {}", x);
         Ok($arm(x))
     }};
 }

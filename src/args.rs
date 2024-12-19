@@ -23,7 +23,7 @@ use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
 const ENV_FLAGS: &str = "DQY_FLAGS";
-const VERSION: &str = "0.3.0";
+const VERSION: &str = "0.4.0";
 
 // help to set or unset flags
 macro_rules! set_unset_flag {

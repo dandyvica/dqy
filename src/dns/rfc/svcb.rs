@@ -1,4 +1,4 @@
-use std::{fmt, io::Cursor};
+use std::{fmt, io::Cursor, ops::Deref};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -6,7 +6,7 @@ use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
-use super::domain::DomainName;
+use super::{char_string::CSList, domain::DomainName};
 
 use crate::{dns::buffer::Buffer, new_rd_length};
 
@@ -91,7 +91,19 @@ impl SvcParam {
 impl fmt::Display for SvcParam {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.key {
-            1 => write!(f, "alpn=\"{}\"", self.value)?,
+            1 | 2 => {
+                let csl = CSList::from(self.value.deref());
+                let v: Vec<String> = csl.iter().map(|cs| cs.to_string()).collect();
+                if self.key == 1 {
+                    write!(f, "alpn=\"{}\"", v.join(","))?;
+                } else {
+                    write!(f, "no-default-alpn=\"{}\"", v.join(","))?;
+                }
+            }
+            3 => {
+                let port = u16::from_be_bytes([self.value[0], self.value[1]]);
+                write!(f, "port={}", port)?
+            }
             4 => {
                 if self.length % 4 == 0 {
                     let ip_array: [u8; 4] = self.value[0..4].try_into().unwrap();
@@ -99,7 +111,7 @@ impl fmt::Display for SvcParam {
                 }
             }
             6 => {
-                if self.length == 16 {
+                if self.length % 16 == 0 {
                     let ip_array: [u8; 16] = self.value[0..16].try_into().unwrap();
                     write!(f, "ipv6hint={}", std::net::Ipv6Addr::from(ip_array))?;
                 }
@@ -115,7 +127,6 @@ impl fmt::Display for SvcParam {
 #[derive(Debug, Default)]
 pub struct SVCB {
     // transmistted through RR deserialization
-    //#[from_network(ignore)]
     pub(super) rd_length: u16,
 
     svc_priority: u16,
@@ -135,6 +146,7 @@ impl<'a> FromNetworkOrder<'a> for SVCB {
         self.target_name.deserialize_from(buffer)?;
 
         // remaining length for Vec<SvcParam>
+        // 2 to svc_priority which is u16
         let data_length = self.rd_length - 2u16 - self.target_name.len() as u16;
         let mut current_length = 0u16;
 
@@ -185,25 +197,29 @@ impl Serialize for SVCB {
 #[allow(clippy::upper_case_acronyms)]
 pub(super) type HTTPS = SVCB;
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         error::DNSResult,
-//         dns::rfc::{rdata::RData, response::Response},
-//         test_rdata,
-//         dns::tests::get_packets,
-//     };
+#[cfg(test)]
+mod tests {
+    use crate::{
+        dns::rfc::{rdata::RData, response::Response},
+        dns::tests::get_packets,
+        test_rdata,
+    };
 
-//     use type2network::FromNetworkOrder;
+    use type2network::FromNetworkOrder;
 
-//     use super::SVCB;
+    use super::SVCB;
 
-//     test_rdata!(
-//         rdata,
-//         "./tests/pcap/svcb.pcap",
-//         RData::SVCB,
-//         (|x: &SVCB, _| {
-//             assert_eq!(&x.to_string(), "");
-//         })
-//     );
-// }
+    test_rdata!(
+        rdata,
+        "./tests/pcap/svcb.pcap",
+        false,
+        1,
+        RData::SVCB,
+        (|x: &SVCB, _| {
+            assert_eq!(
+                &x.to_string(),
+                "1 panix.netmeister.org. port=8888 ipv6hint=2001:470:30:84:e276:63ff:fe72:3900 "
+            );
+        })
+    );
+}

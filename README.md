@@ -40,7 +40,7 @@ The following list of RRs is supported:
 * EUI64
 * HINFO
 * HIP (*)
-* HTTPS (*)
+* HTTPS
 * IPSECKEY
 * KX
 * LOC
@@ -59,7 +59,7 @@ The following list of RRs is supported:
 * SOA
 * SRV
 * SSHFP
-* SVCB (*)
+* SVCB
 * TLSA
 * TXT
 * URI
