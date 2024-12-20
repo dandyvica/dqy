@@ -14,7 +14,7 @@ use regex::Regex;
 use resolving::ResolverList;
 
 use super::network::IPVersion;
-use crate::error::{Dns, Error, Result};
+use crate::error::{Error, Result};
 
 #[derive(Debug, Default, Clone)]
 pub struct EndPoint {
@@ -38,7 +38,7 @@ impl EndPoint {
 
         let mut t = Self {
             server_name: server.to_string(),
-            port: port,
+            port,
             ..Default::default()
         };
 
@@ -159,7 +159,7 @@ impl TryFrom<u16> for EndPoint {
 
         Ok(Self {
             server_name: String::new(),
-            port: port,
+            port,
             addrs: ip_list,
             sni: None,
         })

@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use clap::{Arg, ArgAction, Command};
 use http::*;
-use log::{debug, info, trace};
+use log::trace;
 use rustc_version_runtime::version;
 use simplelog::*;
 
@@ -112,7 +112,7 @@ impl CliOptions {
 
             // check if this is a domain (should include a dot)
             if arg.contains('.') {
-                options.protocol.domain = arg.to_string();
+                options.protocol.domain_string = arg.to_string();
                 continue;
             }
 
@@ -546,20 +546,20 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("stats")
                     .long("stats")
-                    .long_help("Prints out statistics around the query.")
+                    .long_help("Prints out statistics about the query.")
                     .action(ArgAction::SetTrue)
                     .value_name("STATS")
                     .help_heading("Display options")
             )
-            // .arg(
-            //     Arg::new("tpl")
-            //         .long("tpl")
-            //         .long_help("Name of the handlebars template to render to display results.")
-            //         .action(ArgAction::Set)
-            //         .value_name("TEMPLATE")
-            //         .value_parser(clap::value_parser!(PathBuf))
-            //         .help_heading("Display options")
-            // )
+            .arg(
+                Arg::new("tpl")
+                    .long("tpl")
+                    .long_help("Name of the handlebars template to render to display results.")
+                    .action(ArgAction::Set)
+                    .value_name("TEMPLATE")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Display options")
+            )
             .arg(
                 Arg::new("verbose")
                     .short('v')
@@ -581,9 +581,9 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Miscellaneous options")
             )
             .arg(
-                Arg::new("read-query")
-                    .long("rq")
-                    .long_help("Read query from file.")
+                Arg::new("write-response")
+                    .long("wr")
+                    .long_help("Write the response packet to FILE. Only valid for single-qtype queries.")
                     .action(ArgAction::Set)
                     .value_name("FILE")
                     .value_parser(clap::value_parser!(PathBuf))
@@ -592,7 +592,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("write-query")
                     .long("wq")
-                    .long_help("Write an answer packet to file. If several types are requested, the last answer packet if saved")
+                    .long_help("Write the query packet to FILE. Only valid for single-qtype queries.")
                     .action(ArgAction::Set)
                     .value_name("FILE")
                     .value_parser(clap::value_parser!(PathBuf))
@@ -708,8 +708,8 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         // if no domain to query, by default set root (.)
         //───────────────────────────────────────────────────────────────────────────────────
-        if let Some(d) = matches.get_one::<String>("domain") {
-            options.protocol.domain = d.to_string();
+        if let Some(domain) = matches.get_one::<String>("domain") {
+            options.protocol.domain_string = domain.to_string();
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
@@ -726,13 +726,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.transport.timeout = Duration::from_millis(*matches.get_one::<u64>("timeout").unwrap());
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // internal domain name processing (IDNA)
-        //───────────────────────────────────────────────────────────────────────────────────
-        if options.protocol.domain.len() != options.protocol.domain.chars().count() {
-            options.protocol.domain = idna::domain_to_ascii(&options.protocol.domain).unwrap();
-        }
-
-        //───────────────────────────────────────────────────────────────────────────────────
         // if reverse query, ignore all other options
         //───────────────────────────────────────────────────────────────────────────────────
         if let Some(ip) = matches.get_one::<String>("ptr") {
@@ -746,7 +739,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             if addr.is_ipv4() {
                 let mut limbs: Vec<_> = ip.split('.').collect();
                 limbs.reverse();
-                options.protocol.domain = format!("{}.in-addr.arpa", limbs.join("."));
+                options.protocol.domain_string = format!("{}.in-addr.arpa", limbs.join("."));
             } else {
                 // get individual u8 values because an ipv6 address might omit a heading 0
                 // ex: 2001:470:30:84:e276:63ff:fe72:3900 => 2001:0470:0030:84:e276:63ff:fe72:3900
@@ -762,7 +755,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 let mut domain: Vec<_> = split.split("").filter(|x| !x.is_empty()).collect();
                 domain.reverse();
 
-                options.protocol.domain = format!("{}.ip6.arpa", domain.join("."));
+                options.protocol.domain_string = format!("{}.ip6.arpa", domain.join("."));
             }
         }
 
@@ -878,8 +871,16 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         //───────────────────────────────────────────────────────────────────────────────────
         options.display.trace = matches.get_flag("trace");
 
+        //───────────────────────────────────────────────────────────────────────────────────
         // finally convert domain as a string to a domain name
-        options.protocol.domain_name = DomainName::try_from(options.protocol.domain.as_str())?;
+        // internal domain name processing (IDNA)
+        //───────────────────────────────────────────────────────────────────────────────────
+        if options.protocol.domain_string.len() != options.protocol.domain_string.chars().count() {
+            let puny = idna::domain_to_ascii(&options.protocol.domain_string).map_err(Error::IDNA)?;
+            options.protocol.domain_name = DomainName::try_from(puny.as_str())?;
+        } else {
+            options.protocol.domain_name = DomainName::try_from(options.protocol.domain_string.as_str())?;
+        }
 
         // for some types, use TCP instead of UDP right away
         if options.protocol.qtype.contains(&QType::ANY)
@@ -925,7 +926,15 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // Dump options
         //───────────────────────────────────────────────────────────────────────────────────
         if let Some(path) = matches.get_one::<PathBuf>("write-query") {
-            options.dump.write_query = Some(path.to_path_buf());
+            if options.protocol.qtype.len() == 1 {
+                options.dump.write_query = Some(path.to_path_buf());
+            }
+        }
+
+        if let Some(path) = matches.get_one::<PathBuf>("write-response") {
+            if options.protocol.qtype.len() == 1 {
+                options.dump.write_response = Some(path.to_path_buf());
+            }
         }
 
         Ok(options)
@@ -1018,7 +1027,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, ROOT);
+        assert_eq!(&opts.protocol.domain_string, ROOT);
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
@@ -1032,7 +1041,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "www.google.com");
+        assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
@@ -1046,7 +1055,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::AAAA]);
         assert_eq!(opts.protocol.qclass, QClass::CH);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "www.google.com");
+        assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
     }
@@ -1060,7 +1069,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "www.google.com");
+        assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::Any);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
         assert_eq!(&opts.transport.endpoint.server_name, "1.1.1.1");
@@ -1075,7 +1084,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "www.google.com");
+        assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Udp);
         assert_eq!(&opts.transport.endpoint.server_name, &"2606:4700:4700::1111");
@@ -1090,7 +1099,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "www.google.com");
+        assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
     }
@@ -1104,7 +1113,7 @@ mod tests {
         assert_eq!(opts.protocol.qtype, vec![QType::PTR]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(opts.transport.port, 53);
-        assert_eq!(&opts.protocol.domain, "4.3.2.1.in-addr.arpa");
+        assert_eq!(&opts.protocol.domain_string, "4.3.2.1.in-addr.arpa");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
     }

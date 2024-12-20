@@ -1,8 +1,8 @@
 // Specific TLS handling
 use std::sync::Arc;
 
-use log::{debug, info, trace};
-use quinn::{crypto::rustls::QuicClientConfig, Connection, RecvStream, SendStream, VarInt};
+use log::debug;
+use quinn::{crypto::rustls::QuicClientConfig, Connection, RecvStream, SendStream};
 
 use super::{
     crypto::{root_store, tls_config},

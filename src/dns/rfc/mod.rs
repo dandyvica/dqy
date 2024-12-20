@@ -59,6 +59,11 @@ pub mod uri;
 pub mod wallet;
 pub mod zonemd;
 
+//
+pub(crate) trait DataLength {
+    fn len(&self) -> u16;
+}
+
 // a helper macro to generate the new() method for those struct having the rd_length field
 // helper macro to ease returning the internal DNS errors
 #[macro_export]

@@ -1,7 +1,7 @@
-Hello {{ info.server }}
+Hello {{ info.netinfo.peer }}
 
-{% for m in messages %}
-{% for a in m.response.answer %}
-  {{a.name}} {{a.class}} {{a.type}} {{a.ttl}} {{a.rdata-}}
-{% endfor %}
-{% endfor %}
+{{#each messages}}
+{{#each response.answer}}
+{{name}} {{type}} {{rdata}}
+{{/each}}
+{{/each}}

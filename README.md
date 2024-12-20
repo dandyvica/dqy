@@ -16,7 +16,7 @@ This tool is written in pure Rust with the following features:
     * plain vanilla ascii
     * Json (useful with ```jq```)
     * ability to call a Lua script to fine tune the output (when `mlua` feature is enabled)
-* OPT coverage
+* OPT coverage: NSID, COOKIE, Padding, Extended, ReportChannel, ZONEVERSION
 
 ## Supported resource records
 The following list of RRs is supported:
@@ -66,7 +66,9 @@ The following list of RRs is supported:
 * ZONEMD
 * WALLET
 
-Those with (*) are not yet fully tested. You can also use a `TYPEn` where `n` is an integer <=255 for the query type.
+Those with (*) are not yet fully tested. 
+
+You can also use a `TYPEn` where `n` is an integer <=255 for the query type.
 
 ## General usage
 Usage is similar to __dig__, without support for options starting with `+`.
@@ -95,14 +97,20 @@ For all network operations (apart from DoQ), a timeout can be set with `--timeou
 ### UDP
 By default, dqy uses UDP on port 53. If response is truncated, query is resend on TCP port 53 as stated in RFC1035.
 
+```console
+# uses UDP:53
+$ dqy A www.google.com
+```
+
 ### TCP
 You can force to use TCP with the `--tcp` option: 
 ```console
+# uses TCP:53
 $ dqy A www.google.com --tcp
 ```
 
 ### DoT (DNS over TLS)
-You can force to use DNQ over TLS on port 853 with the `--dot` option: 
+You can force to use DNS over TLS on port 853 with the `--dot` option: 
 ```console
 $ dqy A www.google.com @1.1.1.1 --dot
 ```
@@ -146,25 +154,31 @@ $ dqy A 스타벅스코리아.com
 $ dqy AAAA ουτοπία.δπθ.gr 
 ```
 
-Using --puny gives the punycode string instead of the UTF-8 domain name.
+Using `--puny` gives the punycode string instead of the UTF-8 domain name.
 
 ## Output options
 ### JSON support
-The _--json_ and _--json-pretty_ options allows to display output data in JSON format with key:
+The `--json` and `--json-pretty` options allows to display output data in JSON format with key:
 
 * messages: list of messages
 * info: meta-info like elpased time, endpoint address etc
 
 ### Debugging mode
-You can ask for a info to trace mode using `-v` (info) to `-vvvvv` (trace). In addition the --log option allows to save debug output into a file.
+You can ask for a info to trace mode using `-v` (info) to `-vvvvv` (trace). In addition the `--log` option allows to save debug output into a file.
 
 ### Colors
 By default, output is colored. To dismiss colored output, just add `--no-colors`.
 
 ### IPV4 and IPV6 transport
-You can force to use IPV4 using -4, and IPV6 -6. You can then verify usage with --stats:
+You can force to use IPV4 using `-4`, and IPV6 `-6`. You can then verify usage with `--stats`:
 ```console
 $ dqy A www.google.com @one.one.one.one -6 --stats
+```
+
+### Save query and response into a file
+You can save raw query or response bytes using `--wq` or `--wr` respectively.
+```console
+$ dqy TXT dropbox.com --wr response.bin --wq query.bin
 ```
 
 ## Lua scripting support
@@ -200,8 +214,8 @@ Following is a tentative roadmap:
 
 * v0.2: ipv6 support (done)
 * v0.3: trace option (done)
-* v0.4: OPT options full support
-* v0.5: DNS over Quic
+* v0.4: OPT options full support (done) and DoQ (done)
+* v0.5: fine-tuning displaying options
 * ...
 
 ## Usage
@@ -223,17 +237,21 @@ Compilation instructions: [compiling dqy](./compile.md)
 
 ## Exit codes
 * 0: no error
-* 1: I/O error (probably a networking error)
+* 1: I/O error (probably a networking or file access error)
 * 2: UTF-8 conversion error
 * 3: IP address parsing error from a string
-* 4: internal DNS protocol error
-* 5: DoH error
-* 6: DoT error
-* 7: error fetching OS resolvers
-* 8: network timeout error
-* 9: Lua script error
-* 10: logger error
-
+* 4: timeout during network operations
+* 5: TLS error
+* 6: DoH error
+* 7: Dns procotol error
+* 8: error during IP address parsing
+* 9: logger error
+* 10: resolver error
+* 11: QUIC error
+* 12: integer parsing error
+* 13: network resolving error
+* 14: tokio runtime error
+* 15: IDNA conversion error
 
 
 

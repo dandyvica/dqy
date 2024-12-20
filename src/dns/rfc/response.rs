@@ -1,7 +1,12 @@
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 use std::{fmt, io::Cursor, net::IpAddr};
 
 use log::{debug, trace};
 use serde::Serialize;
+use tokio::io::AsyncWriteExt;
+
 use type2network::FromNetworkOrder;
 
 use super::{
@@ -83,7 +88,12 @@ impl Response {
     }
 
     // Receive message for DNS resolver
-    pub fn recv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
+    pub fn recv<T: Messenger>(
+        &mut self,
+        trp: &mut T,
+        buffer: &mut [u8],
+        save_path: &Option<PathBuf>,
+    ) -> crate::error::Result<usize> {
         // receive packet from endpoint
         let received = trp.recv(buffer)?;
         debug!("received {} bytes", received);
@@ -100,11 +110,22 @@ impl Response {
         trace!("response answer: {:?}", self.answer);
         trace!("response authority: {:?}", self.authority);
 
+        // save response as raw bytes if requested
+        if let Some(path) = save_path {
+            let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+            f.write_all(&buffer[..received]).map_err(Error::Buffer)?;
+        }
+
         Ok(received)
     }
 
     // Receive message for DNS resolver
-    pub async fn arecv<T: Messenger>(&mut self, trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<usize> {
+    pub async fn arecv<T: Messenger>(
+        &mut self,
+        trp: &mut T,
+        buffer: &mut [u8],
+        save_path: &Option<PathBuf>,
+    ) -> crate::error::Result<usize> {
         // receive packet from endpoint
         let received = trp.arecv(buffer).await?;
         debug!("received {} bytes", received);
@@ -120,6 +141,14 @@ impl Response {
         trace!("response query: {}", self.question);
         trace!("response answer: {:?}", self.answer);
         trace!("response authority: {:?}", self.authority);
+
+        // save response as raw bytes if requested
+        if let Some(path) = save_path {
+            let mut f = tokio::fs::File::create(path)
+                .await
+                .map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+            f.write_all(&buffer[..received]).await.map_err(Error::Buffer)?;
+        }
 
         Ok(received)
     }

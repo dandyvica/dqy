@@ -46,6 +46,18 @@ impl RRList {
     pub fn max_length(&self) -> Option<usize> {
         self.0.iter().map(|x| x.name.len()).max()
     }
+
+    // same as before but when displaying UTF-8 IDNA
+    pub fn max_count(&self) -> Option<usize> {
+        self.0.iter().map(|x| x.name.count()).max()
+    }
+
+    // pub fn foo<P>(&self, dimension: P) -> Option<usize>
+    // where
+    //     P: Fn(&ResourceRecord) -> usize,
+    // {
+    //     self.0.iter().map(|x| dimension(x)).max()
+    // }
 }
 
 impl Deref for RRList {

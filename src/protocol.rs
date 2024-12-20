@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use log::{debug, info};
 
 use crate::dns::{
@@ -64,9 +66,13 @@ impl DnsProtocol {
     // receive response from resolver
     //───────────────────────────────────────────────────────────────────────────────────
     #[inline(always)]
-    fn receive_response<T: Messenger>(trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<Response> {
+    fn receive_response<T: Messenger>(
+        trp: &mut T,
+        buffer: &mut [u8],
+        save_path: &Option<PathBuf>,
+    ) -> crate::error::Result<Response> {
         let mut response = Response::default();
-        let _ = response.recv(trp, buffer)?;
+        let _ = response.recv(trp, buffer, save_path)?;
 
         Ok(response)
     }
@@ -75,9 +81,13 @@ impl DnsProtocol {
     // receive response from resolver, async version
     //───────────────────────────────────────────────────────────────────────────────────
     #[inline(always)]
-    async fn areceive_response<T: Messenger>(trp: &mut T, buffer: &mut [u8]) -> crate::error::Result<Response> {
+    async fn areceive_response<T: Messenger>(
+        trp: &mut T,
+        buffer: &mut [u8],
+        save_path: &Option<PathBuf>,
+    ) -> crate::error::Result<Response> {
         let mut response = Response::default();
-        let _ = response.arecv(trp, buffer).await?;
+        let _ = response.arecv(trp, buffer, save_path).await?;
 
         Ok(response)
     }
@@ -97,7 +107,7 @@ impl DnsProtocol {
         for qtype in options.protocol.qtype.iter() {
             // send query, response is depending on TC flag if UDP
             let mut query = Self::send_query(options, qtype, trp)?;
-            let mut response = Self::receive_response(trp, &mut buffer)?;
+            let mut response = Self::receive_response(trp, &mut buffer, &options.dump.write_response)?;
 
             // check for the truncation (TC) header flag. If set and UDP, resend using TCP
             if response.is_truncated() && trp.mode() == Protocol::Udp {
@@ -109,7 +119,7 @@ impl DnsProtocol {
                 // resend using TCP
                 let mut tcp_transport = TcpProtocol::new(&options.transport)?;
                 query = Self::send_query(options, qtype, &mut tcp_transport)?;
-                response = Self::receive_response(&mut tcp_transport, &mut buffer)?;
+                response = Self::receive_response(&mut tcp_transport, &mut buffer, &options.dump.write_response)?;
             }
 
             // struct Message is a convenient way to gather both query and response
@@ -140,7 +150,7 @@ impl DnsProtocol {
 
             // send query, response is depending on TC flag if UDP
             let query = Self::asend_query(options, qtype, &mut trp).await?;
-            let response = Self::areceive_response(&mut trp, &mut buffer).await?;
+            let response = Self::areceive_response(&mut trp, &mut buffer, &options.dump.write_response).await?;
 
             // struct Message is a convenient way to gather both query and response
             let msg = Message { query, response };

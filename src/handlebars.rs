@@ -8,7 +8,7 @@ use crate::QueryInfo;
 // custom helper
 handlebars_helper!(ljust: |length: usize, x: String| format!("{:<length$}", x));
 
-#[derive(Serialize)]
+#[derive(Debug,Serialize)]
 struct HBData<'a> {
     messages: &'a MessageList,
     info: &'a QueryInfo,
@@ -36,13 +36,10 @@ impl<'a> HelperDef for HBData<'a> {
 pub fn render(messages: &MessageList, info: &QueryInfo, tpl: &str) {
     let mut handlebars = Handlebars::new();
 
-    let data = HBData { messages, info };
-
     //handlebars.register_helper("ljust", Box::new(ljust));
-    handlebars.register_helper("ljust", Box::new(data));
+    //handlebars.register_helper("ljust", Box::new(data));
 
     let data = HBData { messages, info };
-
     let rendered = handlebars.render_template(tpl, &data).unwrap();
 
     println!("{}", rendered);

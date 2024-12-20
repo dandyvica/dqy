@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self},
+    fmt::{self, Debug},
     io::Cursor,
 };
 
@@ -53,6 +53,7 @@ use super::{
     uri::URI,
     wallet::WALLET,
     zonemd::ZONEMD,
+    DataLength,
 };
 
 #[allow(clippy::upper_case_acronyms)]
@@ -163,19 +164,7 @@ impl RData {
             QType::NSEC3PARAM => get_rr!(buffer, NSEC3PARAM, RData::NSEC3PARAM),
             QType::OPENPGPKEY => get_rr!(buffer, OPENPGPKEY, RData::OPENPGPKEY, rd_length),
             QType::OPT => {
-                let mut v: Vec<OptOption> = Vec::new();
-                let mut current_length = 0u16;
-
-                while current_length < rd_length {
-                    let mut option = OptOption::default();
-                    option.deserialize_from(buffer)?;
-                    trace!("option={:?}", option);
-
-                    current_length += option.length + 4;
-
-                    v.push(option);
-                }
-
+                let v = auto_vec_deser::<OptOption>(rd_length, buffer)?;
                 Ok(RData::OPT(OptionList::new(v)))
             }
             QType::PTR => get_rr!(buffer, PTR, RData::PTR),
@@ -187,7 +176,11 @@ impl RData {
             QType::SSHFP => get_rr!(buffer, SSHFP, RData::SSHFP, rd_length),
             QType::SVCB => get_rr!(buffer, SVCB, RData::SVCB, rd_length),
             QType::TLSA => get_rr!(buffer, TLSA, RData::TLSA, rd_length),
-            QType::TXT => Self::txt_deser(rd_length, buffer),
+            //QType::TXT => Self::txt_deser(rd_length, buffer),
+            QType::TXT => {
+                let v = auto_vec_deser::<CharacterString>(rd_length, buffer)?;
+                Ok(RData::TXT(TXT(v)))
+            }
             QType::URI => get_rr!(buffer, URI, RData::URI, rd_length),
             QType::ZONEMD => get_rr!(buffer, ZONEMD, RData::ZONEMD, rd_length),
             QType::WALLET => get_rr!(buffer, WALLET, RData::WALLET),
@@ -199,25 +192,28 @@ impl RData {
             }
         }
     }
+}
 
-    // a specific deserialization like for TXT or OPT when RDATA contains a vector of the same type
-    // should be generalized with generics
-    fn txt_deser(rd_length: u16, buffer: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
-        let mut v: Vec<CharacterString> = Vec::new();
-        let mut current_length = 0u16;
+// generic deserialization: will be used for OPR RRs and TXT RR
+fn auto_vec_deser<'a, T>(rd_length: u16, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<Vec<T>>
+where
+    T: Default + FromNetworkOrder<'a> + Debug + DataLength,
+{
+    // this will hold T structs found as a list
+    let mut v: Vec<T> = Vec::new();
+    let mut current_length = 0u16;
 
-        while current_length < rd_length {
-            let mut cs = CharacterString::default();
-            cs.deserialize_from(buffer)?;
-            trace!("value={:?}", cs);
+    while current_length < rd_length {
+        let mut value = T::default();
+        value.deserialize_from(buffer)?;
+        trace!("value={:?}", value);
 
-            current_length += cs.len() as u16 + 1;
+        current_length += value.len() + 1u16;
 
-            v.push(cs);
-        }
-
-        Ok(RData::TXT(TXT(v)))
+        v.push(value);
     }
+
+    Ok(v)
 }
 
 impl Default for RData {
@@ -273,12 +269,6 @@ impl fmt::Display for RData {
             RData::NSEC3PARAM(a) => write!(f, "{}", a),
             RData::OPENPGPKEY(a) => write!(f, "{}", a),
             RData::OPT(a) => write!(f, "{}", a),
-            //{
-            //     for opt in a {
-            //         write!(f, "{}", opt)?;
-            //     }
-            //     Ok(())
-            // }
             RData::PTR(a) => write!(f, "{}", a),
             RData::RP(a) => write!(f, "{}", a),
             RData::RRSIG(a) => write!(f, "{}", a),

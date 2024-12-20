@@ -14,6 +14,7 @@ use crate::show::ToColor;
 
 pub const ROOT_DOMAIN: DomainName = DomainName { labels: vec![] };
 pub const ROOT: &str = ".";
+const PUNY_HEADER: &[u8; 4] = b"xn--";
 
 //---------------------------------------------------------------------------------------------
 // Define a Label first
@@ -22,6 +23,18 @@ pub const ROOT: &str = ".";
 // a label is part of a domain name
 #[derive(Debug, Default, Clone, Serialize, ToNetwork)]
 struct Label(Vec<u8>);
+
+impl Label {
+    // true is label representes a punycode
+    #[inline]
+    fn is_puny(&self) -> bool {
+        if self.0.len() < 4 {
+            false
+        } else {
+            &self.0[0..=3] == PUNY_HEADER
+        }
+    }
+}
 
 // Deref to ease methods calls on inner value
 impl Deref for Label {
@@ -73,6 +86,23 @@ pub struct DomainName {
     labels: Vec<Label>,
 }
 
+impl DomainName {
+    // true if any of the labels is punycode
+    pub fn is_puny(&self) -> bool {
+        self.labels.iter().any(|l| l.is_puny())
+    }
+
+    // convert domain name to UTF-8
+    pub fn to_unicode(&self) -> error::Result<String> {
+        let conv = idna::domain_to_unicode(&self.to_string());
+        if let Err(e) = conv.1 {
+            Err(Error::IDNA(e))
+        } else {
+            Ok(conv.0)
+        }
+    }
+}
+
 // a special serializer because the standard serialization isn't what is expected
 // for a domain name
 impl Serialize for DomainName {
@@ -96,14 +126,34 @@ impl DomainName {
         x >= 0b1100_0000
     }
 
-    // length of domain name bytes representation
-    // +1 because of the ending 0
-    pub fn len(&self) -> usize {
+    // total length is bytes of a domain name as received from network
+    // see https://datatracker.ietf.org/doc/html/rfc1035#section-3.1
+    // each label contains one byte which is the label size in bytes
+    // and ends for \x00
+    pub fn size(&self) -> usize {
         self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
     }
 
+    // length of domain name as respresented as a string
+    pub fn len(&self) -> usize {
+        self.to_string().len()
+    }
+
+    // count is different from len in case of UTF-8 chars
+    // ex: count("香港.中國.") == 6 len("香港.中國.") == 14
+    // this is useful for aligning domain names on ouput
+    pub fn count(&self) -> usize {
+        if self.is_puny() {
+            // convert back first to UTF-8
+            let unicode = idna::domain_to_unicode(&self.to_string());
+            unicode.0.chars().count()
+        } else {
+            self.len()
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.labels.is_empty()
     }
 
     // iterator on labels
@@ -333,9 +383,34 @@ mod tests {
     use super::*;
 
     #[test]
+    fn size() {
+        let dn = DomainName::try_from("www.google.com").unwrap();
+        assert_eq!(dn.size(), 16);
+    }
+
+    #[test]
     fn len() {
         let dn = DomainName::try_from("www.google.com").unwrap();
-        assert_eq!(dn.len(), 16);
+        assert_eq!(dn.len(), 15);
+    }
+
+    #[test]
+    fn count() {
+        // xn--j6w193g.xn--fiqz9s. puny is == 香港.中國.
+        let dn = DomainName::try_from("xn--j6w193g.xn--fiqz9s.").unwrap();
+        assert_eq!(dn.count(), 6);
+
+        let dn = DomainName::try_from("www.google.com").unwrap();
+        assert_eq!(dn.count(), 15);
+    }
+
+    #[test]
+    fn puny() {
+        let dn = DomainName::try_from("xn--j6w193g.xn--fiqz9s.").unwrap();
+        assert!(dn.is_puny());
+
+        let dn = DomainName::try_from("www.google.com").unwrap();
+        assert!(!dn.is_puny());
     }
 
     #[test]

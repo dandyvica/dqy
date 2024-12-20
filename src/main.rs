@@ -3,7 +3,7 @@ use std::{process::ExitCode, time::Instant};
 
 use error::Error;
 // use handlebars::render;
-use log::{debug, info};
+use log::info;
 
 // internal modules
 mod dns;
@@ -21,7 +21,6 @@ mod transport;
 use transport::{
     https::HttpsProtocol,
     network::{Messenger, Protocol},
-    quic::QuicProtocol,
     root_servers::init_root_map,
     tcp::TcpProtocol,
     tls::TlsProtocol,
@@ -36,7 +35,7 @@ use protocol::DnsProtocol;
 
 mod cli_options;
 
-// mod handlebars;
+mod handlebars;
 // mod templating;
 
 #[cfg(feature = "mlua")]
@@ -183,12 +182,12 @@ fn run() -> error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // print out final results
     //───────────────────────────────────────────────────────────────────────────────────
-    // if let Some(tpl) = &options.display.hb_tpl {
-    //     templating::render(&messages, &info, &tpl);
-    // } else {
-    //     messages.show_all(&options.display, info);
-    // }
-    messages.show_all(&options.display, info);
+    if let Some(tpl) = &options.display.hb_tpl {
+        handlebars::render(&messages, &info, &tpl);
+    } else {
+        messages.show_all(&options.display, info);
+    }
+    //messages.show_all(&options.display, info);
 
     Ok(())
 }

@@ -24,35 +24,6 @@ use crate::dns::rfc::{
 // DNSSEC OK
 const DNSSEC_FLAG: u16 = 0x8000;
 
-//────────────────────────────────────────────────────────────────────────────────────────────
-// List of flags to set or not
-//
-// Useful: https://serverfault.com/questions/729025/what-are-all-the-flags-in-a-dig-response
-//────────────────────────────────────────────────────────────────────────────────────────────
-#[derive(Debug, Default)]
-pub struct QueryFlagsOptions {
-    // AA = Authoritative Answer
-    pub aa: bool,
-
-    // AD = Authenticated Data (for DNSSEC only; indicates that the data was authenticated)
-    pub ad: bool,
-
-    // CD = Checking Disabled (DNSSEC only; disables checking at the receiving server)
-    pub cd: bool,
-
-    // RA = Recursion Available (if set, denotes recursive query support is available)
-    pub ra: bool,
-
-    // RD = Recursion Desired (set in a query and copied into the response if recursion is supported)
-    pub rd: bool,
-
-    // TC TrunCation (truncated due to length greater than that permitted on the transmission channel)
-    pub tc: bool,
-
-    // Z is unused but ...
-    pub z: bool,
-}
-
 //───────────────────────────────────────────────────────────────────────────────────
 // EDNS options
 //───────────────────────────────────────────────────────────────────────────────────
@@ -100,7 +71,7 @@ pub struct DnsProtocolOptions {
     pub resolvers: Vec<SocketAddr>,
 
     // domain name to query. IDNA domains are punycoded before being sent
-    pub domain: String,
+    pub domain_string: String,
 
     // domain name but converted to a DomainName struct
     pub domain_name: DomainName,
@@ -112,7 +83,7 @@ impl Default for DnsProtocolOptions {
             qtype: Vec::new(),
             qclass: QClass::default(),
             resolvers: Vec::new(),
-            domain: String::from(ROOT), // by default, query is NS and sent to root
+            domain_string: String::from(ROOT), // by default, query is NS and sent to root
             domain_name: ROOT_DOMAIN,
         }
     }

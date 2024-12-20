@@ -7,6 +7,7 @@ use super::{algorithm::Algorithm, domain::DomainName, qtype::QType};
 use crate::dns::{buffer::Buffer, date_time::DnsDateTime};
 use crate::new_rd_length;
 
+// https://datatracker.ietf.org/doc/html/rfc4034
 // The RDATA for an RRSIG RR consists of a 2 octet Type Covered field, a
 // 1 octet Algorithm field, a 1 octet Labels field, a 4 octet Original
 // TTL field, a 4 octet Signature Expiration field, a 4 octet Signature
@@ -50,7 +51,7 @@ pub struct RRSIG {
     // #[from_network(ignore)]
     pub name: DomainName,
 
-    #[from_network(with_code( self.signature = Buffer::with_capacity(self.rd_length - 18 - self.name.len() as u16); ))]
+    #[from_network(with_code( self.signature = Buffer::with_capacity(self.rd_length - 18 - self.name.size() as u16); ))]
     pub signature: Buffer,
 }
 

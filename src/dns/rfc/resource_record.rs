@@ -205,16 +205,16 @@ pub struct ResourceRecord {
 }
 
 // standard lengths for displaying and aligning a RR
-const NAME: usize = 28;
-const TYPE: usize = 10;
-const LENGTH: usize = 5;
-const CLASS: usize = 4;
-const TTL_INT: usize = 7;
-const TTL_STRING: usize = 12;
-const PAYLOAD: usize = 5;
-const EXTCODE: usize = 5;
-const VERSION: usize = 5;
-const FLAGS: usize = 5;
+const NAME_DISPLAY_LENGTH: usize = 28;
+const TYPE_DISPLAY_LENGTH: usize = 10;
+const LENGTH_DISPLAY_LENGTH: usize = 5;
+const CLASS_DISPLAY_LENGTH: usize = 4;
+const TTL_INT_DISPLAY_LENGTH: usize = 7;
+const TTL_STRING_DISPLAY_LENGTH: usize = 12;
+const PAYLOAD_DISPLAY_LENGTH: usize = 5;
+const EXTCODE_DISPLAY_LENGTH: usize = 5;
+const VERSION_DISPLAY_LENGTH: usize = 5;
+const FLAGS_DISPLAY_LENGTH: usize = 5;
 
 // don't use Show trait to provide extra length used to align output
 // use this function
@@ -258,27 +258,30 @@ impl ResourceRecord {
                     }
                     // print as UTF-8
                     else {
-                        let converted = idna::domain_to_unicode(&self.name.to_string());
-                        if converted.1.is_ok() {
-                            print!("{:<name_length$} ", converted.0.bright_green());
-                        } else {
+                        // convert domain name back to UTF-8
+                        if self.name.is_puny() {
+                            let unicode = self.name.to_unicode().unwrap();
+                            print!("{}\t\t\t", unicode.bright_green());
+                        }
+                        // not puny-like
+                        else {
                             print!("{:<name_length$} ", self.name.to_color());
                         }
                     }
                 }
-                "type" => print!("{:<TYPE$} ", self.r#type.to_color()),
-                "length" => print!("{:<LENGTH$} ", self.rd_length),
+                "type" => print!("{:<TYPE_DISPLAY_LENGTH$} ", self.r#type.to_color()),
+                "length" => print!("{:<LENGTH_DISPLAY_LENGTH$} ", self.rd_length),
                 "class" => {
                     if let Some(r) = self.opt_or_class_ttl.regular() {
-                        print!("{:<CLASS$} ", r.class.to_string())
+                        print!("{:<CLASS_DISPLAY_LENGTH$} ", r.class.to_string())
                     }
                 }
                 "ttl" => {
                     if let Some(r) = self.opt_or_class_ttl.regular() {
                         if raw_ttl {
-                            print!("{:<TTL_INT$} ", r.ttl)
+                            print!("{:<TTL_INT_DISPLAY_LENGTH$} ", r.ttl)
                         } else {
-                            print!("{:<TTL_STRING$} ", Ttl(r.ttl).to_color())
+                            print!("{:<TTL_STRING_DISPLAY_LENGTH$} ", Ttl(r.ttl).to_color())
                         }
                     }
                 }
@@ -287,22 +290,22 @@ impl ResourceRecord {
                 // OPT specific data
                 "payload" => {
                     if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<PAYLOAD$}", r.payload)
+                        print!("{:<PAYLOAD_DISPLAY_LENGTH$}", r.payload)
                     }
                 }
                 "extcode" => {
                     if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<EXTCODE$}", r.extended_rcode)
+                        print!("{:<EXTCODE_DISPLAY_LENGTH$}", r.extended_rcode)
                     }
                 }
                 "version" => {
                     if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("EDNS{:<VERSION$}", r.version)
+                        print!("EDNS{:<VERSION_DISPLAY_LENGTH$}", r.version)
                     }
                 }
                 "flags" => {
                     if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<FLAGS$}", r.flags)
+                        print!("{:<FLAGS_DISPLAY_LENGTH$}", r.flags)
                     }
                 }
                 _ => (),
@@ -311,7 +314,7 @@ impl ResourceRecord {
     }
 
     pub(super) fn show(&self, display_options: &DisplayOptions, length: Option<usize>) {
-        let name_length = length.unwrap_or(NAME);
+        let name_length = length.unwrap_or(NAME_DISPLAY_LENGTH);
 
         // formatting display
         if !display_options.fmt.is_empty() {

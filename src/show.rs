@@ -97,7 +97,7 @@ pub struct DumpOptions {
     pub write_query: Option<PathBuf>,
 
     // optional file containing Query raw data to read
-    pub read_query: Option<PathBuf>,
+    pub write_response: Option<PathBuf>,
 }
 
 pub trait Show: Display {

@@ -30,7 +30,7 @@ impl TcpProtocol {
             netinfo: NetworkInfo {
                 sent: 0,
                 received: 0,
-                peer: peer,
+                peer,
             },
         })
     }

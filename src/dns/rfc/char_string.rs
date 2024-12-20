@@ -6,6 +6,8 @@ use type2network::FromNetworkOrder;
 
 use serde::{Serialize, Serializer};
 
+use super::DataLength;
+
 // Character string as described in: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.4
 #[derive(Debug, Default, PartialEq)]
 pub struct CharacterString {
@@ -17,6 +19,12 @@ impl CharacterString {
     #[inline]
     pub fn len(&self) -> u8 {
         self.length
+    }
+}
+
+impl DataLength for CharacterString {
+    fn len(&self) -> u16 {
+        self.length as u16
     }
 }
 

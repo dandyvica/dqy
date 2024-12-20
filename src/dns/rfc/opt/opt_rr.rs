@@ -18,6 +18,7 @@ use crate::dns::{
     rfc::{
         domain::DomainName,
         opt::nsid::NSID,
+        DataLength,
         //qtype::QType, // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
     },
 };
@@ -59,6 +60,12 @@ pub struct OptOption {
     pub(crate) code: OptionCode,
     pub(crate) length: u16,
     pub(crate) data: Option<OptionData>,
+}
+
+impl DataLength for OptOption {
+    fn len(&self) -> u16 {
+        self.length
+    }
 }
 
 impl fmt::Display for OptOption {

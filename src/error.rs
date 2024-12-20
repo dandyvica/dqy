@@ -125,6 +125,10 @@ pub enum Error {
     #[error("run time tokio error {0}")]
     Tokio(#[source] io::Error),
 
+    // IDNA error
+    #[error("IDNA conversion error {0}")]
+    IDNA(#[source] idna::Errors),
+
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
 }
@@ -174,6 +178,7 @@ impl From<Error> for ExitCode {
             Error::Conversion(_, _) => ExitCode::from(12),
             Error::ToSocketAddrs(_, _) => ExitCode::from(13),
             Error::Tokio(_) => ExitCode::from(14),
+            Error::IDNA(_) => ExitCode::from(15),
             #[cfg(feature = "mlua")]
             Error::Lua(_) => ExitCode::from(10),
         }

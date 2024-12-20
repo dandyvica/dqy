@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use log::{debug, trace};
 use serde::Serialize;
+use tokio::io::AsyncWriteExt;
 
 use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
@@ -151,8 +152,10 @@ impl Query {
 
         // save query as raw bytes if requested
         if let Some(path) = save_path {
-            let mut f = File::create(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
-            f.write_all(&buffer).map_err(Error::Buffer)?;
+            let mut f = tokio::fs::File::create(path)
+                .await
+                .map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
+            f.write_all(&buffer).await.map_err(Error::Buffer)?;
         }
 
         Ok(sent)
