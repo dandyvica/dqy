@@ -261,7 +261,7 @@ impl ResourceRecord {
                         // convert domain name back to UTF-8
                         if self.name.is_puny() {
                             let unicode = self.name.to_unicode().unwrap();
-                            print!("{}\t\t\t", unicode.bright_green());
+                            print!("{:<name_length$}", unicode.bright_green());
                         }
                         // not puny-like
                         else {

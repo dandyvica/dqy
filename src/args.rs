@@ -23,7 +23,7 @@ use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
 const ENV_FLAGS: &str = "DQY_FLAGS";
-const VERSION: &str = "0.4.0";
+const VERSION: &str = "v0.4.0";
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -554,6 +554,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("tpl")
                     .long("tpl")
+                    .hide(true)
                     .long_help("Name of the handlebars template to render to display results.")
                     .action(ArgAction::Set)
                     .value_name("TEMPLATE")

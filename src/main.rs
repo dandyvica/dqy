@@ -1,3 +1,11 @@
+
+// TODO: 
+// hide --tpl for the moment
+// colors in clap ?
+// analyze --align if necessary
+// --show-opt ?
+// fix display options
+
 //! A DNS resource query tool
 use std::{process::ExitCode, time::Instant};
 
@@ -99,13 +107,6 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error
 
             rt.block_on(async {
                 let messages = DnsProtocol::quic_process_request(options, BUFFER_SIZE).await?;
-                // transport.handle.0.finish().await.unwrap();
-
-                // we want run info
-                // if let Some(info) = info {
-                //     info.netinfo = *transport.network_info();
-                // }
-
                 Ok(messages)
             })
         }
@@ -183,7 +184,7 @@ fn run() -> error::Result<()> {
     // print out final results
     //───────────────────────────────────────────────────────────────────────────────────
     if let Some(tpl) = &options.display.hb_tpl {
-        handlebars::render(&messages, &info, &tpl);
+        handlebars::render(&messages, &info, tpl);
     } else {
         messages.show_all(&options.display, info);
     }
