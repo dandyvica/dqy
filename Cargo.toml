@@ -21,7 +21,7 @@ byteorder = "1.5.0"
 bytes = "1.5.0"
 chrono = "0.4.38"
 clap = "4.5.9"
-colored = "2.1.0"
+colored = "2.2.0"
 enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
 handlebars = "6.2.0"
 http = "1.0.0"
@@ -36,7 +36,7 @@ regex = "1.11.1"
 reqwest = { version = "0.12.9", default-features = false, features = ["rustls-tls-webpki-roots", "blocking", "http2"] }
 resolving = { git = "https://github.com/dandyvica/resolving" }
 rustc_version_runtime = "0.3.0"
-rustls = { version = "0.23.17", default-features = false, features = ["std", "tls12", "ring"] }
+rustls = { version = "0.23.20", default-features = false, features = ["std", "tls12", "ring"] }
 rustls-pki-types = "1.1.0"
 serde = { version = "1.0.195", features = [ "derive" ] }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }

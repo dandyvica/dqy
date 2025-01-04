@@ -203,7 +203,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("4")
                     .short('4')
-                    .long("ip4")
+                    .long("ipv4")
                     .long_help("Sets IP version 4. Only send queries to ipv4 enabled nameservers.")
                     .action(ArgAction::SetTrue)
                     .value_name("IPV4")
@@ -212,7 +212,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("6")
                     .short('6')
-                    .long("ip6")
+                    .long("ipv6")
                     .long_help("Sets IP version 6. Only send queries to ipv6 enabled nameservers.")
                     .action(ArgAction::SetTrue)
                     .value_name("IPV6")
@@ -494,20 +494,20 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
-            .arg(
-                Arg::new("no-add")
-                    .long("no-add")
-                    .long_help("Don't show the additional RR section. Showed by default.")
-                    .action(ArgAction::SetTrue)
-                    .help_heading("Display options")
-            )
-            .arg(
-                Arg::new("no-auth")
-                    .long("no-auth")
-                    .long_help("Don't show the authorative RR section. Showed by default.")
-                    .action(ArgAction::SetTrue)
-                    .help_heading("Display options")
-            )
+            // .arg(
+            //     Arg::new("no-add")
+            //         .long("no-add")
+            //         .long_help("Don't show the additional RR section. Showed by default.")
+            //         .action(ArgAction::SetTrue)
+            //         .help_heading("Display options")
+            // )
+            // .arg(
+            //     Arg::new("no-auth")
+            //         .long("no-auth")
+            //         .long_help("Don't show the authorative RR section. Showed by default.")
+            //         .action(ArgAction::SetTrue)
+            //         .help_heading("Display options")
+            // )
             .arg(
                 Arg::new("no-colors")
                     .long("no-colors")
@@ -537,12 +537,19 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Display options")
             )
             .arg(
-                Arg::new("show-opt")
-                    .long("show-opt")
-                    .long_help("If set, OPT record is displayed, if any.")
+                Arg::new("show-all")
+                    .long("show-all")
+                    .long_help("If set, show all sections: answer, authorative, additional.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
+            // .arg(
+            //     Arg::new("show-opt")
+            //         .long("show-opt")
+            //         .long_help("If set, OPT record is displayed, if any.")
+            //         .action(ArgAction::SetTrue)
+            //         .help_heading("Display options")
+            // )
             .arg(
                 Arg::new("stats")
                     .long("stats")
@@ -699,6 +706,12 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             options.transport.ip_version = IPVersion::V6;
         }
 
+        // when providing an IPV6 address using @ (ex: @2001:678:8::3) and not providing the -6 flag
+        // error occurs because by default, IPV4 is set. So in this case, reset to IPV6
+        if options.transport.endpoint.is_ipv6() {
+            options.transport.ip_version = IPVersion::V6;
+        }
+
         //───────────────────────────────────────────────────────────────────────────────────
         // recursion desired flag
         //───────────────────────────────────────────────────────────────────────────────────
@@ -818,21 +831,22 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         options.display.headers = matches.get_flag("headers");
         options.display.json = matches.get_flag("json");
         options.display.json_pretty = matches.get_flag("json-pretty");
-        options.display.no_additional = matches.get_flag("no-add");
-        options.display.no_authorative = matches.get_flag("no-auth");
-        options.display.question = matches.get_flag("question");
+        // options.display.no_additional = matches.get_flag("no-add");
+        // options.display.no_authorative = matches.get_flag("no-auth");
+        options.display.show_question = matches.get_flag("question");
         options.display.raw_ttl = matches.get_flag("raw-ttl");
         options.display.short = matches.get_flag("short");
-        options.display.show_opt = matches.get_flag("show-opt");
+        options.display.show_all = matches.get_flag("show-all");
+        //options.display.show_opt = matches.get_flag("show-opt");
         options.display.stats = matches.get_flag("stats");
         options.display.puny = matches.get_flag("puny");
 
         // handlebars template
-        // if let Some(path) = matches.get_one::<PathBuf>("tpl") {
-        //     // read handlebars file as a string
-        //     options.display.hb_tpl =
-        //         Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
-        // }
+        if let Some(path) = matches.get_one::<PathBuf>("tpl") {
+            // read handlebars file as a string
+            options.display.hb_tpl =
+                Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage misc. options
@@ -988,11 +1002,8 @@ fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::env::set_var;
-
-    use crate::dns::rfc::domain::ROOT;
-
     use super::*;
+    use crate::dns::rfc::domain::ROOT;
 
     #[test]
     fn _split_args() {

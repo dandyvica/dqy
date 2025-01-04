@@ -5,7 +5,10 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use serde::Serialize;
 
-use crate::dns::{rfc::domain::DomainName, rfc::qclass::QClass, rfc::qtype::QType};
+use crate::{
+    dns::rfc::{domain::DomainName, qclass::QClass, qtype::QType},
+    show::TITLES,
+};
 
 // Question structure: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 // 1  1  1  1  1  1
@@ -28,7 +31,11 @@ pub struct Question {
 
 impl fmt::Display for Question {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}   {:?}   {:?}", self.qname, self.qtype, self.qclass)
+        write!(
+            f,
+            "{}:{} {}:{:?} {}:{:?}",
+            TITLES["qname"], self.qname, TITLES["qtype"], self.qtype, TITLES["qclass"], self.qclass
+        )
     }
 }
 

@@ -55,7 +55,7 @@ impl EndPoint {
             t.server_name = server[index + 2..].to_string();
         }
         // case of a true IPV6 address
-        else if Self::is_ipv6(server) {
+        else if Self::_is_ipv6(server) {
         }
         // 3rd case: @1.1.1.1:53 or @[2606:4700:4700::1111]:53 or @one.one.one.one:53
         else if let Some(cap) = re.captures(server) {
@@ -92,8 +92,13 @@ impl EndPoint {
         }
     }
 
+    // true if all addresses in addrs field are ipv6
+    pub fn is_ipv6(&self) -> bool {
+        self.addrs.iter().all(|a| a.is_ipv6())
+    }
+
     // test if a string ip is IPV6. Used to disambiguate from cases where port is added
-    fn is_ipv6(ip_str: &str) -> bool {
+    fn _is_ipv6(ip_str: &str) -> bool {
         matches!(IpAddr::from_str(ip_str), Ok(IpAddr::V6(_)))
     }
 

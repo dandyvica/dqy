@@ -1,5 +1,7 @@
 // use std::fmt;
 
+use std::fmt;
+
 use type2network::FromNetworkOrder;
 use type2network_derive::FromNetwork;
 
@@ -40,18 +42,20 @@ pub struct TKEY {
 // auto-implement new
 new_rd_length!(TKEY);
 
-// impl fmt::Display for TKEY {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(
-//             f,
-//             "{} {} {} {}",
-//             self.key_tag, self.algorithm, self.digest_type, self.digest
-//         )?;
-
-//         // for c in &self.digest {
-//         //     write!(f, "{:X?}", c)?;
-//         // }
-
-//         Ok(())
-//     }
-// }
+impl fmt::Display for TKEY {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {} {} {} {} {} {}",
+            self.algorithm,
+            self.inception,
+            self.expiration,
+            self.mode,
+            self.error,
+            self.key_size,
+            self.key_data,
+            self.other_size,
+            self.other_data
+        )
+    }
+}

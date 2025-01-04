@@ -1,5 +1,6 @@
 use std::fmt;
 
+use colored::Colorize;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
@@ -40,6 +41,13 @@ pub struct Header {
                        // resource records in the additional records section.
 }
 
+impl Header {
+    // DoQ must set ID to 0: https://datatracker.ietf.org/doc/rfc9250/ section 4.2.1
+    pub fn set_id(&mut self, id: u16) {
+        self.id = id;
+    }
+}
+
 impl Default for Header {
     fn default() -> Self {
         // by default, we use the recursion desired flag at query
@@ -64,15 +72,15 @@ impl Default for Header {
 
 impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "id:0x{:X}({}) ", self.id, self.id)?;
-        write!(f, "flags:<{}>  ", self.flags)?;
+        write!(f, "{}:0x{:X}({}) ", "id".bright_cyan(), self.id, self.id)?;
+        write!(f, "{}:<{}>  ", "flags".bright_cyan(), self.flags)?;
 
         if self.flags.qr == PacketType::Query {
-            write!(f, "QUERY:{}", self.qd_count)
+            write!(f, "{}:{}", "qd_count".bright_cyan(), self.qd_count)
         } else {
             write!(
                 f,
-                "QUERY:{}, ANSWER:{} AUTHORITY:{} ADDITIONAL:{}",
+                "qd_count:{}, an_count:{} ns_count:{} ar_count:{}",
                 self.qd_count, self.an_count, self.ns_count, self.ar_count
             )
         }

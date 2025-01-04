@@ -8,7 +8,7 @@ use crate::QueryInfo;
 // custom helper
 handlebars_helper!(ljust: |length: usize, x: String| format!("{:<length$}", x));
 
-#[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 struct HBData<'a> {
     messages: &'a MessageList,
     info: &'a QueryInfo,

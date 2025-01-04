@@ -10,7 +10,7 @@ use super::opt::OptionDataValue;
 // use super::opt::opt_rr::OPT;
 use super::{domain::DomainName, qclass::QClass, qtype::QType, rdata::RData};
 use crate::dns::rfc::opt::opt_rr::{OptOption, OptionList};
-use crate::show::{DisplayOptions, ToColor};
+use crate::show::{DisplayOptions, ToColor, TITLES};
 
 use log::{debug, trace};
 
@@ -77,7 +77,7 @@ pub struct OptPayload {
 }
 
 // CLASS & TTL vary if RR is OPT or not
-#[derive(Debug, ToNetwork, PartialEq)]
+#[derive(ToNetwork, PartialEq)]
 pub enum OptOrClassTtl {
     Regular(RegularClassTtl),
     Opt(OptPayload),
@@ -114,6 +114,26 @@ impl fmt::Display for OptOrClassTtl {
         match self {
             OptOrClassTtl::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
             OptOrClassTtl::Opt(x) => write!(f, "{} {} {} {}", x.payload, x.extended_rcode, x.version, x.flags),
+        }
+    }
+}
+
+impl fmt::Debug for OptOrClassTtl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            OptOrClassTtl::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
+            OptOrClassTtl::Opt(x) => write!(
+                f,
+                "{}:{} {}:{} {}:{} {}:{}",
+                TITLES["payload"],
+                x.payload,
+                TITLES["rcode"],
+                x.extended_rcode,
+                TITLES["version"],
+                x.version,
+                TITLES["flags"],
+                x.flags
+            ),
         }
     }
 }
@@ -178,7 +198,7 @@ impl ToColor for Ttl {
     }
 }
 
-#[derive(Debug, Default, ToNetwork, Serialize)]
+#[derive(Default, ToNetwork, Serialize)]
 pub struct ResourceRecord {
     pub name: DomainName, // an owner name, i.e., the name of the node to which this resource record pertains.
     pub r#type: QType,    // two octets containing one of the RR TYPE codes.
@@ -343,7 +363,9 @@ impl ResourceRecord {
     }
 }
 
+//─────────────────────────────────────opt_or_class_ttl──────────────────────────────────────────────
 // OPT is a special case of RR
+//───────────────────────────────────────────────────────────────────────────────────
 pub type OPT = ResourceRecord;
 
 impl OPT {
@@ -381,6 +403,17 @@ impl OPT {
         if let RData::OPT(opt) = &mut self.r_data {
             opt.push(option);
         }
+    }
+}
+
+impl fmt::Debug for OPT {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}:{} {}:{} {:?}",
+            TITLES["name"], self.name, TITLES["type"], self.r#type, self.opt_or_class_ttl
+        )?;
+        Ok(())
     }
 }
 
@@ -458,6 +491,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::dns::rfc::a::A;
+    use crate::dns::rfc::resource_record::Ttl;
     use crate::dns::rfc::{
         aaaa::AAAA,
         domain::DomainName,
@@ -470,6 +504,27 @@ mod tests {
     use type2network::FromNetworkOrder;
 
     use super::ResourceRecord;
+
+    #[test]
+    fn rax_ttl() {
+        let ttl = Ttl(1);
+        assert_eq!(ttl.to_string(), "1s");
+
+        let ttl = Ttl(710);
+        assert_eq!(ttl.to_string(), "11m50s");
+
+        let ttl = Ttl(1163);
+        assert_eq!(ttl.to_string(), "19m23s");
+
+        let ttl = Ttl(86400);
+        assert_eq!(ttl.to_string(), "1d0h0m0s");
+
+        let ttl = Ttl(86401);
+        assert_eq!(ttl.to_string(), "1d0h0m1s");
+
+        let ttl = Ttl(86461);
+        assert_eq!(ttl.to_string(), "1d0h1m1s");
+    }
 
     #[test]
     fn a_record() {

@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
+use colored::Colorize;
 use log::{debug, trace};
 use serde::Serialize;
 use tokio::io::AsyncWriteExt;
@@ -11,6 +12,7 @@ use type2network::ToNetworkOrder;
 use type2network_derive::ToNetwork;
 
 use crate::error::{Dns, Error, Result};
+use crate::show::{header_section, DisplayOptions, Show};
 use crate::transport::network::Messenger;
 
 use super::{
@@ -18,16 +20,27 @@ use super::{
     resource_record::OPT,
 };
 
+const DEFAULT_BUFSIZE: u16 = 4096;
+
 #[derive(Debug, ToNetwork, Serialize)]
 pub enum MetaRR {
     OPT(OPT),
+}
+
+impl fmt::Display for MetaRR {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MetaRR::OPT(opt) => write!(f, "{}", opt),
+            //_ => unimplemented!("Meta RR other than OPT not implemented"),
+        }
+    }
 }
 
 impl Default for MetaRR {
     fn default() -> Self {
         // https://datatracker.ietf.org/doc/html/rfc6891#section-6.2.5
         // RFC recommends 4096 bytes to start with
-        Self::OPT(OPT::new(4096, None))
+        Self::OPT(OPT::new(DEFAULT_BUFSIZE, None))
     }
 }
 
@@ -160,37 +173,38 @@ impl Query {
 
         Ok(sent)
     }
-
-    pub fn display(&self) {
-        // header first
-        println!("HEADER: {}\n", self.header);
-        println!("QUESTION: {}\n", self.question);
-    }
 }
-
-// impl fmt::Debug for Query {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(
-//             f,
-//             "length:<{:?}> header:<{:?}> question:<{:?}>",
-//             self.length, self.header, self.question
-//         )?;
-
-//         if let Some(add) = &self.additional {
-//             for rr in add {
-//                 write!(f, "{:?}", rr)?;
-//             }
-//         }
-
-//         Ok(())
-//     }
-// }
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.header)?;
-        write!(f, "{}", self.question)?;
-        write!(f, "{:?}", self.additional)
+        write!(f, "{}\n", header_section("QUERY", None))?;
+        write!(
+            f,
+            "{}({}) {}({})",
+            "HEADER".bright_blue(),
+            self.header,
+            "QUESTION".bright_blue(),
+            self.question,
+        )?;
+
+        if let Some(add) = &self.additional {
+            let mut s = String::with_capacity(100);
+            for meta_rr in add {
+                s += &format!("{:?}", meta_rr);
+            }
+            write!(f, " {}:({})", "ADDITIONAL".bright_blue(), s)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Show for Query {
+    fn show(&self, display_options: &DisplayOptions, _length: Option<usize>) {
+        // print out Query if requested
+        if display_options.show_question {
+            println!("{}", self);
+        }
     }
 }
 

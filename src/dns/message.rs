@@ -74,6 +74,17 @@ impl fmt::Display for Message {
     }
 }
 
+impl Show for Message {
+    fn show(&self, display_options: &DisplayOptions, length: Option<usize>) {
+        // print out Query if requested
+        if display_options.show_question {
+            self.query.show(display_options, length);
+        }
+
+        self.response.show(display_options, length);
+    }
+}
+
 //───────────────────────────────────────────────────────────────────────────────────
 // convenient struct for holding al messages
 //───────────────────────────────────────────────────────────────────────────────────
@@ -110,26 +121,47 @@ impl fmt::Display for MessageList {
 
 impl ShowAll for MessageList {
     fn show_all(&self, display_options: &DisplayOptions, info: QueryInfo) {
+        //───────────────────────────────────────────────────────────────────────────────────
         // JSON
+        //───────────────────────────────────────────────────────────────────────────────────
         if display_options.json_pretty {
             let j = serde_json::json!({
                 "messages": self,
                 "info": info
             });
             println!("{}", serde_json::to_string_pretty(&j).unwrap());
+            return;
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
         // JSON pretty
-        } else if display_options.json {
+        //───────────────────────────────────────────────────────────────────────────────────
+        if display_options.json {
             let j = serde_json::json!({
                 "messages": self,
                 "info": info
             });
             println!("{}", serde_json::to_string(&j).unwrap());
-        // Regular print out
-        } else {
+            return;
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // fancy print out when only one message
+        //───────────────────────────────────────────────────────────────────────────────────
+        if self.len() == 1 {
+            // we only have 1 message
+            let msg = &self[0];
+            let resp = msg.response();
+            resp.show(display_options, None);
+        }
+        //───────────────────────────────────────────────────────────────────────────────────
+        // when several messages, just print out the ANSWER
+        //───────────────────────────────────────────────────────────────────────────────────
+        else {
             let max_length = self.max_length();
 
             for msg in self.iter() {
-                msg.response().show(display_options, max_length);
+                msg.show(display_options, max_length);
             }
 
             if display_options.stats {

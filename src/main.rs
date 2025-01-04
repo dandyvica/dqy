@@ -1,5 +1,4 @@
-
-// TODO: 
+// TODO:
 // hide --tpl for the moment
 // colors in clap ?
 // analyze --align if necessary
