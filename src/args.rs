@@ -23,7 +23,7 @@ use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
 const ENV_FLAGS: &str = "DQY_FLAGS";
-const VERSION: &str = "v0.4.0";
+const VERSION: &str = "v0.5.0";
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -828,7 +828,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // manage display options
         //───────────────────────────────────────────────────────────────────────────────────
         options.display.align_names = matches.get_flag("align");
-        options.display.headers = matches.get_flag("headers");
+        options.display.show_headers = matches.get_flag("headers");
         options.display.json = matches.get_flag("json");
         options.display.json_pretty = matches.get_flag("json-pretty");
         // options.display.no_additional = matches.get_flag("no-add");

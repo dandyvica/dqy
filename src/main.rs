@@ -185,7 +185,7 @@ fn run() -> error::Result<()> {
     if let Some(tpl) = &options.display.hb_tpl {
         handlebars::render(&messages, &info, tpl);
     } else {
-        messages.show_all(&options.display, info);
+        messages.show_all(&mut options.display, info);
     }
     //messages.show_all(&options.display, info);
 

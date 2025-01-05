@@ -7,7 +7,7 @@ use super::rfc::{query::Query, response::Response, response_code::ResponseCode};
 use log::{error, trace};
 use serde::Serialize;
 
-use crate::show::{DisplayOptions, QueryInfo, Show, ShowAll};
+use crate::show::{header_section, DisplayOptions, QueryInfo, Show, ShowAll};
 
 #[derive(Debug, Serialize)]
 pub struct Message {
@@ -86,7 +86,7 @@ impl Show for Message {
 }
 
 //───────────────────────────────────────────────────────────────────────────────────
-// convenient struct for holding al messages
+// convenient struct for holding all messages
 //───────────────────────────────────────────────────────────────────────────────────
 #[derive(Debug, Serialize)]
 pub struct MessageList(Vec<Message>);
@@ -120,7 +120,7 @@ impl fmt::Display for MessageList {
 }
 
 impl ShowAll for MessageList {
-    fn show_all(&self, display_options: &DisplayOptions, info: QueryInfo) {
+    fn show_all(&self, display_options: &mut DisplayOptions, info: QueryInfo) {
         //───────────────────────────────────────────────────────────────────────────────────
         // JSON
         //───────────────────────────────────────────────────────────────────────────────────
@@ -152,7 +152,17 @@ impl ShowAll for MessageList {
             // we only have 1 message
             let msg = &self[0];
             let resp = msg.response();
+
+            // when we only have one message, we print out a dig-like info
+            display_options.sho_resp_header = true;
+            display_options.show_headers = true;
+            display_options.show_all = true;
+
             resp.show(display_options, None);
+
+            // print out stats
+            println!("{}", header_section("STATS", None));
+            println!("{}", info);
         }
         //───────────────────────────────────────────────────────────────────────────────────
         // when several messages, just print out the ANSWER

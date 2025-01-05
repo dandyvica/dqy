@@ -24,10 +24,10 @@ pub struct QueryInfo {
 impl fmt::Display for QueryInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(peer) = self.netinfo.peer {
-            write!(f, "\nendpoint: {} ({})\n", peer, self.mode)?;
+            writeln!(f, "endpoint: {} ({})", peer, self.mode)?;
         }
         writeln!(f, "elapsed: {} ms", self.elapsed)?;
-        write!(
+        writeln!(
             f,
             "sent:{}, received:{} bytes",
             self.netinfo.sent, self.netinfo.received
@@ -63,7 +63,7 @@ pub struct DisplayOptions {
     pub no_authorative: bool,
 
     // true if we want header for each section
-    pub headers: bool,
+    pub show_headers: bool,
 
     // show OPT record if any
     pub show_opt: bool,
@@ -86,6 +86,9 @@ pub struct DisplayOptions {
     // show all information possible
     pub show_all: bool,
 
+    // show response header
+    pub sho_resp_header: bool,
+
     // Lua code if specified
     #[cfg(feature = "mlua")]
     pub lua_code: Option<String>,
@@ -107,7 +110,7 @@ pub trait Show: Display {
     fn show(&self, display_options: &DisplayOptions, length: Option<usize>);
 }
 pub trait ShowAll: Display {
-    fn show_all(&self, display_options: &DisplayOptions, info: QueryInfo);
+    fn show_all(&self, display_options: &mut DisplayOptions, info: QueryInfo);
 }
 
 pub trait ToColor: Display {

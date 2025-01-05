@@ -280,7 +280,15 @@ impl<'a> FromNetworkOrder<'a> for Response {
 
 impl Show for Response {
     fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
-        const HEADER_LENGTH: usize = 80;
+        // const HEADER_LENGTH: usize = 80;
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Response HEADER
+        //───────────────────────────────────────────────────────────────────────────────────
+        if display_options.sho_resp_header {
+            println!("{}", header_section("Response HEADER", None));
+            println!("{}\n", self.header);
+        }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // ANSWER
@@ -288,7 +296,7 @@ impl Show for Response {
         if self.header.an_count > 0 {
             debug_assert!(self.answer.is_some());
 
-            if display_options.headers {
+            if display_options.show_headers {
                 println!("{}", header_section("ANSWER", None));
             }
             self.answer.as_ref().unwrap().show(display_options, max_length);
@@ -300,7 +308,7 @@ impl Show for Response {
         if self.header.ns_count > 0 && display_options.show_all {
             debug_assert!(self.authority.is_some());
 
-            if display_options.headers {
+            if display_options.show_headers {
                 println!("\n{}", header_section("AUTHORATIVE", None));
             }
             self.authority.as_ref().unwrap().show(display_options, max_length);
@@ -312,7 +320,7 @@ impl Show for Response {
         if self.header.ar_count > 0 && display_options.show_all {
             debug_assert!(self.additional.is_some());
 
-            if display_options.headers {
+            if display_options.show_headers {
                 println!("\n{}", header_section("ADDITIONAL", None));
             }
             self.additional.as_ref().unwrap().show(display_options, max_length);
