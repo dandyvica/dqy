@@ -1,0 +1,46 @@
+# test all different endpoints
+name: DQY binary test (endpoints v6)
+testcases:
+  - name: use specific ipv6 resolver
+    steps:
+    - script: dqy A www.google.com "@2606:4700:4700::1111" -6
+      assertions:
+
+  - name: use specific ipv6 resolver with port number
+    steps:
+    - script: dqy A www.google.com "@[2606:4700:4700::1111]:53" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver ipv6
+    steps:
+    - script: dqy A AAAA www.google.com "@one.one.one.one" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver ipv6 TCP
+    steps:
+    - script: dqy A AAAA www.google.com "@one.one.one.one" -6 --tcp
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver with port number ipv6
+    steps:
+    - script: dqy A AAAA www.google.com "@one.one.one.one:53" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoH resolver
+    steps:
+    - script: dqy A www.google.com "@https://cloudflare-dns.com/dns-query" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoQ resolver
+    steps:
+    - script: dqy A www.google.com "@quic://dns.adguard.com" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+
+      

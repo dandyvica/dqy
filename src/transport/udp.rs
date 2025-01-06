@@ -42,18 +42,20 @@ impl UdpProtocol {
         })
     }
 
-    // // Bind to a socket either to IPV4, IPV6 or any of these 2
-    // // the bind() method will chose the first one which succeeds if IPVersion::Any is passed
-    // fn unspec(ver: &IPVersion) -> Vec<SocketAddr> {
-    //     match ver {
-    //         IPVersion::Any => vec![
-    //             SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)),
-    //             SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0)),
-    //         ],
-    //         IPVersion::V4 => vec![SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0))],
-    //         IPVersion::V6 => vec![SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0))],
-    //     }
-    // }
+    // display list of found host resolvers and try to bind
+    pub fn list_resolvers(trp_options: &TransportOptions) -> Result<()> {
+        // create udp socket on either V4 or V6
+        let unspec = trp_options.ip_version.unspecified_ip();
+        let sock = UdpSocket::bind(&unspec).map_err(|e| Error::Network(e, Network::Bind))?;
+
+        for addr in &trp_options.endpoint.addrs {
+            // try to connect
+            let result = if let Ok(_) = sock.connect(addr) { "OK" } else { " KO " };
+            println!("addr: {}, connect: {} ", addr, result);
+        }
+
+        Ok(())
+    }
 }
 
 impl Messenger for UdpProtocol {

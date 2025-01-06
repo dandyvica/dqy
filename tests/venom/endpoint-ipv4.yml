@@ -1,0 +1,54 @@
+# test all different endpoints (only ipv4)
+name: DQY binary test  (endpoints v4)
+testcases:
+  - name: use host resolver
+    steps:
+    - script: dqy A www.google.com
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use specific ipv4 resolver
+    steps:
+    - script: dqy A www.google.com "@1.1.1.1"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use specific ipv4 resolver with port number
+    steps:
+    - script: dqy A www.google.com "@1.1.1.1:53"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver
+    steps:
+    - script: dqy A AAAA www.google.com "@one.one.one.one"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver with port number
+    steps:
+    - script: dqy A AAAA www.google.com "@one.one.one.one:53"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoH resolver
+    steps:
+    - script: dqy A www.google.com "@https://cloudflare-dns.com/dns-query"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoQ resolver
+    steps:
+    - script: dqy A www.google.com "@quic://dns.adguard.com"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: dqy axfr @nsztm1.digi.ninja zonetransfer.me
+    steps:
+    - script: dqy axfr "@nsztm1.digi.ninja" zonetransfer.me
+      assertions:
+      - result.code ShouldEqual 0      
+
+
+      
+

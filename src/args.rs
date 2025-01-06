@@ -19,6 +19,7 @@ use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
 use crate::error::Error;
 use crate::show::{DisplayOptions, DumpOptions};
 use crate::transport::network::{IPVersion, Protocol};
+use crate::transport::udp::UdpProtocol;
 use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
@@ -589,6 +590,13 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                     .help_heading("Miscellaneous options")
             )
             .arg(
+                Arg::new("list-resolvers")
+                    .long("list-resolvers")
+                    .long_help("Do not query but list host resolvers found and try to connect to them.")
+                    .action(ArgAction::SetTrue)
+                    .help_heading("Display options")
+            )
+            .arg(
                 Arg::new("write-response")
                     .long("wr")
                     .long_help("Write the response packet to FILE. Only valid for single-qtype queries.")
@@ -950,6 +958,14 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             if options.protocol.qtype.len() == 1 {
                 options.dump.write_response = Some(path.to_path_buf());
             }
+        }
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // Dump resolvers
+        //───────────────────────────────────────────────────────────────────────────────────
+        if matches.get_flag("list-resolvers") {
+            UdpProtocol::list_resolvers(&options.transport)?;
+            std::process::exit(0);
         }
 
         Ok(options)
