@@ -3,7 +3,7 @@ name: DQY binary test  (endpoints v4)
 testcases:
   - name: use host resolver
     steps:
-    - script: dqy A www.google.com
+    - script: dqy A www.google.com -vvvvv
       assertions:
       - result.code ShouldEqual 0
 

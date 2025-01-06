@@ -94,7 +94,7 @@ impl EndPoint {
 
     // true if all addresses in addrs field are ipv6
     pub fn is_ipv6(&self) -> bool {
-        self.addrs.iter().all(|a| a.is_ipv6())
+        !self.addrs.is_empty() && self.addrs.iter().all(|a| a.is_ipv6())
     }
 
     // test if a string ip is IPV6. Used to disambiguate from cases where port is added
