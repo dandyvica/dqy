@@ -155,7 +155,7 @@ pub fn header_section(text: &str, length: Option<usize>) -> ColoredString {
     let s = if let Some(l) = length {
         format!("{:<l$}", text)
     } else {
-        format!("{}", text)
+        text.to_string()
     };
     s.black().on_bright_cyan()
 }

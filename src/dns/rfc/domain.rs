@@ -55,7 +55,6 @@ impl fmt::Display for Label {
             }
         }
         Ok(())
-        // write!(f, "{}", String::from_utf8_lossy(self.0))
     }
 }
 
@@ -86,23 +85,6 @@ pub struct DomainName {
     labels: Vec<Label>,
 }
 
-impl DomainName {
-    // true if any of the labels is punycode
-    pub fn is_puny(&self) -> bool {
-        self.labels.iter().any(|l| l.is_puny())
-    }
-
-    // convert domain name to UTF-8
-    pub fn to_unicode(&self) -> error::Result<String> {
-        let conv = idna::domain_to_unicode(&self.to_string());
-        if let Err(e) = conv.1 {
-            Err(Error::IDNA(e))
-        } else {
-            Ok(conv.0)
-        }
-    }
-}
-
 // a special serializer because the standard serialization isn't what is expected
 // for a domain name
 impl Serialize for DomainName {
@@ -131,12 +113,12 @@ impl DomainName {
     // each label contains one byte which is the label size in bytes
     // and ends for \x00
     pub fn size(&self) -> usize {
-        self.labels.iter().map(|l| l.len() + 1).sum::<usize>() + 1
+        self.len() + 1
     }
 
     // length of domain name as respresented as a string
     pub fn len(&self) -> usize {
-        self.to_string().len()
+        self.iter().map(|l| l.len() + 1).sum()
     }
 
     // count is different from len in case of UTF-8 chars
@@ -149,6 +131,21 @@ impl DomainName {
             unicode.0.chars().count()
         } else {
             self.len()
+        }
+    }
+
+    // true if any of the labels is punycode
+    pub fn is_puny(&self) -> bool {
+        self.labels.iter().any(|l| l.is_puny())
+    }
+
+    // convert domain name to UTF-8
+    pub fn to_unicode(&self) -> error::Result<String> {
+        let conv = idna::domain_to_unicode(&self.to_string());
+        if let Err(e) = conv.1 {
+            Err(Error::IDNA(e))
+        } else {
+            Ok(conv.0)
         }
     }
 

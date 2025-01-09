@@ -19,7 +19,6 @@ use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
 use crate::error::Error;
 use crate::show::{DisplayOptions, DumpOptions};
 use crate::transport::network::{IPVersion, Protocol};
-use crate::transport::udp::UdpProtocol;
 use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
@@ -592,7 +591,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("list-resolvers")
                     .long("list-resolvers")
-                    .long_help("Do not query but list host resolvers found and try to connect to them.")
+                    .long_help("Do not query but list host resolvers (with port number) found and try to connect to them.")
                     .action(ArgAction::SetTrue)
                     .help_heading("Display options")
             )
@@ -964,11 +963,19 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
         // Dump resolvers
         //───────────────────────────────────────────────────────────────────────────────────
         if matches.get_flag("list-resolvers") {
-            UdpProtocol::list_resolvers(&options.transport)?;
+            list_resolvers(&options.transport);
             std::process::exit(0);
         }
 
         Ok(options)
+    }
+}
+
+// display list of found host resolvers and try to bind
+fn list_resolvers(trp_options: &TransportOptions) {
+    for addr in &trp_options.endpoint.addrs {
+        // try to connect
+        println!("addr: {} ", addr);
     }
 }
 

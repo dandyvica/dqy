@@ -16,3 +16,7 @@ Cargo.lock
 docker/images/
 
 **/*.log
+
+# venom log and result files
+tests/venom/log
+

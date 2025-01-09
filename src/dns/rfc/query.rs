@@ -177,7 +177,7 @@ impl Query {
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}\n", header_section("QUERY", None))?;
+        writeln!(f, "{}", header_section("QUERY", None))?;
         write!(
             f,
             "{}({}) {}({})",

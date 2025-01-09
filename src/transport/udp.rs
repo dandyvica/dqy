@@ -42,20 +42,20 @@ impl UdpProtocol {
         })
     }
 
-    // display list of found host resolvers and try to bind
-    pub fn list_resolvers(trp_options: &TransportOptions) -> Result<()> {
-        // create udp socket on either V4 or V6
-        let unspec = trp_options.ip_version.unspecified_ip();
-        let sock = UdpSocket::bind(&unspec).map_err(|e| Error::Network(e, Network::Bind))?;
+    // // display list of found host resolvers and try to bind
+    // pub fn list_resolvers(trp_options: &TransportOptions) -> Result<()> {
+    //     // create udp socket on either V4 or V6
+    //     let unspec = trp_options.ip_version.unspecified_ip();
+    //     let sock = UdpSocket::bind(&unspec).map_err(|e| Error::Network(e, Network::Bind))?;
 
-        for addr in &trp_options.endpoint.addrs {
-            // try to connect
-            let result = if let Ok(_) = sock.connect(addr) { "OK" } else { " KO " };
-            println!("addr: {}, connect: {} ", addr, result);
-        }
+    //     for addr in &trp_options.endpoint.addrs {
+    //         // try to connect
+    //         let result = if let Ok(_) = sock.connect(addr) { "OK" } else { " KO " };
+    //         println!("addr: {}, connect: {} ", addr, result);
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
 
 impl Messenger for UdpProtocol {

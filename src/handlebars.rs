@@ -14,13 +14,13 @@ struct HBData<'a> {
     info: &'a QueryInfo,
 }
 
-impl<'a> HelperDef for HBData<'a> {
+impl HelperDef for HBData<'_> {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         _: &Handlebars,
         _: &Context,
-        rc: &mut RenderContext,
+        _rc: &mut RenderContext,
         out: &mut dyn Output,
     ) -> HelperResult {
         let param1 = h.param(0).unwrap();
@@ -34,7 +34,7 @@ impl<'a> HelperDef for HBData<'a> {
 }
 
 pub fn render(messages: &MessageList, info: &QueryInfo, tpl: &str) {
-    let mut handlebars = Handlebars::new();
+    let handlebars = Handlebars::new();
 
     //handlebars.register_helper("ljust", Box::new(ljust));
     //handlebars.register_helper("ljust", Box::new(data));

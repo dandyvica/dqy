@@ -1,25 +1,25 @@
 # tests RRs
 name: DQY binary test
 vars:
-  opts: -p 10053 --no-colors --short
+  dqy: ../../target/release/dqy
 testcases:
   - name: A
     steps:
-    - script: dqy A www.google.com
+    - script: {{.dqy}} A www.google.com
       assertions:
       - result.code ShouldEqual 0
   - name: AAAA
     steps:
-    - script: dqy AAAA www.google.com
+    - script: {{.dqy}} AAAA www.google.com
       assertions:
       - result.code ShouldEqual 0
   - name: TXT
     steps:
-    - script: dqy TXT dropbox.com
+    - script: {{.dqy}} TXT dropbox.com
       assertions:
       - result.code ShouldEqual 0
   - name: WALLET
     steps:
-    - script: dqy bortzmeyer.fr WALLET
+    - script: {{.dqy}} bortzmeyer.fr WALLET
       assertions:
       - result.code ShouldEqual 0
