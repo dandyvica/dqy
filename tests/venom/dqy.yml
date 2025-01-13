@@ -1,0 +1,163 @@
+name: DQY binary test
+
+vars:
+  dqy: ../../target/release/dqy
+  
+testcases:
+  #───────────────────────────────────────────────────────────────────────────────────
+  # test some RRs
+  #───────────────────────────────────────────────────────────────────────────────────
+  - name: A
+    steps:
+    - script: {{.dqy}} A www.google.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: AAAA
+    steps:
+    - script: {{.dqy}} AAAA www.google.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: TXT
+    steps:
+    - script: {{.dqy}} TXT dropbox.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: WALLET
+    steps:
+    - script: {{.dqy}} bortzmeyer.fr WALLET
+      assertions:
+      - result.code ShouldEqual 0
+
+  #───────────────────────────────────────────────────────────────────────────────────
+  # test IDNA
+  #─────────────────────────────────────────────────────────────────────────────────── 
+  - name: German
+    steps:
+    - script: {{.dqy}} A münchen.de
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Cyrillic
+    steps:
+    - script: {{.dqy}} A россия.рф
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Greek
+    steps:
+    - script: {{.dqy}} AAAA ουτοπία.δπθ.gr
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Korean
+    steps:
+    - script: {{.dqy}} A 스타벅스코리아.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Nordic
+    steps:
+    - script: {{.dqy}} A www.øl.com
+      assertions:
+      - result.code ShouldEqual 0
+  - name: Chinese
+    steps:
+    - script: {{.dqy}} A 香港.中國
+      assertions:
+      - result.code ShouldEqual 0
+    - script: {{.dqy}} A 中国.中国
+      assertions:
+      - result.code ShouldEqual 0  
+
+  #───────────────────────────────────────────────────────────────────────────────────
+  # test endpoint IPV4
+  #───────────────────────────────────────────────────────────────────────────────────  
+  - name: use host resolver
+    steps:
+    - script: {{.dqy}} A www.google.com
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use specific ipv4 resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@1.1.1.1"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use specific ipv4 resolver with port number
+    steps:
+    - script: {{.dqy}} A www.google.com "@1.1.1.1:53"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver
+    steps:
+    - script: {{.dqy}} A AAAA www.google.com "@one.one.one.one"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver with port number
+    steps:
+    - script: {{.dqy}} A AAAA www.google.com "@one.one.one.one:53"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoH resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@https://cloudflare-dns.com/dns-query"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoQ resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@quic://dns.adguard.com"
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: AXFR test
+    steps:
+    - script: {{.dqy}} axfr "@nsztm1.digi.ninja" zonetransfer.me
+      assertions:
+      - result.code ShouldEqual 0     
+
+  #───────────────────────────────────────────────────────────────────────────────────
+  # test endpoint IPV6
+  # as Github hosted runners don't support IPV6, need this trick
+  #───────────────────────────────────────────────────────────────────────────────────   
+  - name: use specific ipv6 resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@2606:4700:4700::1111" -6
+      assertions:
+      - result.code ShouldEqual 0      
+
+  - name: use specific ipv6 resolver with port number
+    steps:
+    - script: {{.dqy}} A www.google.com "@[2606:4700:4700::1111]:53" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver ipv6
+    steps:
+    - script: {{.dqy}} A AAAA www.google.com "@one.one.one.one" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver ipv6 TCP
+    steps:
+    - script: {{.dqy}} A AAAA www.google.com "@one.one.one.one" -6 --tcp
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use named resolver with port number ipv6
+    steps:
+    - script: {{.dqy}} A AAAA www.google.com "@one.one.one.one:53" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoH resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@https://cloudflare-dns.com/dns-query" -6
+      assertions:
+      - result.code ShouldEqual 0
+
+  - name: use DoQ resolver
+    steps:
+    - script: {{.dqy}} A www.google.com "@quic://dns.adguard.com" -6
+      assertions:
+      - result.code ShouldEqual 0             

@@ -23,8 +23,8 @@ impl CharacterString {
 }
 
 impl DataLength for CharacterString {
-    fn len(&self) -> u16 {
-        self.length as u16
+    fn size(&self) -> u16 {
+        self.length as u16 + 1
     }
 }
 

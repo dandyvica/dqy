@@ -110,6 +110,9 @@ impl fmt::Display for SvcParam {
                     write!(f, "ipv4hint={}", std::net::Ipv4Addr::from(ip_array))?;
                 }
             }
+            5 => {
+                write!(f, "ech={}", self.value.to_base64())?;
+            }
             6 => {
                 if self.length % 16 == 0 {
                     let ip_array: [u8; 16] = self.value[0..16].try_into().unwrap();
@@ -147,7 +150,7 @@ impl<'a> FromNetworkOrder<'a> for SVCB {
 
         // remaining length for Vec<SvcParam>
         // 2 to svc_priority which is u16
-        let data_length = self.rd_length - 2u16 - self.target_name.len() as u16;
+        let data_length = self.rd_length - 2u16 - self.target_name.size() as u16;
         let mut current_length = 0u16;
 
         // now deserialize each SvcParam

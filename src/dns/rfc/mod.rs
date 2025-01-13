@@ -1,3 +1,7 @@
+use std::io::Cursor;
+
+use log::trace;
+
 #[allow(clippy::unnecessary_cast)]
 pub mod char_string;
 pub mod domain;
@@ -61,7 +65,7 @@ pub mod zonemd;
 
 //
 pub(crate) trait DataLength {
-    fn len(&self) -> u16;
+    fn size(&self) -> u16;
 }
 
 // a helper macro to generate the new() method for those struct having the rd_length field
@@ -83,4 +87,12 @@ macro_rules! new_rd_length {
             }
         }
     };
+}
+
+// helper function to display currenr cursor data
+pub fn cursor_view(buffer: &Cursor<&[u8]>, length: usize) {
+    let pos = buffer.position() as usize;
+    let reference = buffer.get_ref();
+    trace!("buffer length: {}", reference.len());
+    trace!("cursor view at {}: {:X?}", pos, &reference[pos..pos + length]);
 }

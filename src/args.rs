@@ -7,7 +7,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use clap::{Arg, ArgAction, Command};
+use clap::builder::styling;
+use clap::{crate_version, Arg, ArgAction, Command};
 use http::*;
 use log::trace;
 use rustc_version_runtime::version;
@@ -23,7 +24,6 @@ use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
 const ENV_FLAGS: &str = "DQY_FLAGS";
-const VERSION: &str = "v0.5.0";
 
 // help to set or unset flags
 macro_rules! set_unset_flag {
@@ -101,6 +101,14 @@ impl CliOptions {
 
         let mut server = "";
 
+        // build list of supported QTypes from txt file
+        let supported_types = {
+            let tmp: Vec<_> = include_str!("../doc/supported_types.txt")
+                .split_ascii_whitespace()
+                .collect();
+            tmp.join(",")
+        };
+
         //───────────────────────────────────────────────────────────────────────────────────
         // process the arguments not starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
@@ -123,33 +131,47 @@ impl CliOptions {
             }
         }
 
-        let rustc_version = format!("compiled with rustc v{}", version());
+        let dqy_version = crate_version!();
         let about = format!(
             r#"
+dqy v{}
 A DNS query tool inspired by dig, drill and dog.
 Compiled with rustc v{}
 
-Project home page: https://github.com/dandyvica/dqy
-                
-"#,
+Project home page: https://github.com/dandyvica/dqy"#,
+            dqy_version,
             version()
+        );
+
+        let usage = format!(
+            r#"dqy [TYPES] [DOMAIN] [@RESOLVER] [OPTIONS]
+            
+Caveat: all options starting with a dash (-) should be placed after optional [TYPES] [DOMAIN] [@RESOLVER].
+
+Supported query types: {}
+            "#,
+            supported_types
         );
 
         //───────────────────────────────────────────────────────────────────────────────────
         // now process the arguments starting with a '-'
         //───────────────────────────────────────────────────────────────────────────────────
+        const STYLES: styling::Styles = styling::Styles::styled()
+            .header(styling::AnsiColor::Green.on_default().bold())
+            .usage(styling::AnsiColor::Green.on_default().bold())
+            .literal(styling::AnsiColor::Blue.on_default().bold())
+            .placeholder(styling::AnsiColor::Cyan.on_default());
+
         let cmd = Command::new("A DNS query tool inspired by dig, drill and dog")
-            .version(VERSION)
+            .version(crate_version!())
+            .long_version(crate_version!())
+            .styles(STYLES)
             .author("Alain Viguier dandyvica@gmail.com")
             .about(about)
-            .after_help(rustc_version)
             .after_long_help(include_str!("../doc/usage_examples.txt"))
             .bin_name("dqy")
             .no_binary_name(true)
-            .override_usage(r#"dqy [TYPES] [DOMAIN] [@RESOLVER] [OPTIONS]
-            
-Caveat: all options starting with a dash (-) should be placed after optional [TYPES] [DOMAIN] [@RESOLVER].
-            "#)
+            .override_usage(usage)
             .arg(
                 Arg::new("type")
                     .short('t')
@@ -221,7 +243,7 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
             .arg(
                 Arg::new("alpn")
                     .long("alpn")
-                    .long_help("Forces ALPN protocol to DoT.")
+                    .long_help("Forces ALPN protocol to 'DoT' for DNS over TLS queries.")
                     .action(ArgAction::SetTrue)
                     .value_name("ALPN")
                     .help_heading("Transport options")
@@ -442,7 +464,6 @@ Caveat: all options starting with a dash (-) should be placed after optional [TY
                 Arg::new("zoneversion")
                     .long("zoneversion")
                     .long_help("Sets the EDNS ZONEVERSION option in the OPT record.")
-                    .long_help("Sets the EDNS NSID option in the OPT record.")
                     .action(ArgAction::SetTrue)
                     .help_heading("EDNS options")
             )

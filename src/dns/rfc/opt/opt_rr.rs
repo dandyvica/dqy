@@ -16,10 +16,10 @@ use serde::Serialize;
 use crate::dns::{
     buffer::Buffer,
     rfc::{
+        cursor_view,
         domain::DomainName,
         opt::nsid::NSID,
-        DataLength,
-        //qtype::QType, // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
+        DataLength, //qtype::QType, // resource_record::{OptClassTtl, OptOrElse, ResourceRecord},
     },
 };
 
@@ -28,6 +28,7 @@ use super::{
     client_subnet::ClientSubnet,
     cookie::COOKIE,
     extended::Extended,
+    llq::LLQ,
     padding::Padding,
     report_chanel::ReportChannel,
     zoneversion::{ZONEVERSION, ZV},
@@ -63,8 +64,8 @@ pub struct OptOption {
 }
 
 impl DataLength for OptOption {
-    fn len(&self) -> u16 {
-        self.length
+    fn size(&self) -> u16 {
+        self.length + 4
     }
 }
 
@@ -81,10 +82,21 @@ impl fmt::Display for OptOption {
 impl<'a> FromNetworkOrder<'a> for OptOption {
     #[allow(clippy::field_reassign_with_default)]
     fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+        cursor_view(buffer, 2);
+
         self.code.deserialize_from(buffer)?;
+        trace!("OPT option code: {}", self.code);
+
         self.length.deserialize_from(buffer)?;
+        trace!("OPT option length: {}", self.length);
 
         match self.code {
+            OptionCode::LLQ => {
+                let mut llq = LLQ::default();
+                llq.deserialize_from(buffer)?;
+
+                self.data = Some(OptionData::LLQ(llq));
+            }
             OptionCode::NSID => {
                 let mut buf: Buffer = Buffer::with_capacity(self.length);
                 buf.deserialize_from(buffer)?;
@@ -120,7 +132,6 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
                 self.data = Some(OptionData::ReportChanel(ReportChannel::from(agent_domain)));
             }
             OptionCode::ZONEVERSION => {
-                println!("inside ZV");
                 let mut zv = ZV::default();
                 zv.label_count.deserialize_from(buffer)?;
                 zv.r#type.deserialize_from(buffer)?;
@@ -149,7 +160,8 @@ impl<'a> FromNetworkOrder<'a> for OptOption {
 #[from_network(TryFrom)]
 pub enum OptionCode {
     #[default]
-    LLQ = 1, // Optional	[RFC8764]
+    Unknown = 0, // OPT code unknow
+    LLQ = 1,               // Optional	[RFC8764]
     UL = 2,                // On-hold	[http://files.dns-sd.org/draft-sekar-dns-ul.txt]
     NSID = 3,              // Standard	[RFC5001]
     Reserved = 4,          // 	[draft-cheshire-edns0-owner-option]
@@ -174,15 +186,16 @@ pub enum OptionCode {
 
 #[derive(Debug, ToNetwork, Serialize)]
 pub enum OptionData {
-    NSID(NSID),
-    COOKIE(COOKIE),
-    Padding(Padding),
-    ClientSubnet(ClientSubnet),
     // DAU(DAU),
     // DHU(DHU),
-    // N3U(N3U),
     // EdnsKeyTag(EdnsKeyTag),
+    // N3U(N3U),
+    COOKIE(COOKIE),
+    ClientSubnet(ClientSubnet),
     Extended(Extended),
+    LLQ(LLQ),
+    NSID(NSID),
+    Padding(Padding),
     ReportChanel(ReportChannel),
     ZONEVERSION(ZONEVERSION),
 }
@@ -196,11 +209,12 @@ impl Default for OptionData {
 impl fmt::Display for OptionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            OptionData::NSID(n) => write!(f, "{}", n)?,
             OptionData::COOKIE(n) => write!(f, "{}", n)?,
-            OptionData::Padding(p) => write!(f, "{}", p)?,
-            OptionData::Extended(p) => write!(f, "{}", p)?,
             OptionData::ClientSubnet(p) => write!(f, "{} {}", p.family, p.address)?,
+            OptionData::Extended(p) => write!(f, "{}", p)?,
+            OptionData::LLQ(p) => write!(f, "{}", p)?,
+            OptionData::NSID(n) => write!(f, "{}", n)?,
+            OptionData::Padding(p) => write!(f, "{}", p)?,
             OptionData::ReportChanel(p) => write!(f, "{}", p)?,
             OptionData::ZONEVERSION(p) => write!(f, "{}", p)?,
             //_ => unimplemented!("EDNS option not yet implemented"),

@@ -204,11 +204,19 @@ where
     let mut current_length = 0u16;
 
     while current_length < rd_length {
-        let mut value = T::default();
-        value.deserialize_from(buffer)?;
-        trace!("value={:?}", value);
+        trace!(
+            "===========> rd_length: {}, current length: {}",
+            rd_length,
+            current_length
+        );
 
-        current_length += value.len() + 1u16;
+        let mut value = T::default();
+        trace!("before value={:?}", value);
+        value.deserialize_from(buffer)?;
+        trace!("after value={:?}", value);
+        trace!("===========> value length: {}", value.size());
+
+        current_length += value.size();
 
         v.push(value);
     }

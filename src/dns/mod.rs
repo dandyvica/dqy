@@ -90,7 +90,7 @@ mod tests {
                         std::io::Cursor::new(&data.1[0x2A..])
                     };
 
-                    println!("{:X?}", resp_buffer);
+                    //println!("{:X?}", resp_buffer);
 
                     let mut resp = Response::default();
                     let _ = resp.deserialize_from(&mut resp_buffer);

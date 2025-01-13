@@ -181,6 +181,20 @@ You can save raw query or response bytes using `--wq` or `--wr` respectively.
 $ dqy TXT dropbox.com --wr response.bin --wq query.bin
 ```
 
+### DQY_FLAGS environment variable
+You can set the `DQY_FLAGS` environment variable to all the options you always want
+to use. You just need to respect the order of options, by having the dash options
+after all other ones.
+
+If this environment variable is set, `dqy` will use the options found in the variable.
+
+Example:
+```console
+$ export DQY_FLAG='@1.1.1.1 --no-colors --stats'
+$ dqy A www.google.com
+```
+
+
 ## Lua scripting support
 Using `-l <Lua source file>`, all DNS data are sent as global variables to the Lua interpreter which makes it possible to format the output in a very flexible manner.
 
@@ -206,7 +220,7 @@ https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
 
 
 ## Bugs
-Beware it's a humble utility and probably buggy. Feel free to test it and report issues.
+Beware it's an utility developed during some of my free time and probably buggy. Feel free to test it and report issues.
 Specially in the display options, not all are implemented or even specially useful because of the Lua scripting or JSON output.
 
 ## Roadmap

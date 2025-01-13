@@ -32,7 +32,8 @@ jobs:
       run: |
         echo "TRIPLE=$(rustc -vV | sed -n 's|host: ||p')" >> $GITHUB_ENV
         echo ${{ env.TRIPLE }}
-        cargo t
+        cargo build
+        cargo test -- --test-threads=1
         cargo build --release
       shell: bash
 
