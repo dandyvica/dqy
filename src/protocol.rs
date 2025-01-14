@@ -8,7 +8,6 @@ use crate::dns::{
 };
 use crate::error::{self};
 use crate::transport::network::{Messenger, Protocol};
-use crate::transport::quic::QuicProtocol;
 use crate::transport::tcp::TcpProtocol;
 use crate::{args::CliOptions, cli_options::FromOptions};
 
@@ -93,9 +92,9 @@ impl DnsProtocol {
     }
 
     //───────────────────────────────────────────────────────────────────────────────────
-    // this sends and receives queries using a transport
+    // this sends and receives queries using a sync transport
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) fn process_request<T: Messenger>(
+    pub(crate) fn sync_process_request<T: Messenger>(
         options: &CliOptions,
         trp: &mut T,
         buffer_size: usize,
@@ -132,25 +131,24 @@ impl DnsProtocol {
     }
 
     //───────────────────────────────────────────────────────────────────────────────────
-    // specific to QUIC
+    // this sends and receives queries using an async transport
     //───────────────────────────────────────────────────────────────────────────────────
-    pub(crate) async fn quic_process_request(
+    pub(crate) async fn async_process_request<T: Messenger>(
         options: &CliOptions,
+        trp: &mut T,
         buffer_size: usize,
     ) -> crate::error::Result<MessageList> {
         // we'll have the same number of messages than the number of types to query
         let mut messages = Vec::with_capacity(options.protocol.qtype.len());
         let mut buffer = vec![0u8; buffer_size];
 
-        let mut trp = QuicProtocol::new(&options.transport).await?;
-
         for qtype in options.protocol.qtype.iter() {
             // for QUIC, we need a specific stream for each query as stated in https://www.rfc-editor.org/rfc/rfc9250.html
-            trp.connect().await?;
+            trp.aconnect().await?;
 
             // send query, response is depending on TC flag if UDP
-            let query = Self::asend_query(options, qtype, &mut trp).await?;
-            let response = Self::areceive_response(&mut trp, &mut buffer, &options.dump.write_response).await?;
+            let query = Self::asend_query(options, qtype, trp).await?;
+            let response = Self::areceive_response(trp, &mut buffer, &options.dump.write_response).await?;
 
             // struct Message is a convenient way to gather both query and response
             let msg = Message { query, response };

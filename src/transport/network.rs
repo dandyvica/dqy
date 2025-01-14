@@ -106,6 +106,9 @@ pub trait Messenger {
     // async version
     async fn arecv(&mut self, buffer: &mut [u8]) -> error::Result<usize>;
 
+    // async connect used by QUIC
+    async fn aconnect(&mut self) -> error::Result<()>;
+
     // true if transporter uses Tcp. This is required for TCP transport to have 2 bytes
     // for the message length prepended in the query
     fn uses_leading_length(&self) -> bool;

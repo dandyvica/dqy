@@ -100,6 +100,10 @@ impl<'a> Messenger for HttpsProtocol<'a> {
         Ok(0)
     }
 
+    async fn aconnect(&mut self) -> error::Result<()> {
+        Ok(())
+    }
+
     fn send(&mut self, buffer: &[u8]) -> crate::error::Result<usize> {
         self.netinfo.sent = buffer.len();
 

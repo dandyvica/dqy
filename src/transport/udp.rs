@@ -66,6 +66,10 @@ impl Messenger for UdpProtocol {
         Ok(0)
     }
 
+    async fn aconnect(&mut self) -> error::Result<()> {
+        Ok(())
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         self.netinfo.sent = self.handle.send(buffer).map_err(|e| Error::Network(e, Network::Send))?;
         debug!("sent {} bytes", self.netinfo.sent);

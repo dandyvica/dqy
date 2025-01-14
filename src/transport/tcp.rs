@@ -44,6 +44,10 @@ impl Messenger for TcpProtocol {
         Ok(0)
     }
 
+    async fn aconnect(&mut self) -> error::Result<()> {
+        Ok(())
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         self.netinfo.sent = self.handle.write(buffer).map_err(crate::error::Error::Buffer)?;
         self.handle.flush().map_err(crate::error::Error::Buffer)?;

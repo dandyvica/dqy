@@ -83,6 +83,10 @@ impl Messenger for TlsProtocol {
         Ok(0)
     }
 
+    async fn aconnect(&mut self) -> error::Result<()> {
+        Ok(())
+    }
+
     fn send(&mut self, buffer: &[u8]) -> Result<usize> {
         self.netinfo.sent = self
             .handle

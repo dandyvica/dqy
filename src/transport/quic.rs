@@ -59,28 +59,20 @@ impl QuicProtocol {
             .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
         debug!("conn: {:?}", conn);
 
+        let addr = conn.remote_address();
+
         Ok(Self {
             handle: QuicConn {
                 conn,
                 send: None,
                 recv: None,
             },
-            netinfo: NetworkInfo::default(),
+            netinfo: NetworkInfo {
+                sent: 0,
+                received: 0,
+                peer: Some(addr),
+            },
         })
-    }
-
-    pub async fn connect(&mut self) -> Result<()> {
-        let (send, recv) = self
-            .handle
-            .conn
-            .open_bi()
-            .await
-            .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
-
-        self.handle.send = Some(send);
-        self.handle.recv = Some(recv);
-
-        Ok(())
     }
 }
 
@@ -128,6 +120,20 @@ impl Messenger for QuicProtocol {
 
         self.netinfo.received = length;
         Ok(length)
+    }
+
+    async fn aconnect(&mut self) -> Result<()> {
+        let (send, recv) = self
+            .handle
+            .conn
+            .open_bi()
+            .await
+            .map_err(|e| Error::Quic(QuicError::Connection(e)))?;
+
+        self.handle.send = Some(send);
+        self.handle.recv = Some(recv);
+
+        Ok(())
     }
 
     fn uses_leading_length(&self) -> bool {

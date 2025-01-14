@@ -28,6 +28,7 @@ mod transport;
 use transport::{
     https::HttpsProtocol,
     network::{Messenger, Protocol},
+    quic::QuicProtocol,
     root_servers::init_root_map,
     tcp::TcpProtocol,
     tls::TlsProtocol,
@@ -54,15 +55,15 @@ use lua::LuaDisplay;
 const BUFFER_SIZE: usize = 8192;
 
 //───────────────────────────────────────────────────────────────────────────────────
-// get list of messages using transport
+// get list of messages using transport: sync mode
 //───────────────────────────────────────────────────────────────────────────────────
-fn get_messages_using_transport<T: Messenger>(
+fn get_messages_using_sync_transport<T: Messenger>(
     info: Option<&mut QueryInfo>,
     transport: &mut T,
     options: &CliOptions,
 ) -> error::Result<MessageList> {
     // BUFFER_SIZE is the size of the buffer used to received data
-    let messages = DnsProtocol::process_request(options, transport, BUFFER_SIZE)?;
+    let messages = DnsProtocol::sync_process_request(options, transport, BUFFER_SIZE)?;
 
     // we want run info
     if let Some(info) = info {
@@ -83,19 +84,19 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error
     match options.transport.transport_mode {
         Protocol::Udp => {
             let mut transport = UdpProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, options)
+            get_messages_using_sync_transport(info, &mut transport, options)
         }
         Protocol::Tcp => {
             let mut transport = TcpProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, options)
+            get_messages_using_sync_transport(info, &mut transport, options)
         }
         Protocol::DoT => {
             let mut transport = TlsProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, options)
+            get_messages_using_sync_transport(info, &mut transport, options)
         }
         Protocol::DoH => {
             let mut transport = HttpsProtocol::new(&options.transport)?;
-            get_messages_using_transport(info, &mut transport, options)
+            get_messages_using_sync_transport(info, &mut transport, options)
         }
         Protocol::DoQ => {
             // quinn crate doesn't provide blocking
@@ -105,7 +106,13 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error
                 .map_err(Error::Tokio)?;
 
             rt.block_on(async {
-                let messages = DnsProtocol::quic_process_request(options, BUFFER_SIZE).await?;
+                let mut transport = QuicProtocol::new(&options.transport).await?;
+                let messages = DnsProtocol::async_process_request(options, &mut transport, BUFFER_SIZE).await?;
+
+                // we want run info
+                if let Some(info) = info {
+                    info.netinfo = *transport.network_info();
+                }
                 Ok(messages)
             })
         }
