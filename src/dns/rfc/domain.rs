@@ -25,6 +25,14 @@ const PUNY_HEADER: &[u8; 4] = b"xn--";
 struct Label(Vec<u8>);
 
 impl Label {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn size(&self) -> usize {
+        self.0.len() + 1
+    }
+
     // true is label representes a punycode
     #[inline]
     fn is_puny(&self) -> bool {
@@ -309,24 +317,34 @@ impl<'a> TryFrom<&'a str> for DomainName {
             return Err(Error::Dns(Dns::EmptyDomainName));
         }
 
-        // root domain is a special case
-        let label_list = if domain == "." {
-            Vec::new()
-        } else {
+        // root domain
+        if domain == "." {
+            return Ok(DomainName::default());
+        }
+
+        // domain too long
+        if domain.len() > 255 {
+            return Err(Error::Dns(Dns::DomainNameTooLong));
+        }
+
+        // test IDNA: if so, convert to puny
+        let dom = if domain.is_ascii() {
             domain
-                .split('.')
-                .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
-                .map(|x| Label(x.as_bytes().to_vec()))
-                .collect()
+        } else {
+            &idna::domain_to_ascii(domain).map_err(Error::IDNA)?
         };
+
+        // root domain is a special case
+        let label_list = dom
+            .split('.')
+            .filter(|x| !x.is_empty()) // filter to exclude any potential ending root
+            .map(|x| Label(x.as_bytes().to_vec()))
+            .collect();
 
         // create the domain name struct
         let dn = DomainName { labels: label_list };
 
         // test for correctness
-        if dn.len() > 255 {
-            return Err(Error::Dns(Dns::DomainNameTooLong));
-        }
         if dn.labels.iter().any(|x| x.len() > 63) {
             return Err(Error::Dns(Dns::DomainLabelTooLong));
         }

@@ -79,12 +79,12 @@ impl fmt::Display for RRList {
 }
 
 impl Show for RRList {
-    fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
-        // let max_length = if display_options.align_names {
-        //     self.max_length()
-        // } else {
-        //     None
-        // };
+    fn show(&self, display_options: &DisplayOptions, _: Option<usize>) {
+        let max_length = if display_options.align_names {
+            self.max_length()
+        } else {
+            None
+        };
 
         for rr in &self.0 {
             // don't display OPT if not requested

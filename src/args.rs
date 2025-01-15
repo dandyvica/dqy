@@ -751,7 +751,7 @@ Supported query types: {}
         }
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // if no domain to query, by default set root (.)
+        // if --domain, take it
         //───────────────────────────────────────────────────────────────────────────────────
         if let Some(domain) = matches.get_one::<String>("domain") {
             options.protocol.domain_string = domain.to_string();
@@ -921,12 +921,13 @@ Supported query types: {}
         // finally convert domain as a string to a domain name
         // internal domain name processing (IDNA)
         //───────────────────────────────────────────────────────────────────────────────────
-        if options.protocol.domain_string.len() != options.protocol.domain_string.chars().count() {
-            let puny = idna::domain_to_ascii(&options.protocol.domain_string).map_err(Error::IDNA)?;
-            options.protocol.domain_name = DomainName::try_from(puny.as_str())?;
-        } else {
-            options.protocol.domain_name = DomainName::try_from(options.protocol.domain_string.as_str())?;
-        }
+        // if options.protocol.domain_string.len() != options.protocol.domain_string.chars().count() {
+        //     let puny = idna::domain_to_ascii(&options.protocol.domain_string).map_err(Error::IDNA)?;
+        //     options.protocol.domain_name = DomainName::try_from(puny.as_str())?;
+        // } else {
+        //     options.protocol.domain_name = DomainName::try_from(options.protocol.domain_string.as_str())?;
+        // }
+        options.protocol.domain_name = DomainName::try_from(options.protocol.domain_string.as_str())?;
 
         // for some types, use TCP instead of UDP right away
         if options.protocol.qtype.contains(&QType::ANY)

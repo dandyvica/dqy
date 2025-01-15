@@ -71,7 +71,7 @@ Those with (*) are not yet fully tested.
 You can also use a `TYPEn` where `n` is an integer <=255 for the query type.
 
 ## General usage
-Usage is similar to __dig__, without support for options starting with `+`.
+Usage is akin to __dig__, without support for options starting with `+`.
 Example:
 ```console
 $ dqy A www.google.com
