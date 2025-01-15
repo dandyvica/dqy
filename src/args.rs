@@ -149,7 +149,7 @@ Project home page: https://github.com/dandyvica/dqy"#,
 Caveats: 
 
     - all options starting with a dash (-) should be placed after optional [TYPES] [DOMAIN] [@RESOLVER].
-    - whenever you enter a domain name, it must ends with the root (.). E.g.: fr. or mx.
+    - whenever you enter a singl-label domain name, it must ends with the root (.). E.g.: fr. or mx.
 
 Supported query types: {}
             "#,
