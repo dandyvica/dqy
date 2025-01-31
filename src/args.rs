@@ -14,13 +14,14 @@ use log::trace;
 use rustc_version_runtime::version;
 use simplelog::*;
 
+use dnslib::dns::rfc::domain::DomainName;
+use dnslib::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
+use dnslib::error::Error;
+use dnslib::transport::network::{IPVersion, Protocol};
+use dnslib::transport::{endpoint::EndPoint, TransportOptions};
+
 use crate::cli_options::{DnsProtocolOptions, EdnsOptions};
-use crate::dns::rfc::domain::DomainName;
-use crate::dns::rfc::{flags::BitFlags, qclass::QClass, qtype::QType};
-use crate::error::Error;
 use crate::show::{DisplayOptions, DumpOptions};
-use crate::transport::network::{IPVersion, Protocol};
-use crate::transport::{endpoint::EndPoint, TransportOptions};
 
 // value of the environment variable for flags if any
 const ENV_FLAGS: &str = "DQY_FLAGS";
@@ -60,7 +61,7 @@ pub struct CliOptions {
 }
 
 impl FromStr for CliOptions {
-    type Err = crate::error::Error;
+    type Err = dnslib::error::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
@@ -80,7 +81,7 @@ impl CliOptions {
         }
     }
 
-    pub fn options(args: &[String]) -> crate::error::Result<Self> {
+    pub fn options(args: &[String]) -> dnslib::error::Result<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
 
@@ -1012,7 +1013,7 @@ fn validate_qtypes(s: &str) -> std::result::Result<QType, String> {
 }
 
 // Initialize write logger: either create it or use it
-fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error::Result<()> {
+fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> dnslib::error::Result<()> {
     if level == log::LevelFilter::Off {
         return Ok(());
     }
@@ -1039,7 +1040,7 @@ fn init_write_logger(logfile: &PathBuf, level: log::LevelFilter) -> crate::error
 }
 
 // Initialize terminal logger
-fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
+fn init_term_logger(level: log::LevelFilter) -> dnslib::error::Result<()> {
     if level == log::LevelFilter::Off {
         return Ok(());
     }
@@ -1051,7 +1052,7 @@ fn init_term_logger(level: log::LevelFilter) -> crate::error::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dns::rfc::domain::ROOT;
+    use dnslib::dns::rfc::domain::ROOT;
 
     #[test]
     fn _split_args() {

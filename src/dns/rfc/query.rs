@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::path::PathBuf;
 
 use colored::Colorize;
@@ -8,11 +8,11 @@ use log::{debug, trace};
 use serde::Serialize;
 use tokio::io::AsyncWriteExt;
 
-use type2network::ToNetworkOrder;
-use type2network_derive::ToNetwork;
+use type2network::{FromNetworkOrder, ToNetworkOrder};
+use type2network_derive::{FromNetwork, ToNetwork};
 
 use crate::error::{Dns, Error, Result};
-use crate::show::{header_section, DisplayOptions, Show};
+use crate::header_section;
 use crate::transport::network::Messenger;
 
 use super::{
@@ -22,16 +22,18 @@ use super::{
 
 const DEFAULT_BUFSIZE: u16 = 4096;
 
+#[non_exhaustive]
 #[derive(Debug, ToNetwork, Serialize)]
 pub enum MetaRR {
     OPT(OPT),
 }
 
+#[allow(unreachable_patterns)]
 impl fmt::Display for MetaRR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MetaRR::OPT(opt) => write!(f, "{}", opt),
-            //_ => unimplemented!("Meta RR other than OPT not implemented"),
+            _ => unimplemented!("Meta RR other than OPT not implemented"),
         }
     }
 }
@@ -44,7 +46,20 @@ impl Default for MetaRR {
     }
 }
 
-#[derive(Debug, Default, ToNetwork, Serialize)]
+#[allow(unreachable_patterns)]
+impl<'a> FromNetworkOrder<'a> for MetaRR {
+    fn deserialize_from(&mut self, buffer: &mut Cursor<&'a [u8]>) -> std::io::Result<()> {
+        match self {
+            MetaRR::OPT(opt) => opt.deserialize_from(buffer)?,
+            _ => unimplemented!("Meta RR other than OPT not implemented"),
+        }
+
+        // if a pointer, get pointer value and call
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default, ToNetwork, FromNetwork, Serialize)]
 pub struct Query {
     #[serde(skip_serializing)]
     pub length: Option<u16>, // length in case of TCP/TLS transport (https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2)
@@ -102,7 +117,7 @@ impl Query {
 
     // Send the query through the wire
     pub fn send<T: Messenger>(&mut self, trp: &mut T, save_path: &Option<PathBuf>) -> Result<usize> {
-        // convert to network bytes
+        // convert to network Querybytes
         let mut buffer: Vec<u8> = Vec::new();
         let message_size = self
             .serialize_to(&mut buffer)
@@ -196,15 +211,6 @@ impl fmt::Display for Query {
         }
 
         Ok(())
-    }
-}
-
-impl Show for Query {
-    fn show(&self, display_options: &DisplayOptions, _length: Option<usize>) {
-        // print out Query if requested
-        if display_options.show_question {
-            println!("{}", self);
-        }
     }
 }
 

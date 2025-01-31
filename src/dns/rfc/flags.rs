@@ -15,7 +15,7 @@ use crate::error::{Dns, Error};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |QR|   Opcode  |AA|TC|RD|RA|Z |AD|CD|   RCODE   |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize)]
 pub struct Flags {
     pub(super) qr: PacketType, // A one bit field that specifies whether this message is a query (0), or a response (1).
     pub(super) op_code: OpCode, // A four bit field that specifies kind of query in this
@@ -46,6 +46,12 @@ pub struct Flags {
                                             //                a particular operation (e.g., zone
                                             //                transfer) for particular data.
                                             //6-15            Reserved for future use.
+}
+
+impl Flags {
+    pub fn set_response_code(&mut self, rc: ResponseCode) {
+        self.response_code = rc;
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize)]

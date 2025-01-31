@@ -8,24 +8,12 @@
 //! A DNS resource query tool
 use std::{process::ExitCode, time::Instant};
 
-use error::Error;
-// use handlebars::render;
 use log::info;
 
-// internal modules
-mod dns;
-use dns::message::MessageList;
-
-mod args;
-use args::CliOptions;
-
-mod error;
-
-mod show;
-use show::{QueryInfo, ShowAll};
-
-mod transport;
-use transport::{
+// tap into dnslib crate
+use dnslib::dns::message::MessageList;
+use dnslib::error::*;
+use dnslib::transport::{
     https::HttpsProtocol,
     network::{Messenger, Protocol},
     quic::QuicProtocol,
@@ -34,6 +22,12 @@ use transport::{
     tls::TlsProtocol,
     udp::UdpProtocol,
 };
+
+mod args;
+use args::CliOptions;
+
+mod show;
+use show::{QueryInfo, ShowAll};
 
 mod trace;
 use trace::*;
@@ -44,7 +38,6 @@ use protocol::DnsProtocol;
 mod cli_options;
 
 mod handlebars;
-// mod templating;
 
 #[cfg(feature = "mlua")]
 mod lua;
@@ -61,7 +54,7 @@ fn get_messages_using_sync_transport<T: Messenger>(
     info: Option<&mut QueryInfo>,
     transport: &mut T,
     options: &CliOptions,
-) -> error::Result<MessageList> {
+) -> dnslib::error::Result<MessageList> {
     // BUFFER_SIZE is the size of the buffer used to received data
     let messages = DnsProtocol::sync_process_request(options, transport, BUFFER_SIZE)?;
 
@@ -76,7 +69,7 @@ fn get_messages_using_sync_transport<T: Messenger>(
 //───────────────────────────────────────────────────────────────────────────────────
 // send all QTypes to domain and get responses for each query.
 //───────────────────────────────────────────────────────────────────────────────────
-pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> error::Result<MessageList> {
+pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> dnslib::error::Result<MessageList> {
     info!(
         "qtype={:?} domain='{}' resolver=<{}>",
         options.protocol.qtype, options.protocol.domain_name, options.transport.endpoint
@@ -137,7 +130,7 @@ fn main() -> ExitCode {
 // core of processing
 //───────────────────────────────────────────────────────────────────────────────────
 #[allow(unused_assignments)]
-fn run() -> error::Result<()> {
+fn run() -> dnslib::error::Result<()> {
     let now = Instant::now();
 
     init_root_map();

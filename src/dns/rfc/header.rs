@@ -7,7 +7,7 @@ use type2network_derive::{FromNetwork, ToNetwork};
 use rand::Rng;
 use serde::Serialize;
 
-use super::{flags::Flags, opcode::OpCode, packet_type::PacketType};
+use super::{flags::Flags, opcode::OpCode, packet_type::PacketType, response_code::ResponseCode};
 
 //  1  1  1  1  1  1
 //  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -24,7 +24,7 @@ use super::{flags::Flags, opcode::OpCode, packet_type::PacketType};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                    ARCOUNT                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, ToNetwork, FromNetwork, Serialize)]
+#[derive(Debug, Clone, ToNetwork, FromNetwork, Serialize)]
 pub struct Header {
     pub id: u16, // A 16 bit identifier assigned by the program that
     // generates any kind of query.  This identifier is copied
@@ -46,6 +46,10 @@ impl Header {
     pub fn set_id(&mut self, id: u16) {
         self.id = id;
     }
+
+    pub fn set_response_code(&mut self, rc: ResponseCode) {
+        self.flags.set_response_code(rc);
+    }    
 }
 
 impl Default for Header {

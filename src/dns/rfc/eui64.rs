@@ -11,7 +11,7 @@ use type2network_derive::FromNetwork;
 // |                                                               |
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct EUI64(u64);
+pub struct EUI64(u64);
 
 impl fmt::Display for EUI64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -3,11 +3,10 @@ use std::net::SocketAddr;
 
 use log::trace;
 
-use crate::args::CliOptions;
-use crate::dns::rfc::domain::ROOT;
-use crate::dns::rfc::opt::cookie::COOKIE;
-use crate::dns::rfc::opt::zoneversion::ZONEVERSION;
-use crate::dns::rfc::{
+use dnslib::dns::rfc::domain::ROOT;
+use dnslib::dns::rfc::opt::cookie::COOKIE;
+use dnslib::dns::rfc::opt::zoneversion::ZONEVERSION;
+use dnslib::dns::rfc::{
     domain::{DomainName, ROOT_DOMAIN},
     opt::{
         //dau_dhu_n3u::{EdnsKeyTag, DAU, DHU, N3U},
@@ -20,6 +19,8 @@ use crate::dns::rfc::{
     query::{MetaRR, Query},
     resource_record::OPT,
 };
+
+use crate::args::CliOptions;
 
 // DNSSEC OK
 const DNSSEC_FLAG: u16 = 0x8000;

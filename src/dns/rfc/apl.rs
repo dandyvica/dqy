@@ -82,7 +82,7 @@ impl Serialize for InnerAPL {
 //───────────────────────────────────────────────────────────────────────────────────
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, Serialize)]
-pub(super) struct APL {
+pub struct APL {
     #[serde(skip_serializing)]
     rd_length: u16,
     apl: Vec<InnerAPL>,

@@ -10,7 +10,7 @@ use crate::{dns::buffer::Buffer, new_rd_length};
 //-------------------------------------------------------------------------------------
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct OPENPGPKEY {
+pub struct OPENPGPKEY {
     // transmistted through RR deserialization
     #[from_network(ignore)]
     rd_length: u16,

@@ -1,11 +1,8 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use colored::Colorize;
 use enum_from::{EnumDisplay, EnumFromStr, EnumTryFrom};
 use serde::Serialize;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
-
-use crate::show::ToColor;
 
 #[allow(clippy::unnecessary_cast)]
 // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.2
@@ -113,12 +110,6 @@ pub enum QType {
 
     #[fallback]
     TYPE(u16),
-}
-
-impl ToColor for QType {
-    fn to_color(&self) -> colored::ColoredString {
-        self.to_string().bright_blue()
-    }
 }
 
 #[cfg(test)]

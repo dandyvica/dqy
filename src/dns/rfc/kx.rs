@@ -14,7 +14,7 @@ use super::domain::DomainName;
 // /                                               /
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct KX {
+pub struct KX {
     preference: u16,
     exchanger: DomainName,
 }

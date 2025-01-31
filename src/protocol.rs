@@ -2,13 +2,13 @@ use std::path::PathBuf;
 
 use log::{debug, info};
 
-use crate::dns::{
-    message::{Message, MessageList},
-    rfc::{qtype::QType, query::Query, response::Response},
+use dnslib::{
+    dns::message::{Message, MessageList},
+    dns::rfc::{qtype::QType, query::Query, response::Response},
+    transport::network::{Messenger, Protocol},
+    transport::tcp::TcpProtocol,
 };
-use crate::error::{self};
-use crate::transport::network::{Messenger, Protocol};
-use crate::transport::tcp::TcpProtocol;
+
 use crate::{args::CliOptions, cli_options::FromOptions};
 
 // a unit struct with gathers all high level functions
@@ -18,7 +18,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver
     //───────────────────────────────────────────────────────────────────────────────────
-    fn send_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> error::Result<Query> {
+    fn send_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> dnslib::error::Result<Query> {
         // it's safe to unwrap here, see from_options() for Query
         let mut query = Query::from_options(options, qt).unwrap();
 
@@ -41,7 +41,7 @@ impl DnsProtocol {
     //───────────────────────────────────────────────────────────────────────────────────
     // send the query to the resolver, async version
     //───────────────────────────────────────────────────────────────────────────────────
-    async fn asend_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> error::Result<Query> {
+    async fn asend_query<T: Messenger>(options: &CliOptions, qt: &QType, trp: &mut T) -> dnslib::error::Result<Query> {
         // it's safe to unwrap here, see from_options() for Query
         let mut query = Query::from_options(options, qt).unwrap();
 
@@ -69,7 +69,7 @@ impl DnsProtocol {
         trp: &mut T,
         buffer: &mut [u8],
         save_path: &Option<PathBuf>,
-    ) -> crate::error::Result<Response> {
+    ) -> dnslib::error::Result<Response> {
         let mut response = Response::default();
         let _ = response.recv(trp, buffer, save_path)?;
 
@@ -84,7 +84,7 @@ impl DnsProtocol {
         trp: &mut T,
         buffer: &mut [u8],
         save_path: &Option<PathBuf>,
-    ) -> crate::error::Result<Response> {
+    ) -> dnslib::error::Result<Response> {
         let mut response = Response::default();
         let _ = response.arecv(trp, buffer, save_path).await?;
 
@@ -98,7 +98,7 @@ impl DnsProtocol {
         options: &CliOptions,
         trp: &mut T,
         buffer_size: usize,
-    ) -> crate::error::Result<MessageList> {
+    ) -> dnslib::error::Result<MessageList> {
         // we'll have the same number of messages than the number of types to query
         let mut messages = Vec::with_capacity(options.protocol.qtype.len());
         let mut buffer = vec![0u8; buffer_size];
@@ -137,7 +137,7 @@ impl DnsProtocol {
         options: &CliOptions,
         trp: &mut T,
         buffer_size: usize,
-    ) -> crate::error::Result<MessageList> {
+    ) -> dnslib::error::Result<MessageList> {
         // we'll have the same number of messages than the number of types to query
         let mut messages = Vec::with_capacity(options.protocol.qtype.len());
         let mut buffer = vec![0u8; buffer_size];

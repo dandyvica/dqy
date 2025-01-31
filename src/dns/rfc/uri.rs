@@ -17,7 +17,7 @@ use crate::{dns::buffer::Buffer, new_rd_length};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct URI {
+pub struct URI {
     #[from_network(ignore)]
     rd_length: u16,
 

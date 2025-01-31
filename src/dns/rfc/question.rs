@@ -5,10 +5,8 @@ use type2network_derive::{FromNetwork, ToNetwork};
 
 use serde::Serialize;
 
-use crate::{
-    dns::rfc::{domain::DomainName, qclass::QClass, qtype::QType},
-    show::TITLES,
-};
+use crate::dns::rfc::{domain::DomainName, qclass::QClass, qtype::QType};
+use crate::TITLES;
 
 // Question structure: https://datatracker.ietf.org/doc/html/rfc1035#section-4.1.2
 // 1  1  1  1  1  1
@@ -22,7 +20,7 @@ use crate::{
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // |                     QCLASS                    |
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, ToNetwork, FromNetwork, Serialize)]
 pub struct Question {
     pub qname: DomainName,
     pub qtype: QType,

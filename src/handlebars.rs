@@ -2,8 +2,8 @@
 use handlebars::*;
 use serde::Serialize;
 
-use crate::dns::message::MessageList;
 use crate::QueryInfo;
+use dnslib::dns::message::MessageList;
 
 // custom helper
 handlebars_helper!(ljust: |length: usize, x: String| format!("{:<length$}", x));

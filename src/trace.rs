@@ -1,14 +1,15 @@
 use log::trace;
 
+use dnslib::dns::rfc::domain::ROOT;
+use dnslib::dns::rfc::{domain::ROOT_DOMAIN, qtype::QType};
+use dnslib::error::*;
+use dnslib::transport::{endpoint::EndPoint, root_servers::get_root_server};
+
 use crate::args::CliOptions;
-use crate::dns::rfc::domain::ROOT;
-use crate::dns::rfc::{domain::ROOT_DOMAIN, qtype::QType};
-use crate::error::{Dns, Error};
 use crate::get_messages;
 use crate::show::Show;
-use crate::transport::{endpoint::EndPoint, root_servers::get_root_server};
 
-pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
+pub fn trace_resolution(options: &mut CliOptions) -> dnslib::error::Result<()> {
     trace!("tracing started");
 
     // save original options
@@ -53,7 +54,7 @@ pub fn trace_resolution(options: &mut CliOptions) -> crate::error::Result<()> {
         println!();
 
         // did we find the ip address for the domain we asked for ?
-        if let Some(ip) = resp.ip_address(&orig_qt, &options.protocol.domain_name) {
+        if let Some(_ip) = resp.ip_address(&orig_qt, &options.protocol.domain_name) {
             // println!("!!! found ip={}", ip);
             return Ok(());
         }

@@ -1,18 +1,24 @@
 use std::{fmt, io::Cursor, net::IpAddr};
 
-use colored::Colorize;
 use serde::Serialize;
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::domain::ROOT_DOMAIN;
 use super::opt::OptionDataValue;
-// use super::opt::opt_rr::OPT;
 use super::{domain::DomainName, qclass::QClass, qtype::QType, rdata::RData};
 use crate::dns::rfc::opt::opt_rr::{OptOption, OptionList};
-use crate::show::{DisplayOptions, ToColor, TITLES};
 
 use log::{debug, trace};
+
+macro_rules! getter {
+    ($fname:ident, $type:ty) => {
+        #[inline]
+        pub fn $fname(&self) -> $type {
+            self.$fname
+        }
+    };
+}
 
 // 4.1.3. Resource record format
 
@@ -60,6 +66,11 @@ pub struct RegularClassTtl {
     pub(super) ttl: u32,
 }
 
+impl RegularClassTtl {
+    getter!(class, QClass);
+    getter!(ttl, u32);
+}
+
 // Case of OPT RR
 // https://www.rfc-editor.org/rfc/rfc6891#section-6.1.3
 // +0 (MSB)                            +1 (LSB)
@@ -70,10 +81,17 @@ pub struct RegularClassTtl {
 //    +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #[derive(Debug, Default, PartialEq, ToNetwork, FromNetwork)]
 pub struct OptPayload {
-    pub(super) payload: u16,
-    pub(super) extended_rcode: u8,
-    pub(super) version: u8,
-    pub(super) flags: u16,
+    payload: u16,
+    extended_rcode: u8,
+    version: u8,
+    flags: u16,
+}
+
+impl OptPayload {
+    getter!(payload, u16);
+    getter!(extended_rcode, u8);
+    getter!(version, u8);
+    getter!(flags, u16);
 }
 
 // CLASS & TTL vary if RR is OPT or not
@@ -122,18 +140,7 @@ impl fmt::Debug for OptOrClassTtl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             OptOrClassTtl::Regular(x) => write!(f, "{:<10} {:<10}", x.class.to_string(), x.ttl),
-            OptOrClassTtl::Opt(x) => write!(
-                f,
-                "{}:{} {}:{} {}:{} {}:{}",
-                TITLES["payload"],
-                x.payload,
-                TITLES["rcode"],
-                x.extended_rcode,
-                TITLES["version"],
-                x.version,
-                TITLES["flags"],
-                x.flags
-            ),
+            OptOrClassTtl::Opt(x) => write!(f, "{} {} {} {}", x.payload, x.extended_rcode, x.version, x.flags),
         }
     }
 }
@@ -165,7 +172,7 @@ impl Serialize for OptOrClassTtl {
 }
 
 // a new type definition for printing out TTL as days, hours, minutes and seconds
-struct Ttl(u32);
+pub struct Ttl(u32);
 
 impl fmt::Display for Ttl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -192,9 +199,9 @@ impl fmt::Display for Ttl {
     }
 }
 
-impl ToColor for Ttl {
-    fn to_color(&self) -> colored::ColoredString {
-        self.to_string().bright_red()
+impl From<u32> for Ttl {
+    fn from(v: u32) -> Self {
+        Self(v)
     }
 }
 
@@ -215,30 +222,23 @@ pub struct ResourceRecord {
     // cached.  For example, SOA records are always distributed
     // with a zero TTL to prohibit caching.  Zero values can
     // also be used for extremely volatile data.
-    pub(super) rd_length: u16, // an unsigned 16 bit integer that specifies the length in octets of the RDATA field.
+    rd_length: u16, // an unsigned 16 bit integer that specifies the length in octets of the RDATA field.
 
     #[serde(flatten)]
-    pub(super) r_data: RData,
+    pub r_data: RData,
     //  a variable length string of octets that describes the
     //  resource.  The format of this information varies
     //  according to the TYPE and CLASS of the resource record.
 }
 
-// standard lengths for displaying and aligning a RR
-const NAME_DISPLAY_LENGTH: usize = 28;
-const TYPE_DISPLAY_LENGTH: usize = 10;
-const LENGTH_DISPLAY_LENGTH: usize = 5;
-const CLASS_DISPLAY_LENGTH: usize = 4;
-const TTL_INT_DISPLAY_LENGTH: usize = 7;
-const TTL_STRING_DISPLAY_LENGTH: usize = 12;
-const PAYLOAD_DISPLAY_LENGTH: usize = 5;
-const EXTCODE_DISPLAY_LENGTH: usize = 5;
-const VERSION_DISPLAY_LENGTH: usize = 5;
-const FLAGS_DISPLAY_LENGTH: usize = 5;
-
 // don't use Show trait to provide extra length used to align output
 // use this function
 impl ResourceRecord {
+    #[inline]
+    pub fn rd_length(&self) -> u16 {
+        self.rd_length
+    }
+
     // return the domain name when rr is NS
     pub fn ns_name(&self) -> Option<DomainName> {
         if self.r#type == QType::NS {
@@ -266,106 +266,11 @@ impl ResourceRecord {
         }
         None
     }
-
-    fn display(&self, fmt: &str, raw_ttl: bool, name_length: usize, puny: bool) {
-        for f in fmt.split(",") {
-            match f.trim() {
-                // except OPT
-                "name" => {
-                    // print punycodes
-                    if puny {
-                        print!("{:<name_length$} ", self.name.to_color());
-                    }
-                    // print as UTF-8
-                    else {
-                        // convert domain name back to UTF-8
-                        if self.name.is_puny() {
-                            let unicode = self.name.to_unicode().unwrap();
-                            print!("{:<name_length$}", unicode.bright_green());
-                        }
-                        // not puny-like
-                        else {
-                            print!("{:<name_length$} ", self.name.to_color());
-                        }
-                    }
-                }
-                "type" => print!("{:<TYPE_DISPLAY_LENGTH$} ", self.r#type.to_color()),
-                "length" => print!("{:<LENGTH_DISPLAY_LENGTH$} ", self.rd_length),
-                "class" => {
-                    if let Some(r) = self.opt_or_class_ttl.regular() {
-                        print!("{:<CLASS_DISPLAY_LENGTH$} ", r.class.to_string())
-                    }
-                }
-                "ttl" => {
-                    if let Some(r) = self.opt_or_class_ttl.regular() {
-                        if raw_ttl {
-                            print!("{:<TTL_INT_DISPLAY_LENGTH$} ", r.ttl)
-                        } else {
-                            print!("{:<TTL_STRING_DISPLAY_LENGTH$} ", Ttl(r.ttl).to_color())
-                        }
-                    }
-                }
-                "rdata" => print!("{}", self.r_data.to_color()),
-
-                // OPT specific data
-                "payload" => {
-                    if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<PAYLOAD_DISPLAY_LENGTH$}", r.payload)
-                    }
-                }
-                "extcode" => {
-                    if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<EXTCODE_DISPLAY_LENGTH$}", r.extended_rcode)
-                    }
-                }
-                "version" => {
-                    if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("EDNS{:<VERSION_DISPLAY_LENGTH$}", r.version)
-                    }
-                }
-                "flags" => {
-                    if let Some(r) = self.opt_or_class_ttl.opt() {
-                        print!("{:<FLAGS_DISPLAY_LENGTH$}", r.flags)
-                    }
-                }
-                _ => (),
-            }
-        }
-    }
-
-    pub(super) fn show(&self, display_options: &DisplayOptions, length: Option<usize>) {
-        let name_length = length.unwrap_or(NAME_DISPLAY_LENGTH);
-
-        // formatting display
-        if !display_options.fmt.is_empty() {
-            self.display(
-                &display_options.fmt,
-                display_options.raw_ttl,
-                name_length,
-                display_options.puny,
-            );
-            println!();
-            return;
-        }
-
-        // other options
-        if display_options.short {
-            println!("{}", self.r_data.to_color());
-        } else if self.r#type != QType::OPT {
-            const ALL_FIELDS: &str = "name,type,class,ttl,length,rdata";
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.puny);
-            println!();
-        } else {
-            const ALL_FIELDS: &str = "name,type,length,payload,extcode,version,flags,length,rdata";
-            self.display(ALL_FIELDS, display_options.raw_ttl, name_length, display_options.puny);
-            println!();
-        }
-    }
 }
 
 //─────────────────────────────────────opt_or_class_ttl──────────────────────────────────────────────
 // OPT is a special case of RR
-//───────────────────────────────────────────────────────────────────────────────────
+//───────────────────────────────────────────────────────────────────────────────────────────────────
 pub type OPT = ResourceRecord;
 
 impl OPT {
@@ -408,11 +313,7 @@ impl OPT {
 
 impl fmt::Debug for OPT {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{} {}:{} {:?}",
-            TITLES["name"], self.name, TITLES["type"], self.r#type, self.opt_or_class_ttl
-        )?;
+        write!(f, "{} {} {:?}", self.name, self.r#type, self.opt_or_class_ttl)?;
         Ok(())
     }
 }

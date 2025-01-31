@@ -8,7 +8,7 @@ use super::domain::DomainName;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct AFSDB {
+pub struct AFSDB {
     subtype: u16,
     hostname: DomainName,
 }

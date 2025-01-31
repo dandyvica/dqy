@@ -16,7 +16,7 @@ use crate::{dns::buffer::Buffer, new_rd_length};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct TLSA {
+pub struct TLSA {
     #[from_network(ignore)]
     rd_length: u16,
 

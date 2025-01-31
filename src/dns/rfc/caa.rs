@@ -20,7 +20,7 @@ use crate::{dns::buffer::Buffer, new_rd_length};
 // +----------------+----------------+.....+----------------+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct CAA {
+pub struct CAA {
     // transmistted through RR deserialization
     #[serde(skip_serializing)]
     #[from_network(ignore)]

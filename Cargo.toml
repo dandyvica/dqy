@@ -1,5 +1,5 @@
 [package]
-name = "dqy"
+name = "dnslib"
 edition = "2021"
 version = "0.5.2"  #:version
 authors = ["Alain Viguier <dandyvica@gmail.com>"]
@@ -13,6 +13,10 @@ keywords = ["dns"]
 categories = ["command-line-utilities"]
 license = "MIT"
 rust-version = "1.82.0"
+
+[lib]
+name = "dnslib"
+path = "src/lib.rs"
 
 [dependencies]
 base16 = "0.2.1"
@@ -63,3 +67,7 @@ unnecessary_cast = "allow"
 [[bin]]
 name = "certgen"
 path = "src/certgen.rs"
+
+# [[bin]]
+# name = "dqy"
+# path = "src/main.rs"

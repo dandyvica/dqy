@@ -20,6 +20,11 @@ impl CharacterString {
     pub fn len(&self) -> u8 {
         self.length
     }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
 }
 
 impl DataLength for CharacterString {

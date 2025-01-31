@@ -90,7 +90,7 @@ mod tests {
             resp.deserialize_from(&mut resp_buffer)
                 .map_err(|_| Error::Dns(Dns::CantDeserialize))?;
 
-            let answer = resp.authority.unwrap();
+            let answer = resp.authority().as_ref().unwrap();
 
             for (i, a) in answer.iter().enumerate() {
                 match i {

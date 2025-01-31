@@ -20,7 +20,7 @@ use crate::new_rd_length;
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
-pub(super) struct ZONEMD {
+pub struct ZONEMD {
     #[from_network(ignore)]
     rd_length: u16,
 

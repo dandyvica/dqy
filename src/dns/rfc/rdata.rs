@@ -3,14 +3,13 @@ use std::{
     io::Cursor,
 };
 
-use colored::{ColoredString, Colorize};
 use log::trace;
 use serde::Serialize;
 use type2network::ToNetworkOrder;
 
 use type2network::FromNetworkOrder;
 
-use crate::{dns::buffer::Buffer, show::ToColor};
+use crate::dns::buffer::Buffer;
 
 use super::{
     a::A,
@@ -59,7 +58,7 @@ use super::{
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "rdata")]
-pub(super) enum RData {
+pub enum RData {
     // RData definitions
     A(A),
     AAAA(AAAA),
@@ -293,11 +292,5 @@ impl fmt::Display for RData {
             RData::WALLET(a) => write!(f, "{}", a),
             _ => unimplemented!("not yet implemented"),
         }
-    }
-}
-
-impl ToColor for RData {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().bright_yellow()
     }
 }

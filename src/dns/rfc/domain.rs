@@ -3,14 +3,12 @@ use std::io::{Cursor, Result};
 use std::ops::Deref;
 use std::slice::Iter;
 
-use colored::Colorize;
 use log::trace;
 use serde::{Serialize, Serializer};
 use type2network::{FromNetworkOrder, ToNetworkOrder};
 use type2network_derive::ToNetwork;
 
 use crate::error::{self, Dns, Error};
-use crate::show::ToColor;
 
 pub const ROOT_DOMAIN: DomainName = DomainName { labels: vec![] };
 pub const ROOT: &str = ".";
@@ -29,7 +27,7 @@ impl Label {
         self.0.len()
     }
 
-    pub fn size(&self) -> usize {
+    pub fn _size(&self) -> usize {
         self.0.len() + 1
     }
 
@@ -289,13 +287,6 @@ impl fmt::Display for DomainName {
 impl fmt::Debug for DomainName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
-    }
-}
-
-impl ToColor for DomainName {
-    fn to_color(&self) -> colored::ColoredString {
-        self.to_string().bright_green()
-        // self.to_string().truecolor(NAME_COLOR.0, NAME_COLOR.1, NAME_COLOR.2)
     }
 }
 

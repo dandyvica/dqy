@@ -6,13 +6,13 @@ use std::{fmt, net::IpAddr, ops::Deref};
 use rand::seq::IteratorRandom;
 use serde::Serialize;
 
-use type2network::FromNetworkOrder;
-use type2network_derive::FromNetwork;
+use type2network::{FromNetworkOrder, ToNetworkOrder};
+use type2network_derive::{FromNetwork, ToNetwork};
 
 use super::{domain::DomainName, qtype::QType, resource_record::ResourceRecord};
-use crate::show::{DisplayOptions, Show};
+// use crate::show::{DisplayOptions, Show};
 
-#[derive(Debug, Default, FromNetwork, Serialize)]
+#[derive(Debug, Default, FromNetwork, ToNetwork, Serialize)]
 pub struct RRList(Vec<ResourceRecord>);
 
 impl RRList {
@@ -78,26 +78,6 @@ impl fmt::Display for RRList {
     }
 }
 
-impl Show for RRList {
-    fn show(&self, display_options: &DisplayOptions, _: Option<usize>) {
-        let max_length = if display_options.align_names {
-            self.max_length()
-        } else {
-            None
-        };
-
-        for rr in &self.0 {
-            // don't display OPT if not requested
-            // if rr.r#type == QType::OPT && !display_options.show_opt {
-            //     continue;
-            // } else {
-            //     rr.show(display_options, max_length);
-            // }
-            rr.show(display_options, max_length);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -122,12 +102,12 @@ mod tests {
         // no anwser is response => this is a referral
         assert!(resp.is_referral());
 
-        assert!(resp.authority.is_some());
-        let auth = resp.authority.unwrap();
+        assert!(resp.authority().is_some());
+        let auth = resp.authority().as_ref().unwrap();
         assert_eq!(auth.len(), 13);
 
-        assert!(resp.additional.is_some());
-        let add = resp.additional.unwrap();
+        assert!(resp.additional().is_some());
+        let add = resp.additional().as_ref().unwrap();
         assert_eq!(add.len(), 27);
 
         let ip = add.ip_address(&QType::A, "l.gtld-servers.net.").unwrap();

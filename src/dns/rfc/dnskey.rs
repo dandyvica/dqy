@@ -20,7 +20,7 @@ use super::algorithm::DNSSECAlgorithmTypes;
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork)]
 #[from_network(TryFrom)]
-pub(super) struct DNSKEY {
+pub struct DNSKEY {
     #[from_network(ignore)]
     rd_length: u16,
 

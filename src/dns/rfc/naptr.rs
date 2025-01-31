@@ -25,7 +25,7 @@ use super::{char_string::CharacterString, domain::DomainName};
 // +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct NAPTR {
+pub struct NAPTR {
     order: u16,
     preference: u16,
     flags: CharacterString,

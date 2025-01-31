@@ -8,7 +8,7 @@ use serde::Serialize;
 use super::domain::DomainName;
 
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct RP {
+pub struct RP {
     mbox: DomainName,
     hostname: DomainName,
 }

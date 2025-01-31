@@ -19,7 +19,7 @@ use super::{domain::DomainName, type_bitmaps::TypeBitMaps};
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Default, FromNetwork, Serialize)]
-pub(super) struct NSEC {
+pub struct NSEC {
     // transmistted through RR deserialization
     #[from_network(ignore)]
     rd_length: u16,

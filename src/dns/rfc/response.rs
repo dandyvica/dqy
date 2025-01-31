@@ -7,15 +7,16 @@ use log::{debug, trace};
 use serde::Serialize;
 use tokio::io::AsyncWriteExt;
 
-use type2network::FromNetworkOrder;
+use type2network::{FromNetworkOrder, ToNetworkOrder};
+use type2network_derive::ToNetwork;
 
+use super::query::Query;
 use super::{
     domain::DomainName, header::Header, qtype::QType, question::Question, resource_record::ResourceRecord,
     rrlist::RRList,
 };
 use crate::dns::rfc::response_code::ResponseCode;
 use crate::error::{Dns, Error};
-use crate::show::{header_section, DisplayOptions, Show};
 use crate::transport::network::Messenger;
 
 pub enum ResponseSection {
@@ -24,17 +25,27 @@ pub enum ResponseSection {
     Additional,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, ToNetwork)]
 pub struct Response {
     pub header: Header,
     pub question: Question,
     pub answer: Option<RRList>,
-    pub(super) authority: Option<RRList>,
-    pub(super) additional: Option<RRList>,
+    authority: Option<RRList>,
+    additional: Option<RRList>,
 }
 
 // hide internal fields
 impl Response {
+    #[inline]
+    pub fn authority(&self) -> &Option<RRList> {
+        &self.authority
+    }
+
+    #[inline]
+    pub fn additional(&self) -> &Option<RRList> {
+        &self.additional
+    }
+
     #[inline]
     pub fn rcode(&self) -> ResponseCode {
         self.header.flags.response_code
@@ -58,6 +69,11 @@ impl Response {
     #[inline]
     pub fn is_authorative(&self) -> bool {
         self.header.flags.bitflags.authorative_answer
+    }
+
+    #[inline]
+    pub fn set_response_code(&mut self, rc: ResponseCode)  {
+        self.header.set_response_code(rc);
     }
 
     // referral response means no answer
@@ -223,6 +239,21 @@ impl Response {
     }
 }
 
+impl From<&Query> for Response {
+    fn from(q: &Query) -> Self {
+        // copy header and question from query
+        let mut r = Response {
+            header: q.header.clone(),
+            question: q.question.clone(),
+            ..Default::default()
+        };
+
+        r.header.ar_count = 0;
+
+        r
+    }
+}
+
 impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // print out anwser, authority, additional if any
@@ -278,56 +309,6 @@ impl<'a> FromNetworkOrder<'a> for Response {
     }
 }
 
-impl Show for Response {
-    fn show(&self, display_options: &DisplayOptions, max_length: Option<usize>) {
-        // const HEADER_LENGTH: usize = 80;
-
-        //───────────────────────────────────────────────────────────────────────────────────
-        // Response HEADER
-        //───────────────────────────────────────────────────────────────────────────────────
-        if display_options.sho_resp_header {
-            println!("{}", header_section("Response HEADER", None));
-            println!("{}\n", self.header);
-        }
-
-        //───────────────────────────────────────────────────────────────────────────────────
-        // ANSWER
-        //───────────────────────────────────────────────────────────────────────────────────
-        if self.header.an_count > 0 {
-            debug_assert!(self.answer.is_some());
-
-            if display_options.show_headers {
-                println!("{}", header_section("ANSWER", None));
-            }
-            self.answer.as_ref().unwrap().show(display_options, max_length);
-        }
-
-        //───────────────────────────────────────────────────────────────────────────────────
-        // AUTHORATIVE
-        //───────────────────────────────────────────────────────────────────────────────────
-        if self.header.ns_count > 0 && display_options.show_all {
-            debug_assert!(self.authority.is_some());
-
-            if display_options.show_headers {
-                println!("\n{}", header_section("AUTHORATIVE", None));
-            }
-            self.authority.as_ref().unwrap().show(display_options, max_length);
-        }
-
-        //───────────────────────────────────────────────────────────────────────────────────
-        // ADDITIONAL
-        //───────────────────────────────────────────────────────────────────────────────────
-        if self.header.ar_count > 0 && display_options.show_all {
-            debug_assert!(self.additional.is_some());
-
-            if display_options.show_headers {
-                println!("\n{}", header_section("ADDITIONAL", None));
-            }
-            self.additional.as_ref().unwrap().show(display_options, max_length);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -379,7 +360,7 @@ mod tests {
         assert_eq!(answer.r#type, QType::A);
         assert!(matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.class == QClass::IN));
         assert!(matches!(&answer.opt_or_class_ttl, OptOrClassTtl::Regular(x) if x.ttl == 119));
-        assert_eq!(answer.rd_length, 4);
+        assert_eq!(answer.rd_length(), 4);
 
         // assert!(
         //     matches!(answer.r_data, RData::A(A(addr)) if Ipv4Addr::from(addr) == Ipv4Addr::new(172,217,18,36))
@@ -425,9 +406,9 @@ mod tests {
         //     //assert_eq!(ans.ttl.as_ref(), Left(&172800));
         // }
 
-        assert_eq!(answer[0].rd_length, 14);
+        assert_eq!(answer[0].rd_length(), 14);
         for i in 1..8 {
-            assert_eq!(answer[i].rd_length, 4);
+            assert_eq!(answer[i].rd_length(), 4);
         }
 
         assert!(matches!(&answer[0].r_data, RData::NS(ns) if ns.to_string() == "c.hkirc.net.hk."));
@@ -447,8 +428,8 @@ mod tests {
 
         assert_eq!(format!("{}", add.name), ".");
         assert_eq!(add.r#type, QType::OPT);
-        assert!(matches!(&add.opt_or_class_ttl, OptOrClassTtl::Opt(x) if x.payload == 1232));
-        assert_eq!(add.rd_length, 0);
+        assert!(matches!(&add.opt_or_class_ttl, OptOrClassTtl::Opt(x) if x.payload() == 1232));
+        assert_eq!(add.rd_length(), 0);
 
         Ok(())
     }
