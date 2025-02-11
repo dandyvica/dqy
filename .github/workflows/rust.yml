@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest, macos-13]
+        os: [ubuntu-22.04, windows-latest, macos-latest, macos-13, ubuntu-22.04-arm]
         toolchain:
           - stable
 
@@ -67,27 +67,27 @@ jobs:
         path: |
           docker/dqy          
 
-  build_arm64_musl:
-    runs-on: ubuntu-latest
-    steps:
+  # build_arm64_musl:
+  #   runs-on: ubuntu-latest
+  #   steps:
 
-    - name: Checkout repo
-      uses: actions/checkout@v4
+  #   - name: Checkout repo
+  #     uses: actions/checkout@v4
 
-    - name: Install Qemu
-      uses: docker/setup-qemu-action@v3
+  #   - name: Install Qemu
+  #     uses: docker/setup-qemu-action@v3
 
-    - name: Building using Docker
-      run: |
-        cd docker
-        docker build -t dqy --platform "linux/arm64" --build-arg IMAGE="arm64v8/alpine" .
-        docker run --name dqy dqy
-        docker cp dqy:/dqy/target/release/dqy .
+  #   - name: Building using Docker
+  #     run: |
+  #       cd docker
+  #       docker build -t dqy --platform "linux/arm64" --build-arg IMAGE="arm64v8/alpine" .
+  #       docker run --name dqy dqy
+  #       docker cp dqy:/dqy/target/release/dqy .
 
-    - name: Create artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: dqy-arm64-unknown-linux-musl
-        if-no-files-found: ignore
-        path: |
-          docker/dqy          
+  #   - name: Create artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: dqy-arm64-unknown-linux-musl
+  #       if-no-files-found: ignore
+  #       path: |
+  #         docker/dqy          
