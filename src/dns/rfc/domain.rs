@@ -76,7 +76,7 @@ impl PartialEq for Label {
 
         self.iter()
             .zip(other.iter())
-            .all(|x| x.0.to_ascii_lowercase() == x.1.to_ascii_lowercase())
+            .all(|x| x.0.eq_ignore_ascii_case(x.1))
     }
 }
 

@@ -68,6 +68,6 @@ unnecessary_cast = "allow"
 name = "certgen"
 path = "src/certgen.rs"
 
-# [[bin]]
-# name = "dqy"
-# path = "src/main.rs"
+[[bin]]
+name = "dqy"
+path = "src/main.rs"

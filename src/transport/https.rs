@@ -92,7 +92,7 @@ impl<'a> HttpsProtocol<'a> {
     }
 }
 
-impl<'a> Messenger for HttpsProtocol<'a> {
+impl Messenger for HttpsProtocol<'_> {
     async fn asend(&mut self, _: &[u8]) -> error::Result<usize> {
         Ok(0)
     }
