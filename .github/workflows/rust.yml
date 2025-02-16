@@ -34,6 +34,7 @@ jobs:
         echo ${{ env.TRIPLE }}
         cargo test --bin dqy
         cargo build --release
+        ./scripts/compile_musl.sh
       shell: bash
 
     - name: Archive compilation target for ${{ matrix.os }}-${{ matrix.version }}
@@ -45,27 +46,43 @@ jobs:
           target/release/dqy
           target/release/dqy.exe
 
-  build_x86_musl:
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Checkout repo
-      uses: actions/checkout@v4
-
-    - name: Building using Docker
-      run: |
-        cd docker
-        docker build -t dqy --build-arg IMAGE=alpine .
-        docker run --name dqy dqy
-        docker cp dqy:/dqy/target/release/dqy .
-
-    - name: Create artifact
+    - name: Archive compilation target for Ubuntu musl x64
       uses: actions/upload-artifact@v4
       with:
         name: dqy-x86_64-unknown-linux-musl
         if-no-files-found: ignore
         path: |
-          docker/dqy          
+          target/x86_64-unknown-linux-musl/release
+
+    - name: Archive compilation target for Ubuntu musl aarch64
+      uses: actions/upload-artifact@v4
+      with:
+        name: dqy-aarch64-unknown-linux-musl.zip
+        if-no-files-found: ignore
+        path: |
+          target/aarch64-unknown-linux-musl/release
+
+  # build_x86_musl:
+  #   runs-on: ubuntu-latest
+  #   steps:
+
+  #   - name: Checkout repo
+  #     uses: actions/checkout@v4
+
+  #   - name: Building using Docker
+  #     run: |
+  #       cd docker
+  #       docker build -t dqy --build-arg IMAGE=alpine .
+  #       docker run --name dqy dqy
+  #       docker cp dqy:/dqy/target/release/dqy .
+
+  #   - name: Create artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: dqy-x86_64-unknown-linux-musl
+  #       if-no-files-found: ignore
+  #       path: |
+  #         docker/dqy          
 
   # build_arm64_musl:
   #   runs-on: ubuntu-latest
