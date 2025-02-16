@@ -52,15 +52,15 @@ jobs:
         name: dqy-x86_64-unknown-linux-musl
         if-no-files-found: ignore
         path: |
-          target/x86_64-unknown-linux-musl/release
+          target/x86_64-unknown-linux-musl/release/dqy
 
     - name: Archive compilation target for Ubuntu musl aarch64
       uses: actions/upload-artifact@v4
       with:
-        name: dqy-aarch64-unknown-linux-musl.zip
+        name: dqy-aarch64-unknown-linux-musl
         if-no-files-found: ignore
         path: |
-          target/aarch64-unknown-linux-musl/release
+          target/aarch64-unknown-linux-musl/release/dqy
 
   # build_x86_musl:
   #   runs-on: ubuntu-latest
