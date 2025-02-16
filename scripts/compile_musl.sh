@@ -5,7 +5,7 @@ if [ $(uname) = "Linux" ]; then
     target="$platform-unknown-linux-musl"
 
     # install musl gcc
-    apt install musl-tools
+    sudo apt install musl-tools
 
     # add target
     rustup target add $target
