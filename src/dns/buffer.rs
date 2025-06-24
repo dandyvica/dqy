@@ -53,7 +53,7 @@ impl Deref for Buffer {
 impl fmt::Debug for Buffer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for c in self.iter() {
-            write!(f, "{:X?}", c)?;
+            write!(f, "{:02X}", c)?;
         }
         Ok(())
     }
