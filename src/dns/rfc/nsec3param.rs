@@ -77,7 +77,7 @@ mod tests {
         1,
         RData::NSEC3PARAM,
         (|x: &NSEC3PARAM, _| {
-            assert_eq!(&x.to_string(), "1 0 15 CB49105466D36AD");
+            assert_eq!(&x.to_string(), "1 0 15 CB49105466D36A0D");
         })
     );
 }

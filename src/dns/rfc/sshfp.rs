@@ -73,10 +73,10 @@ mod tests {
         RData::SSHFP,
         (|x: &SSHFP, i: usize| {
             match i {
-                0 => assert_eq!(x.to_string(), "1 1 53A76D5284C91E14DEC9AD1A757DA123B95B081"),
+                0 => assert_eq!(x.to_string(), "1 1 53A76D5284C91E140DEC9AD1A757DA123B95B081"),
                 1 => assert_eq!(
                     x.to_string(),
-                    "3 2 62475A22F1E4F09594206539AAFF90A6EDAABAB1BA6F4A67AB396177455CF84"
+                    "3 2 62475A22F1E4F09594206539AAFF90A6EDAABAB1BA6F4A67AB3906177455CF84"
                 ),
                 _ => panic!("data not is the pcap file"),
             }

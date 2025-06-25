@@ -53,7 +53,7 @@ impl Deref for Buffer {
 impl fmt::Debug for Buffer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for c in self.iter() {
-            write!(f, "{:X?}", c)?;
+            write!(f, "{:02X?}", c)?;
         }
         Ok(())
     }
@@ -130,6 +130,20 @@ mod tests {
     use crate::dns::tests::to_network_test;
     use std::io::Cursor;
     use type2network::FromNetworkOrder;
+
+    #[test]
+    fn conversions() {
+        let mut buf = Buffer::with_capacity(3u8);
+        buf.0 = vec![0xFD, 0xFE, 0xFF];
+
+        assert_eq!(&buf.to_base16(), "FDFEFF");
+        assert_eq!(&buf.to_base64(), "/f7/");
+
+        // fix issue #8
+        buf.0 = vec![0xFF, 0x00, 0xFF];
+        assert_eq!(&format!("{:?}", buf), "FF00FF");
+
+    }
 
     #[test]
     fn network() {

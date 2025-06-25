@@ -82,7 +82,7 @@ mod tests {
         (|x: &TLSA, _| {
             assert_eq!(
                 &x.to_string(),
-                "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
+                "3 1 1 8CE14CBE1FAFAE9FB25845D335E00E416BC2FAE02E8746689C006DA59C1F9382"
             );
         })
     );
@@ -96,7 +96,7 @@ mod tests {
         (|x: &SMIMEA, _| {
             assert_eq!(
                 &x.to_string(),
-                "3 1 1 8CE14CBE1FAFAE9FB25845D335E0E416BC2FAE02E8746689C06DA59C1F9382"
+                "3 1 1 8CE14CBE1FAFAE9FB25845D335E00E416BC2FAE02E8746689C006DA59C1F9382"
             );
         })
     );

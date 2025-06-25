@@ -89,7 +89,7 @@ mod tests {
         (|x: &DS, _| {
             assert_eq!(
                 &x.to_string(),
-                "56393 ECDSAP256SHA256 2 BD36DD608262A02683721FA19E2F7B474F531BB3179CC0A0C38FF0CA11657"
+                "56393 ECDSAP256SHA256 2 BD36DD608262A026083721FA19E2F7B474F531BB3179CC00A0C38FF00CA11657"
             );
         })
     );
@@ -103,7 +103,7 @@ mod tests {
         (|x: &DS, _| {
             assert_eq!(
                 &x.to_string(),
-                "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F"
+                "56039 ECDSAP256SHA256 2 4104805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F"
             );
         })
     );
@@ -117,7 +117,7 @@ mod tests {
         (|x: &DS, _| {
             assert_eq!(
                 &x.to_string(),
-                "56039 ECDSAP256SHA256 2 414805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F"
+                "56039 ECDSAP256SHA256 2 4104805B43928FC573F0704A2C1B5A10BAA2878DE26B8535DDE77517C154CE9F"
             );
         })
     );
