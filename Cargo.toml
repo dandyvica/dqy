@@ -1,7 +1,7 @@
 [package]
 name = "dnslib"
 edition = "2021"
-version = "0.5.2"  #:version
+version = "0.5.3"  #:version
 authors = ["Alain Viguier <dandyvica@gmail.com>"]
 description = """
 dqy is a DNS query tool inspired by dig, drill and dog.
