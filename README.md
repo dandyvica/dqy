@@ -25,6 +25,7 @@ The following list of RRs is supported:
 * AAAA
 * AFSDB
 * APL
+* AXFR
 * CAA
 * CDNSKEY
 * CDS
