@@ -142,7 +142,6 @@ mod tests {
         // fix issue #8
         buf.0 = vec![0xFF, 0x00, 0xFF];
         assert_eq!(&format!("{:?}", buf), "FF00FF");
-
     }
 
     #[test]

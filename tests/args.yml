@@ -1,0 +1,21 @@
+# simple
+- cli: "A www.google.com"
+  qtype:
+    - A
+  qclass: IN
+  port: 53
+  domain: www.google.com
+  ip_version: Any
+  protocol: Udp
+
+# several qtypes
+- cli: "A aaaa soa www.google.com"
+  qtype:
+    - A
+    - AAAA
+    - SOA
+  qclass: IN
+  port: 53
+  domain: www.google.com
+  ip_version: Any
+  protocol: Udp

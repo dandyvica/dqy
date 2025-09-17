@@ -72,7 +72,7 @@ impl Response {
     }
 
     #[inline]
-    pub fn set_response_code(&mut self, rc: ResponseCode)  {
+    pub fn set_response_code(&mut self, rc: ResponseCode) {
         self.header.set_response_code(rc);
     }
 

@@ -79,7 +79,7 @@ pub struct DisplayOptions {
     pub show_opt: bool,
 
     // formtting RRs
-    pub fmt: String,
+    pub fmt: Vec<String>,
 
     // display TTL as seconds
     pub raw_ttl: bool,
@@ -222,8 +222,8 @@ const EXTCODE_DISPLAY_LENGTH: usize = 5;
 const VERSION_DISPLAY_LENGTH: usize = 5;
 const FLAGS_DISPLAY_LENGTH: usize = 5;
 
-fn display(rr: &ResourceRecord, fmt: &str, raw_ttl: bool, name_length: usize, puny: bool) {
-    for f in fmt.split(",") {
+fn display(rr: &ResourceRecord, fmt: &[String], raw_ttl: bool, name_length: usize, puny: bool) {
+    for f in fmt {
         match f.trim() {
             // except OPT
             "name" => {
@@ -309,20 +309,29 @@ impl Show for ResourceRecord {
         if display_options.short {
             println!("{}", self.r_data.to_color());
         } else if self.r#type != QType::OPT {
-            const ALL_FIELDS: &str = "name,type,class,ttl,length,rdata";
+            let all_fields: Vec<_> = vec!["name", "type", "class", "ttl", "length", "rdata"]
+                .iter()
+                .map(|f| f.to_string())
+                .collect();
+
             display(
                 self,
-                ALL_FIELDS,
+                &all_fields,
                 display_options.raw_ttl,
                 name_length,
                 display_options.puny,
             );
             println!();
         } else {
-            const ALL_FIELDS: &str = "name,type,length,payload,extcode,version,flags,length,rdata";
+            let all_fields: Vec<_> = vec![
+                "name", "type", "length", "payload", "extcode", "version", "flags", "length", "rdata",
+            ]
+            .iter()
+            .map(|f| f.to_string())
+            .collect();
             display(
                 self,
-                ALL_FIELDS,
+                &all_fields,
                 display_options.raw_ttl,
                 name_length,
                 display_options.puny,

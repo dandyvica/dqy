@@ -1,0 +1,16 @@
+# YAML configuration which is taken
+
+# list of DNS servers
+servers:
+  addresses:
+    - 8.8.8.8
+    - 1.1.1.1
+  mode: random
+
+
+# list of RRs to display if no RR is passed
+default_rrs: 
+  - A 
+  - AAAA 
+  - MX
+

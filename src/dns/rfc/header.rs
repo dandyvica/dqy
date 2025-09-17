@@ -49,7 +49,7 @@ impl Header {
 
     pub fn set_response_code(&mut self, rc: ResponseCode) {
         self.flags.set_response_code(rc);
-    }    
+    }
 }
 
 impl Default for Header {

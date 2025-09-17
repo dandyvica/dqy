@@ -39,6 +39,9 @@ mod cli_options;
 
 mod handlebars;
 
+mod config;
+use config::{read_yaml, YAMLConfig};
+
 #[cfg(feature = "mlua")]
 mod lua;
 #[cfg(feature = "mlua")]

@@ -3,11 +3,13 @@ use std::{
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
 };
 
+use serde::Deserialize;
+
 use crate::error;
 
 use super::NetworkInfo;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize)]
 pub enum IPVersion {
     #[default]
     Any,
@@ -52,7 +54,7 @@ impl IPVersion {
 //     }
 // }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize)]
 pub enum Protocol {
     #[default]
     Udp,

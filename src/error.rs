@@ -129,6 +129,10 @@ pub enum Error {
     #[error("IDNA conversion error {0}")]
     IDNA(#[source] idna::Errors),
 
+    // YAML error
+    #[error("YAML error {0}")]
+    YAML(#[source] serde_yaml::Error),
+
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
 }
@@ -179,8 +183,9 @@ impl From<Error> for ExitCode {
             Error::ToSocketAddrs(_, _) => ExitCode::from(13),
             Error::Tokio(_) => ExitCode::from(14),
             Error::IDNA(_) => ExitCode::from(15),
+            Error::YAML(_) => ExitCode::from(16),
             #[cfg(feature = "mlua")]
-            Error::Lua(_) => ExitCode::from(10),
+            Error::Lua(_) => ExitCode::from(30),
         }
     }
 }
