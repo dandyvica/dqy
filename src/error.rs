@@ -133,6 +133,8 @@ pub enum Error {
     #[error("YAML error {0}")]
     YAML(#[source] serde_yaml::Error),
 
+    // Lua error if feature is selected
+    #[error("LUA error {0}")]
     #[cfg(feature = "mlua")]
     Lua(#[source] mlua::Error),
 }

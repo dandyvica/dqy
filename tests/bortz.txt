@@ -1,0 +1,604 @@
+2023_index.html:% kdig +tls @2a09::   disclose.ngo
+2023_index.html:% kdig +tls @2001:910:800::12 sci-hub.se
+2023_index.html:% kdig +https=/dns-query @2001:910:800::12 sci-hub.se
+2023_index.html:% kdig +tls @localhost -p 8353 foobar.test
+2021_index.html:% kdig +tls @a.ns.facebook.com.  SOA facebook.com   
+2021_index.html:% kdig +tls @localhost -p 7153 SOA fx 
+2021_index.html:% kdig +tls @localhost -p 7153 AXFR fx
+2022_index.html:% kdig +https=/ @doh.bortzmeyer.fr ukraine.ua                                             
+2024_index.html:% kdig +tls @2001:678:8::3 www.bortzmeyer.org
+2024_index.html:% kdig +tls @2409:: geoponum.com
+2024_index.html:% kdig +nsid +https=/dns-query @1.10.10.10 geoponum.com                                             
+2025_index.html:% kdig +tls @2a13:1001::86:54:11:1 frnog.org
+2025_index.html:% kdig +tls @2a13:1001::86:54:11:11 pornhub.com
+2025_index.html:% kdig +nsid +tls @2a13:1001::86:54:11:11 sci-hub.se                                          
+2016_index.html:% kdig +dnssec +tls +padding @1.1.1.1 A chatons.org
+2019_index.html:% dig +dnssec @114.114.114.114 cyberstructure.fr AAAA
+2019_index.html:% dig +dnssec @114.114.114.114 afnic.fr
+2019_index.html:% dig +dnssec +nsid @114.114.114.114 framagit.org
+2019_index.html:% dig +dnssec public1.114dns.com. AAAA
+2019_index.html:% dig A celsa.fr                      
+2019_index.html:% dig @ns0.idianet.net A celsa.fr     
+2019_index.html:% dig CAA bortzmeyer.org
+2019_index.html:% dig CAA google.com
+2019_index.html:% dig +short A 0.fr.pool.ntp.org
+2019_index.html:% dig NID ilnp-aa-test-c.bhatti.me.uk
+2019_index.html:% dig L64 ilnp-aa-test-c.bhatti.me.uk
+2019_index.html:% dig @MY-RESOLVER AAAA ilnp-aa-test-c.bhatti.me.uk
+2019_index.html:% dig +short TXT mail._domainkey.gendarmerie.interieur.gouv.fr
+2019_index.html:% dig root-key-sentinel-is-ta-20326.ksk-test.net  
+2019_index.html:% dig root-key-sentinel-not-ta-20326.ksk-test.net  
+2019_index.html:% dig root-key-sentinel-not-ta-20326.ksk-test.net     
+2019_index.html:% dig  @::1 A brk.internautique.fr
+2019_index.html:% dig  @::1 A expired.caatestsuite-dnssec.com 
+2019_index.html:% dig  @::1 -p 9053 A googleanalytics.com   
+2019_index.html:% dig @ns0.idm.net.lb NS idm.net.lb 
+2019_index.html:% dig +short -x 2a00:1450:4007:816::2005 
+2019_index.html:% dig -x 2001:67c:2218:e::51:41
+2019_index.html:% dig +nodnssec @ns1.nic.fr ANY anna.nic.fr
+2019_index.html:% dig @::1 ANY anna.nic.fr
+2019_index.html:% dig +nodnssec @ns5.cloudflare.com. ANY cloudflare.com
+2019_index.html:% dig TXT _mta-sts.gmail.com
+2019_index.html:% dig +short TXT _mta-sts.yahoo.com
+2019_index.html:% dig +short TXT _mta-sts.outlook.com
+2019_index.html:% dig TXT _mta-sts.protonmail.com
+2019_index.html:% dig @l.root-servers.net A blog.imirhil.fr 
+2019_index.html:% dig @2001:620:0:ff::29 AAAA www.iab.org 
+2019_index.html:% dig @2a02:6b8::feed:0ff AAAA www.iab.org           
+2019_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA www.gq.com  
+2019_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA blog.keltia.net
+2019_index.html:% dig +norecurse @2a01:e0d:1:3:58bf:fa61:0:1 AAAA blog.keltia.net  
+2019_index.html:% dig @a.gtld-servers.net AAAA labs.ripe.net 
+2019_index.html:% dig @d.nic.fr ANY gouv.fr 
+2022_index.html:% dig +short NS gougere.fr  
+2022_index.html:% dig _er.1.foobar.example.9._er.report.dyn.courbu.re TXT
+2022_index.html:% dig _er.1.foobar.example.9.missing-end.report.dyn.courbu.re TXT
+2022_index.html:% dig @2a04:b900:0:100::28 www.bogus.bortzmeyer.fr
+2022_index.html:% dig dyn.bortzmeyer.fr TXT
+2022_index.html:% dig hello.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig ip.dyn.bortzmeyer.fr AAAA
+2022_index.html:% dig @2620:fe::9 ip.dyn.bortzmeyer.fr A   
+2022_index.html:% dig TXT date.dyn.bortzmeyer.fr
+2022_index.html:% dig A random.dyn.bortzmeyer.fr
+2022_index.html:% dig @ns1-dyn.bortzmeyer.fr +bufsize=50 date.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig @ns1-dyn.bortzmeyer.fr +nsid date.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig bgp.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig TXT country.dyn.bortzmeyer.fr
+2022_index.html:% dig TXT full.dyn.bortzmeyer.fr
+2022_index.html:% dig 150KB.KiB.unit.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig 15000ft.m.unit.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig 2+2.op.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig 2+3\*4-\(5-2\).op.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig +short 42.en.number.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig +short 42.fr.number.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig +short 65656734.ca.number.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig quimper.now.weather.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig la-paz.tomorrow.weather.dyn.bortzmeyer.fr TXT
+2022_index.html:% dig +dnssec random.dyn.bortzmeyer.fr LOC
+2022_index.html:% dig +keepopen +tcp @ns4.bortzmeyer.org www.bortzmeyer.org AAAA mail.bortzmeyer.org AAAA
+2022_index.html:% dig A societaires.caisse-epargne.fr
+2022_index.html:% dig A cloud.sevenn.fr                  
+2021_index.html:% dig @113.113.113.113 A mit.edu
+2021_index.html:% dig -x 2001:1900:3001:11::2c
+2021_index.html:% dig +nodnssec NS arpa 
+2021_index.html:% dig +nodnssec NS arpa 
+2021_index.html:% dig @a.gtld-servers.net. A a.ns.facebook.com. 
+2021_index.html:% dig CNAME www.elysee.fr 
+2021_index.html:% dig +ednsopt=65024 @200.1.122.30 dateserial.example.com
+2021_index.html:% dig  A 📪.ws         
+2021_index.html:% dig +noidnout A 📪.ws
+2021_index.html:% dig +noidnout +noidnin A 📪.ws
+2020_index.html:% dig -y hmac-sha256:polly-jadis:LnDomTT+IRf0daLYqxkstFpTpmFfcOvyxtRaq2VhHSI= @polly.sources.org AXFR example.test 
+2020_index.html:% dig A purple-surf-7070.edge.mysocket.io
+2020_index.html:% dig @ns1.google.com AAAA www.bortzmeyer.org 
+2020_index.html:% dig @1.1.1.3 pornhub.com
+2020_index.html:% dig @sns6.bnpparibas.fr A mabanque.bnpparibas 
+2020_index.html:% dig @sns6.bnpparibas.fr NS mabanque.bnpparibas 
+2020_index.html: % dig @d.nic.fr A www.microsofthub.com
+2020_index.html:% dig @193.104.162.15 +noedns +noad +norec +zflag soa ratp.fr  
+2020_index.html:  % dig @193.104.162.15 +noedns +noad +norec soa ratp.fr  
+2020_index.html:% dig @d.nic.fr +opcode=1 toto.fr
+2020_index.html:% dig  @ns3-205.azure-dns.org. +noedns +noad +opcode=15 +norec microsoft.com                        
+2020_index.html:% dig A 2.1.0.0.4.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.8.1.2.2.c.7.6.0.1.0.0.2.list.dnswl.org
+2020_index.html:% dig A 12.4.134.192.list.dnswl.org
+2020_index.html:% dig TXT 2.1.0.0.4.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.8.1.2.2.c.7.6.0.1.0.0.2.list.dnswl.org
+2020_index.html:% dig +ignore @d.nic.fr DNSKEY bostik
+2020_index.html:% dig +short  TXT $(echo 204.62.14.153 | awk -F. '{print $4 "." $3 "." $2 "." $1 ".origin.asn.cymru.com" }')
+2020_index.html:% dig AAAA ipv4only.arpa
+2020_index.html:% dig A ipv4only.arpa
+2020_index.html:% dig  @127.12.12.12 SOA . 
+2020_index.html:% dig www.cnam.fr
+2020_index.html:% dig AAAA cyberstructure.fr
+2020_index.html:% dig @d.nic.fr A sante.gouv.fr
+2020_index.html:% dig NS fi
+2020_index.html:% dig @a.ns.developpement-durable.gouv.fr. A sante.gouv.fr 
+2020_index.html: % dig NS assemblee-nationale.fr
+2020_index.html:% dig +bufsize=4096 AAAA ressources-pedagogiques.org
+2023_index.html:% dig  @2a09:: sci-hub.se  
+2023_index.html:% dig +nsid @2a09:: www.lycee-militaire-autun.terre.defense.gouv.fr              
+2023_index.html:% dig @8.8.8.8 gouv.nc A
+2023_index.html:% dig @d.nic.gl NS com.gl
+2023_index.html:% dig @d.nic.gl DS com.gl      
+2023_index.html:% dig +dnssec @d.nic.gl DS com.gl
+2023_index.html:% dig NSEC3PARAM gl    
+2023_index.html:% dig +short NS gl
+2023_index.html:% dig +dnssec @ns1.anycastdns.cz DS com.gl 
+2023_index.html:% dig  +nodnssec A uptobox.com 
+2023_index.html:% dig  +dnssec A uptobox.com
+2023_index.html:~ % dig @81.253.149.5 +nodnssec A uptobox.com
+2023_index.html:% dig @81.253.149.5 +dnssec A uptobox.com 
+2023_index.html:% dig @212.27.40.240 sci-hub.se    
+2023_index.html:% dig @8.8.8.8 sci-hub.se
+2023_index.html:% dig @2001:910:800::12 sci-hub.se
+2023_index.html:% dig A meteofrance.com 
+2023_index.html:% dig @f.gtld-servers.net. NS meteofrance.com
+2023_index.html:% dig @d.nic.fr NS meteo.fr
+2023_index.html:% dig @137.129.1.4 NS meteofrance.com
+2025_index.html:% dig @d.nic.fr cyberstructure.fr NS    
+2025_index.html: % dig @113.113.113.113 coca-cola.com
+2025_index.html:% dig @113.113.113.113 rsf.org      
+2025_index.html:% dig lex.urn.arpa NAPTR
+2025_index.html:% dig @8.8.8.8 tarjetarojatvlive.net
+2025_index.html:% dig oracle.com TXT
+2025_index.html:% dig +tcp oracle.com TXT
+2025_index.html:% dig @::1 -p 8053 under.michu.example
+2025_index.html:% dig +multi +nodnssec . DNSKEY 
+2007_index.html:% dig +dnssec MX sources.org.               
+2007_index.html:% dig +dnssec a.nsec.dlvtest.dns-oarc.net txt
+2007_index.html:% dig +nsid @ns1.example.org SOA example.org
+2007_index.html:% dig +nsid @c.nic.fr. SOA fr
+2007_index.html:% dig +nsid @::1 nimportequoi
+2007_index.html:% dig @f.root-servers.net CH TXT hostname.bind   
+2007_index.html:% dig  NS hk.
+2007_index.html:% dig +bufsize=4096 NS hk                   
+2007_index.html:% dig @A.ORSN-SERVERS.NET SOA .
+2024_index.html:% dig +norec grease.courbu.re SOA @31.133.134.59
+2024_index.html:% dig @192.168.41.237 grease.courbu.re SOA
+2024_index.html:% dig +ednsopt=19 @ns1-dyn.bortzmeyer.fr dyn.bortzmeyer.fr SOA 
+2024_index.html:% dig telehouse.fr
+2024_index.html:% dig @1.1.1.1 telehouse.fr   
+2024_index.html:% dig @d.nic.fr telehouse.fr 
+2024_index.html:% dig ns1.fr.kddi.com.
+2024_index.html:% dig kddi.com NS            
+2024_index.html:% dig @dnsa01.kddi.ne.jp. fr.kddi.com  NS
+2024_index.html:% dig ns1.kddi-telehouse.eu.
+2024_index.html:% dig @w.dns.eu. kddi-telehouse.eu. NS 
+2024_index.html:% dig @ns1.validname.com kddi-telehouse.eu.
+2024_index.html:% dig +short icann.org NSEC3PARAM
+2024_index.html:% dig +short fr NSEC3PARAM
+2024_index.html:% dig nexistesurementpas.fr 
+2024_index.html: % dig +short org NSEC3PARAM
+2024_index.html:% dig dot.bortzmeyer.fr RESINFO
+2024_index.html:% dig +short dot.dns4all.eu RESINFO
+2024_index.html:% dig @185.71.138.138 ratzeburg.de
+2024_index.html:% dig +tls @185.71.138.138 ratzeburg.de
+2024_index.html:% dig +tls @185.71.138.138 denic.de
+2024_index.html:% dig bortzmeyer.fr TYPE262
+2024_index.html:% dig @ns4.bortzmeyer.org. cyberstructure.fr SOA
+2024_index.html:% dig @ns4.bortzmeyer.org. cyberstructure.fr DNSKEY
+2024_index.html:% dig @208.67.222.222 www.bortzmeyer.org
+2024_index.html:% dig @8.8.8.8 volkastream.xyz A 
+2024_index.html:% dig @2001:678:8::3 www.bortzmeyer.org
+2024_index.html:% dig +tls @2001:678:8::3 servfail.nl
+2024_index.html:% dig +tls @2001:678:8::3 sci-hub.se
+2024_index.html:% dig +short  @a.root-servers.net int DS
+2024_index.html:% dig +short  @c.root-servers.net int DS
+2024_index.html:% dig @l.root-servers.net A blog.imirhil.fr 
+2024_index.html:% dig @2001:620:0:ff::29 AAAA www.iab.org 
+2024_index.html:% dig @2a02:6b8::feed:0ff AAAA www.iab.org           
+2024_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA www.gq.com  
+2024_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA blog.keltia.net
+2024_index.html:% dig +norecurse @2a01:e0d:1:3:58bf:fa61:0:1 AAAA blog.keltia.net  
+2024_index.html:% dig @a.gtld-servers.net AAAA labs.ripe.net 
+2024_index.html:% dig @d.nic.fr ANY gouv.fr 
+2024_index.html:% dig _er.16.hello.dyn.bortzmeyer.fr.7._er.report.dyn.sources.org TXT
+2024_index.html:% dig cloudflare.com HTTPS
+2024_index.html:% dig +short +nodnssec bortzmeyer.org HTTPS
+2024_index.html:% dig +short +nodnssec www.bortzmeyer.org HTTPS
+2024_index.html:% dig -x 2409::
+2024_index.html:% dig +multi +dnssec brisbane.now.weather.dyn.bortzmeyer.fr TXT 
+2024_index.html:% dig +dnssec @d.root-servers.net doesnotexist
+2024_index.html:% dig +multi +dnssec +noidnout doesnotexist.dyn.bortzmeyer.fr
+2024_index.html:% dig +multi +dnssec @ns4.cloudflare.com doesnotexist.cloudflare.com 
+2024_index.html:% dig +dnssec +multi nonono.ietf.bortzmeyer.fr TXT
+2024_index.html:% dig @b.dns.ripn.net. ru NS
+2024_index.html:% dig ru DNSKEY   
+2024_index.html:% dig ru SOA
+2024_index.html:% dig ru SOA
+2005_index.html:% dig +dnssec @ns3.nic.fr +dnssec A ripe.net.  
+2005_index.html:% dig  DNSKEY ripe.net.                     
+2008_index.html:% dig +dnssec SOA example.net
+2008_index.html:% dig +dnssec +cd SOA example.net
+2008_index.html:% dig +dnssec +cd +multi DNSKEY example.net
+2008_index.html:% dig @addr-server-parent +dnssec +cd +multi DS example.net.
+2008_index.html:% dig @ns-ext.isc.org +multi DLV sources.org.dlv.isc.org
+2008_index.html:% dig ANY \*.example.org
+2008_index.html:% dig ANY \*.tk         
+2008_index.html:% dig MX gmail.com.
+2008_index.html:% dig +dnssec MX sources.org
+2008_index.html:% dig +dnssec MX nexistepas.sources.org
+2008_index.html:% dig A futuredate-A.newzsk-ns.test.dnssec-tools.org
+2008_index.html:% dig +short NSEC3PARAM pm.
+2008_index.html:% dig +dnssec ANY nimportequoi.pm.
+2008_index.html:% dig @c.nic.fr SOA fr.              
+2008_index.html:% dig @mon-serveur A www.venezvoirchezmoi.fr.
+2008_index.html:% dig A www.venezvoirchezmoi.fr.
+2008_index.html:% dig @a.gtld-servers.net A ns1.example.com.
+2009_index.html:% dig @8.8.8.8 MX doesnotexist.fr
+2009_index.html:% dig +dnssec -p 8053 @::1 ANY  created-dyn-1258541343-2833.example.
+2009_index.html:% dig @192.0.2.1 +dnssec +multi DNSKEY bortzmeyer.fr
+2009_index.html:% dig +cd NS se.
+2009_index.html:% dig +short @f.root-servers.net CH TXT version.bind.
+2009_index.html:% dig +short NS nominum.com
+2009_index.html:% dig +short @ns1.nominum.com CH TXT version.bind.
+2009_index.html:% dig +short @ns2.nominum.net CH TXT version.bind.
+2009_index.html:% dig +short TXT 32473.enterprise-numbers.org
+2009_index.html:% dig +short TXT _adsp._domainkey.formattype.fr  
+2009_index.html:% dig @ns1.EXAMPLE.net  CH TXT version.bind.
+2009_index.html:% dig +short rs.dns-oarc.net txt
+2009_index.html:% dig +short rs.dns-oarc.net txt
+2009_index.html:% dig +short test.rs.ripe.net txt     
+2009_index.html:% dig @8.8.8.8 +short test.rs.ripe.net txt     
+2009_index.html:% dig TXT sources.org
+2009_index.html:% dig +short A  pool.ntp.org   
+2009_index.html:% dig +short A  pool.ntp.org
+2009_index.html:% dig +short A  pool.ntp.org
+2009_index.html:% dig @votre-machine NS .
+2009_index.html:% dig +dnssec SOA com.                    
+2009_index.html:% dig +dnssec SOA ripe.net                
+2009_index.html:% dig +dnssec SOA mondomaineamoi.fr
+2009_index.html:% dig +dnssec SOA iis.se           
+2009_index.html:% dig +dnssec  A baddata-A.test.dnssec-tools.org
+2009_index.html:% dig DNSKEY generic-nic.net.
+2010_index.html:% dig +bufsize=4096 ANY all-wikileaks.bortzmeyer.fr
+2010_index.html:% dig ANY all-wikileaks.bortzmeyer.fr
+2010_index.html:% dig  A all-wikileaks.bortzmeyer.fr
+2010_index.html:% dig +bufsize=4096 ANY all-wikileaks.bortzmeyer.fr @192.168.68.7
+2010_index.html:% dig +ignore +bufsize=4096 ANY all-wikileaks.bortzmeyer.fr @192.168.68.7
+2010_index.html:% dig +dnssec ANY pm.
+2010_index.html:% dig +dnssec @localhost -p 9053 A example
+2010_index.html:% dig +dnssec @localhost -p 9053 A doesnotexistatall.example
+2010_index.html:% dig +dnssec @localhost -p 9053 A foobar.example
+2010_index.html:% dig +dnssec @localhost -p 9053 A foobar.example
+2010_index.html:% dig +dnssec SOA certainlydoesnotexist.org
+2010_index.html:% dig ANY nexistesurementpas.fr
+2010_index.html:% dig +multi DNSKEY caint.su
+2010_index.html:% dig DS caint.su
+2010_index.html:% dig @a.nic.fr A www.wikipedia.fr
+2010_index.html:% dig @ns1.nic.uk AXFR uk.
+2010_index.html:% dig +dnssec @dns2.uspto.gov ANY uspto.gov       
+2010_index.html:% dig @ns1.eurodns.com MX zataz.com   
+2010_index.html:% dig @ns1.eurodns.com A mailing.zataz.com 
+2010_index.html:% dig +short A  pool.ntp.org   
+2010_index.html:% dig +short A  pool.ntp.org
+2010_index.html:% dig +short A  pool.ntp.org
+2010_index.html:% dig -x 2001:db8:dada::beef:1
+2010_index.html:% dig NS in-addr.arpa 
+2010_index.html:% dig NS ip6.arpa    
+2010_index.html:% dig NS ip6.arpa.
+2010_index.html:% dig NS in-addr.arpa.
+2010_index.html:% dig +dnssec @localhost A toto668.dynamic.test 
+2010_index.html:% dig A www.facebook.com @123.123.123.123 
+2010_index.html:% dig +short @ns.bnu.edu.cn www.bortzmeyer.org
+2010_index.html:% dig +short @ns.bnu.edu.cn www.twitter.com   
+2010_index.html:% dig A www.facebook.com.
+2010_index.html:% dig A www.twitter.com
+2010_index.html:% dig -y hmac-md5:golgoth-ludwig-1:iGSDB9st+5/...Ra9JQ== @192.168.2.1 AXFR example.test
+2010_index.html:% dig A 129.2.0.192.sbl-xbl.spamhaus.org 
+2010_index.html:% dig 158.2.0.192.sbl-xbl.spamhaus.org
+2010_index.html:% dig @ns1.eurodns.com MX zataz.com   
+2010_index.html:% dig @ns1.eurodns.com A mailing.zataz.com 
+2010_index.html:% dig +dnssec +multi @L.root-servers.net DNSKEY .
+2010_index.html:% dig +short TXT rs.dns-oarc.net  
+2010_index.html:% dig +short TXT rs.dns-oarc.net             
+2010_index.html:% dig +short porttest.dns-oarc.net TXT
+2010_index.html:% dig +short amiopen.openresolvers.org TXT
+2010_index.html:% dig AAAA whoami.ultradns.net
+2010_index.html:% dig +short A 1-01-2743-000d.cdx.cedexis.net
+2010_index.html:% dig +short ANY self.myresolver.info 
+2010_index.html:% dig +short @212.27.40.240 A whois.com
+2010_index.html:% dig @::1 -p 8053 ANY www.foobar.example
+2006_index.html:% dig DLV sources.org.dlv.isc.org.  
+2006_index.html:% dig +short TXT aol.com 
+2006_index.html:% dig +short LOC nic.af. 
+2006_index.html:% dig TW110LW.find.me.uk. LOC +short
+2006_index.html:% dig +short +nodnssec LOC 76490.cp.bortzmeyer.fr
+2006_index.html:% dig +short LOC latlon.v4.powerdns.org  
+2006_index.html:% dig +short where-is-the-iss.dedyn.io LOC 
+2006_index.html:% dig +short TXT freebsd.org 
+2006_index.html:% dig +short TXT gentoo.org 
+2006_index.html:% dig SSHFP anoncvs.netbsd.org
+2006_index.html:% dig NAPTR http.uri.arpa
+2014_index.html:% dig SRV _xmpp-server._tcp.jabber.lqdn.fr
+2014_index.html:% dig A www.elysee.fr
+2014_index.html:% dig +short NS linuxfr.org
+2014_index.html:% dig +short TXT bortzmeyer.org
+2014_index.html:% dig +short TXT freebsd.org 
+2014_index.html:% dig +dnssec A www.bortzmeyer.org
+2014_index.html:% dig +noall +answer axfr @$SERVERNAME $ZONE | awk -f check-expire.awk
+2014_index.html:% dig +short TXT 1.9.0.194.asn.routeviews.org
+2014_index.html:% dig @::1 -p 9053 TXT a.example.org
+2014_index.html:% dig @::1 -p 9053 TXT b.example.org
+2014_index.html:% dig @::1 -p 9053 A b.example.org
+2014_index.html:% dig @::1 -p 9053 AAAA a.example.org
+2014_index.html:% dig @::1 -p 9053 A $RANDOM.example.org
+2014_index.html:% dig @::1 -p 9053 A b.example.org
+2014_index.html:% dig +short @::1 -p 9053 NSEC3PARAM example.org
+2014_index.html:% dig A nexistesurementpasmaisquisait.fr
+2014_index.html:% dig -p 9053 @::1 TXT z.example.org
+2014_index.html:% dig -p 9053 @::1 TXT z.example.org
+2014_index.html:% dig @::1 -p 9053 A x.2.example.org
+2014_index.html:% dig  ANY explorer.bit 
+2014_index.html:% dig  AAAA bortzmeyer.bit 
+2014_index.html:% dig +nsid @l.root-servers.net SOA .
+2014_index.html:% dig @l.root-servers.net CH TXT hostname.bind
+2014_index.html:% dig identity.l.root-servers.org
+2014_index.html:% dig +tcp nodes.l.root-servers.org TXT
+2014_index.html:% dig NS identity.l.root-servers.org
+2014_index.html:% dig @192.168.2.7 SOA example.com
+2014_index.html:% dig -p 5353 @127.0.0.1 A monportable.example.com
+2014_index.html:% dig +nsid -p 5353 @127.0.0.1 SOA example.com     
+2012_index.html:% dig +nodnssec +nssearch bortzmeyer.fr
+2012_index.html:% dig @ns0.ratp.fr A www.ratp.fr
+2012_index.html:% dig @altns1.ratp.fr A www.ratp.fr
+2012_index.html:% dig +noedns @altns1.ratp.fr A www.ratp.fr
+2012_index.html:% dig +noedns @altns1.ratp.fr SOA www.ratp.fr
+2012_index.html:% dig NS ben.edu
+2012_index.html:% dig A 1stoptr.com
+2012_index.html:% dig @a.gtld-servers.net NS 1stoptr.com       
+2012_index.html:% dig +nodnssec +nssearch godaddy.com
+2012_index.html:% dig TLSA _443._tcp.dane.rd.nic.fr
+2012_index.html:% dig  TLSA  _5269._tcp.proxima.lp0.eu    
+2012_index.html:% dig  TLSA  _443._tcp.ulthar.us       
+2012_index.html:% dig  TLSA  _443._tcp.nohats.ca   
+2012_index.html:% dig +short TLSA _443._tcp.mattmccutchen.net
+2012_index.html:% dig @127.0.0.1 -p 9053 AAAA www.sub.foobar.example
+2012_index.html:% dig @127.0.0.1 -p 9053 AAAA www.sub.foobar.example
+2012_index.html:% dig AAAA www.testonly.sources.org 
+2012_index.html:% dig A www.bortzmeyer.org
+2012_index.html:% dig AAAA www.bortzmeyer.org
+2012_index.html:% dig A www.gouvernement.fr
+2012_index.html:% dig AAAA www.gouvernement.fr 
+2012_index.html:% dig AAAA google.com
+2012_index.html:% dig AAAA google.com
+2012_index.html:% dig AAAA dangling-alias.bortzmeyer.fr
+2012_index.html:% dig A www.cfeditions.com
+2012_index.html:% dig A www.cfeditions.com
+2012_index.html: % dig @ns6.gandi.net A www.cfeditions.com
+2012_index.html:% dig NS sbl-xbl.spamhaus.org
+2012_index.html:% dig @b.hosting.nic.fr. SOA ga.
+2012_index.html:% dig @nyali.inet.ga. SOA ga.       
+2012_index.html:% dig @nyali.inet.ga. ga. SOA
+2012_index.html:% dig @nyali.inet.ga. ga. NS 
+2012_index.html: % dig +bufsize=1400 @nyali.inet.ga. ga. ANY 
+2012_index.html:% dig @nyali.inet.ga. ga. ANY                
+2011_index.html:% dig +nsid @d.nic.fr SOA fr.
+2011_index.html:% dig LOC dns.lyn2.nic.fr
+2011_index.html:% dig +nsid @l.root-servers.net SOA .
+2011_index.html:% dig SRV _xmpp-server._tcp.dns-oarc.net
+2011_index.html:% dig @ns1.dns.example CH TXT version.bind
+2011_index.html:% dig @dns.sncf.fr. CH TXT version.bind      
+2011_index.html:% dig +short @rigel.illyse.org CH TXT version.bind 
+2011_index.html:% dig +short @ns1.conostix.com CH TXT version.bind
+2011_index.html:% dig -x 172.27.1.1
+2011_index.html:% dig -x 192.0.2.1 
+2011_index.html:% dig -x 192.134.4.20
+2011_index.html:% dig NS 168.192.in-addr.arpa
+2011_index.html:% dig +nsid TXT hostname.as112.net
+2011_index.html:% dig ANY hostname.as112.net.
+2011_index.html:% dig +nssearch td
+2011_index.html:% dig @193.251.147.253 ANY sotel.td
+2011_index.html:% dig @193.251.147.253 NS youtube.td
+2011_index.html:% dig @ns1.google.com A www.youtube.td
+2011_index.html:% dig @193.251.147.253 A www.youtube.td
+2011_index.html:% dig +short -p 9053 @::1 AAAA www.ietf.org 
+2011_index.html:% dig +short -p 9053 @::1 AAAA facebook.com
+2011_index.html:% dig  -p 9053 @::1 -x 64:ff9b::453f:bd10      
+2011_index.html:% dig +short -p 9053 @::1 A ciel.administratif.prive.nic.fr                  
+2011_index.html:% dig  -p 9053 @::1 AAAA ciel.administratif.prive.nic.fr                         
+2011_index.html:% dig +short -p 9053 @::1 AAAA facebook.com
+2011_index.html:% dig SRV _xmpp-client._tcp.dns-oarc.net
+2011_index.html:% dig A google-analytics.com
+2011_index.html:% dig @localhost -p 9053 A google-analytics.com
+2011_index.html:% dig @localhost -p 9053 A buy.enlarge-your-penis.biz
+2011_index.html:% dig @localhost -p 9053 AAAA ads.example.net
+2011_index.html:% dig +short NS fr.
+2011_index.html:% dig +short NS fr. | sort -R | head -n 1
+2011_index.html:% dig +short NS fr. | sort -R | head -n 1
+2011_index.html:% dig +short NS fr. | perl -MList::Util -e 'print List::Util::shuffle &lt;&gt;' | head -n 1
+2011_index.html:% dig +short NS fr. | perl -MList::Util -e 'print List::Util::shuffle &lt;&gt;' | head -n 1
+2011_index.html:% dig +short NS fr. | ruby -e "puts STDIN.readlines.shuffle.first"
+2011_index.html:% dig +short NS fr. | \
+2011_index.html:% dig +short NS fr. | \
+2011_index.html:% dig +short NS fr. | unsort -r | head -n 1
+2011_index.html:% dig +short NS fr. | unsort -r | head -n 1
+2011_index.html:% dig +short NS fr. | shuf -n 1
+2011_index.html:% dig +short NS fr. | shuf -n 1
+2011_index.html:% dig +short NS fr. | rl -c 1
+2011_index.html:% dig +short NS fr. | rl -c 1
+2011_index.html:% dig +short NS fr. | awk '{t[NR]=$0}END{srand();print t[1+int(rand()*NR)]}'
+2011_index.html:% dig +short NS fr. | awk '{t[NR]=$0}END{srand();print t[1+int(rand()*NR)]}'
+2011_index.html:% dig +short NS fr.  | randomize | head -1
+2011_index.html:% dig +short NS fr.  | randomize | head -1
+2015_index.html:% dig @l.root-servers.net A blog.imirhil.fr 
+2015_index.html:% dig @2001:620:0:ff::29 AAAA www.iab.org 
+2015_index.html:% dig @2a02:6b8::feed:0ff AAAA www.iab.org           
+2015_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA www.gq.com  
+2015_index.html:% dig +norecurse @2a02:6b8::feed:0ff AAAA blog.keltia.net
+2015_index.html:% dig +norecurse @2a01:e0d:1:3:58bf:fa61:0:1 AAAA blog.keltia.net  
+2015_index.html:% dig @a.gtld-servers.net AAAA labs.ripe.net 
+2015_index.html:% dig @d.nic.fr ANY gouv.fr 
+2015_index.html:% dig  @127.12.12.12 SOA . 
+2015_index.html:% dig www.cnam.fr
+2015_index.html:% dig +short nexistesurementpas.um.outlook.com
+2015_index.html:% dig +short +nodnssec '&amp;-funny-%-syntax-$.bortzmeyer.org'
+2015_index.html:% dig  nexistesurementpas.um.outlook.com 
+2015_index.html:    </p><pre>% dig TLSA _443._tcp.www.bortzmeyer.org
+2015_index.html:% dig @8.8.8.8 www.images-art.fr 
+2015_index.html:% dig +cd @8.8.8.8 www.images-art.fr
+2015_index.html:% dig www.images-art.fr
+2015_index.html:% dig +cd www.images-art.fr
+2015_index.html:% dig MX sources.org
+2015_index.html: % dig TLSA _25._tcp.uucp.bortzmeyer.org
+2015_index.html:% dig TLSA _25._tcp.mx1.denic.de
+2015_index.html:% dig TLSA _25._tcp.mail.bortzmeyer.org
+2015_index.html:% dig TLSA _443._tcp.www.freebsd.org 
+2015_index.html:% dig +nodnssec +short SRV _xmpp-server._tcp.mailbox.org           
+2015_index.html:% dig +dnssec ladiscordia.noblogs.org
+2015_index.html:% dig SRV _radsec._tcp.eduroam.lu
+2015_index.html:% dig A www.servfail.nl
+2015_index.html:% dig +cd A www.servfail.nl
+2015_index.html:% dig A www.servfail.nl
+2015_index.html:% dig A www.servfail.nl                        
+2015_index.html:% dig +short MX  internautique.fr 
+2015_index.html:% dig +short +nodnssec URI 31110.cp.bortzmeyer.fr
+2015_index.html:% dig ANY empty.as112.arpa
+2015_index.html:% dig -x 192.134.4.20
+2015_index.html:% dig NS 168.192.in-addr.arpa
+2015_index.html:% dig NS empty.as112.arpa
+2015_index.html:% dig +nsid TXT hostname.as112.net
+2015_index.html:% dig +nsid TXT hostname.as112.arpa
+2015_index.html:% dig ANY hostname.as112.net.
+2015_index.html:% dig +short A islamic-news.info 
+2015_index.html:% dig +short A islamic-news.info 
+2015_index.html:% dig @8.8.4.4 +short A islamic-news.info  
+2015_index.html:% dig +norecurse @d.nic.fr A www.hacklab-esgi.fr
+2015_index.html:% dig +norecurse @ns0.online.net. NS hacklab-esgi.fr 
+2015_index.html:% dig @218.76.74.42 A www.ssi.gouv.fr
+2015_index.html:% dig @218.76.74.42 A www.facebook.com
+2015_index.html:% dig @218.76.74.42 A www.facebook.com.example.net
+2016_index.html:% dig AAAA badsign-aaaa.test.dnssec-tools.org
+2016_index.html:% dig +cd AAAA badsign-aaaa.test.dnssec-tools.org
+2016_index.html:% dig A pastdate-a.test.dnssec-tools.org
+2016_index.html:% dig +cd A pastdate-a.test.dnssec-tools.org
+2016_index.html:% dig AAAA non-existent.test.dnsssec-tools.org
+2016_index.html:% dig ANY box.
+2016_index.html:% dig MX foobar56711.se.
+2016_index.html:% dig MX xyz.foobar56711.se.
+2016_index.html:% dig  A www.upenn.edu   
+2016_index.html:% dig @ns1-2.akam.net A edu-dscg.edgesuite.net     
+2016_index.html:% dig AAAA anything.which.does.not.exist.gouv.fr 
+2016_index.html:% dig A +short @192.168.10.1 www.google.fr
+2016_index.html:% dig A +short @8.8.8.8 www.google.fr
+2016_index.html:% dig TXT _dmarc.gmail.com
+2016_index.html:% dig +multi +nodnssec DNSKEY .
+2016_index.html:% dig OPENPGPKEY   28182f0a278161989f90f090dabd6cab331663d8509ddbae617bb1e7._openpgpkey.bortzmeyer.org  
+2016_index.html:% dig +tcp -t TYPE61 28182f0a278161989f90f090dabd6cab331663d8509ddbae617bb1e7._openpgpkey.bortzmeyer.org 
+2016_index.html:% dig +short -t txt www.geo.powerdns.com 
+2016_index.html:% dig +subnet=8.189.152.0/25 @ns-1568.awsdns-04.co.uk  A www.amazon.com 
+2016_index.html:% dig ecs.dyn.bortzmeyer.fr TXT
+2016_index.html:% dig +short -t txt edns-client-sub.net
+2016_index.html:% dig @8.8.8.8 +short -t txt edns-client-sub.net 
+2016_index.html:% dig +cookie @192.168.2.7 foobar.example
+2016_index.html:% dig +short NS 64.100.in-addr.arpa
+2016_index.html:% dig +short NS 64.100.in-addr.arpa
+2016_index.html:% dig +short  NS 64.100.in-addr.arpa 
+2016_index.html:% dig A sci-hub.io
+2016_index.html:% dig @212.27.40.240 test-yann.myshopify.com 
+2016_index.html:% dig +cd @212.27.40.240 test-yann.myshopify.com 
+2016_index.html:% dig A temporary.cr.yp.to
+2016_index.html:% dig +nodnssec +short TXT qnamemintest.internet.nl
+2016_index.html:% dig @64.6.64.6 +nodnssec +short TXT qnamemintest.internet.nl
+2016_index.html:% dig +bufsize=0 +noedns +nodnssec +ignore NS fox.com 
+2016_index.html:% dig +bufsize=0 +noedns +nodnssec NS fox.com 
+2016_index.html:% dig +bufsize=4096 A nimportequoinexistepas.fr
+2016_index.html:% dig DNSKEY cpsc.gov
+2016_index.html:% dig +tcp @d.nic.fr NS gouvernement.fr
+2016_index.html:% dig AAAA bortzmeyer.bit
+2018_index.html:% dig SOA .
+2018_index.html:% dig @k.root-servers.net AXFR . &gt; /tmp/root.zone
+2018_index.html:% dig @bii.dns-lab.net. NS .
+2018_index.html:% dig +tcp +padding=0 -p 9053 @127.0.0.1 SOA foobar.example  
+2018_index.html:% dig +tcp +padding=468 -p 9053 @127.0.0.1 SOA foobar.example  
+2018_index.html:% dig +tcp +padding=468 -p 9053 @127.0.0.1 SOA foobar.example
+2018_index.html:% dig +tcp +padding=468 -p 9053 @127.0.0.1 ANY foobar.example
+2018_index.html:% dig TLSA _443._tcp.www.bortzmeyer.org
+2018_index.html:% dig +short AAAA michu-sa.example-cdn.net
+2018_index.html:% dig @a.root-servers.net ANY home.arpa
+2018_index.html:% dig A printer.home.arpa
+2018_index.html:% dig NS home.arpa
+2018_index.html:% dig -x 2001:678:c::1
+2013_index.html:% dig TLSA _443._tcp.dane.rd.nic.fr
+2013_index.html:% dig +short @192.168.2.254 A alloshare.com          
+2013_index.html:% dig +short A alloshare.com 
+2013_index.html:% dig @127.0.0.1 A www.techn0polis.net 
+2013_index.html:% dig +short A ipv4only.arpa
+2013_index.html:% dig +short AAAA ipv4only.arpa
+2013_index.html:% dig +nodnssec AAAA ipv4only.arpa
+2013_index.html:% dig @149.20.64.20   SOA xn--80asehdb
+2013_index.html:% dig @149.20.64.20   SOA www.xn--80asehdb
+2013_index.html:% dig +cd @149.20.64.20   SOA www.xn--80asehdb
+2013_index.html:% dig +short NSEC3PARAM xn--80asehdb
+2013_index.html:% dig SOA nexistepasdutout.fr
+2013_index.html:% dig SOA eu.org
+2013_index.html:% dig SOA nytimes.com.                   
+2013_index.html:% dig @a.gtld-servers.net NS nytimes.com
+2013_index.html:% dig A fbi.gov
+2013_index.html:% dig AAAA fbi.gov   
+2013_index.html:% dig +cd AAAA fbi.gov   
+2013_index.html:% dig LOC afnic.fr
+2013_index.html:% dig DNSKEY fr.
+2013_index.html:% dig DS bortzmeyer.fr
+2013_index.html:% dig +dnssec SOA fr.
+2013_index.html:% dig +dnssec SOA ecdsa.isc.org
+2013_index.html:% dig +bufsize=4096 +dnssec @193.0.14.129 DNSKEY .
+2013_index.html:% dig +bufsize=4096 +dnssec +norec @193.0.14.129 DNSKEY .
+2013_index.html:% dig +bufsize=8192 @a.gtld-servers.net ANY com.
+2013_index.html:% dig +bufsize=8192 +noignore @a.gtld-servers.net ANY com.
+2013_index.html:% dig +tcp @a.gtld-servers.net ANY com.
+2013_index.html:% dig NS ratp.fr
+2013_index.html:% dig @ns0.ratp.fr. A www.ratp.fr
+2013_index.html:% dig @altns1.ratp.fr. A www.ratp.fr
+2013_index.html:% dig @altns1.ratp.fr A www.ratp.fr
+2013_index.html:% dig NS hk.
+2013_index.html:% dig +bufsize=4096 NS hk.
+2013_index.html:% dig +bufsize=4096 @ns2.msft.net. SOA microsoft.com.
+2013_index.html:% dig @ns2.msft.net. SOA microsoft.com.              
+2013_index.html:% dig @a.root-servers.net A www.redressement-productif.gouv.fr
+2013_index.html:% dig A foo.bar.doesnotexist.cam.ac.uk
+2013_index.html:% dig A www.doesnotexist.asso.fr     
+2013_index.html:% dig @ns1.fdn.org MX fdn.fr
+2013_index.html:% dig MX fdn.fr
+2013_index.html:% dig @ns1.p01.dynect.net. A dyn.com
+2013_index.html:% dig A dyn.com
+2013_index.html:% dig youtube.com
+2013_index.html:% dig @178.33.182.34 youtube.com
+2013_index.html:% dig A r12---sn-25g7rn7l.c.youtube.com
+2013_index.html:% dig @178.33.182.34 A r12---sn-25g7rn7l.c.youtube.com
+2017_index.html:% dig TXT 24.5.134.192.geo.lua.powerdns.org
+2017_index.html:% dig TLSA _443._tcp.dns.bortzmeyer.org
+2017_index.html:% dig +nodnssec @9.9.9.9 AAAA irtf.org   
+2017_index.html:% dig @::1 -p 8053 A www.catstuff.com 
+2017_index.html:% dig @127.0.0.1 A mastodon.gougere.fr
+2017_index.html:% dig TLSA _443._tcp.mercredifiction.bortzmeyer.org
+2017_index.html:% dig @k.root-servers.net A quelquechose.zigzag
+2017_index.html:% dig NS kp
+2017_index.html:% dig +short +nodnssec TXT 34000.cp.bortzmeyer.fr
+2017_index.html:% dig +short +nodnssec TXT 52100.cp.bortzmeyer.fr
+2017_index.html:% dig +short +nodnssec LOC 34000.cp.bortzmeyer.fr
+2017_index.html:% dig +short +nodnssec URI 52100.cp.bortzmeyer.fr
+2017_index.html:% dig +short +nodnssec TXT ROUEN.cp.bortzmeyer.fr
+2017_index.html:% dig +short +nodnssec LOC 98764.cp.bortzmeyer.fr
+2017_index.html:% dig +short DY76JP.find.me.uk LOC 
+2017_index.html:% dig +short LOC 1204.zipdns.ch
+2017_index.html:% dig +short ORY.air.jpmens.net LOC
+2017_index.html:% dig +short ORY.air.jpmens.net TXT
+2017_index.html:% dig @a0.org.afilias-nst.info. NS wikileaks.org
+2017_index.html:% dig @191.101.26.67 A wikileaks.org
+2017_index.html:% dig CAA bortzmeyer.org
+2017_index.html:% dig CAA google.com
+2017_index.html:% dig CAA mabanqueprivee.bnpparibas
+2017_index.html:% dig @a2.nic.bnpparibas. NS mabanqueprivee.bnpparibas
+2017_index.html:% dig @sns5.bnpparibas.net. NS mabanquepro.bnpparibas
+2017_index.html:% dig @sns6.bnpparibas.net. NS mabanquepro.bnpparibas
+2017_index.html:% dig +multi DNSKEY tf
+2017_index.html:% dig DS tf
+2017_index.html:% dig +dnssec SOA tf
+2017_index.html:% dig A www.afnic.fr
+2017_index.html:% dig A www.ssi.gouv.fr       
+2017_index.html:% dig A tsc.gov    
+2017_index.html:% dig +cd A tsc.gov 
+2017_index.html:% dig NS .
+2017_index.html:% dig +bufsize=4096 +norecurse +nodnssec @k.root-servers.net NS .
+2017_index.html:% dig @k.root-servers.net A g.root-servers.net 
+2017_index.html:% dig DNSKEY ed25519.monshouwer.eu

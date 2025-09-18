@@ -25,14 +25,27 @@ pub mod udp;
 // number of bytes sent and received for DNS operations
 //type NetworkStat = (usize, usize);
 
-#[derive(Debug, Default, Copy, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct NetworkInfo {
     pub sent: usize,
     pub received: usize,
     pub peer: Option<SocketAddr>,
+
+    // string version of peer. Used to pass struct to Lua more easily
+    pub peer_s: String,
 }
 
-// default UDP buffer size
+impl NetworkInfo {
+    pub fn server(&self) -> String {
+        if let Some(addr) = self.peer {
+            addr.to_string()
+        } else {
+            String::from("Unknown")
+        }
+    }
+}
+
+// default UDP buffer size and timeouts for network ops
 const BUFFER_SIZE: u16 = 1232;
 const DEFAULT_TIMEOUT: u64 = 3000;
 

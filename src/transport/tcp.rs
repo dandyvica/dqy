@@ -28,9 +28,8 @@ impl TcpProtocol {
         Ok(Self {
             handle,
             netinfo: NetworkInfo {
-                sent: 0,
-                received: 0,
                 peer,
+                ..Default::default()
             },
         })
     }

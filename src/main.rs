@@ -37,7 +37,7 @@ use protocol::DnsProtocol;
 
 mod cli_options;
 
-mod handlebars;
+// mod handlebars;
 
 mod config;
 use config::{read_yaml, YAMLConfig};
@@ -63,7 +63,7 @@ fn get_messages_using_sync_transport<T: Messenger>(
 
     // we want run info
     if let Some(info) = info {
-        info.netinfo = *transport.network_info();
+        info.netinfo = transport.network_info().clone();
     }
 
     Ok(messages)
@@ -107,7 +107,7 @@ pub fn get_messages(info: Option<&mut QueryInfo>, options: &CliOptions) -> dnsli
 
                 // we want run info
                 if let Some(info) = info {
-                    info.netinfo = *transport.network_info();
+                    info.netinfo = transport.network_info().clone();
                 }
                 Ok(messages)
             })
@@ -143,7 +143,7 @@ fn run() -> dnslib::error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // skip program name
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let mut options = CliOptions::options(&args)?;
+    let mut options = CliOptions::options(&args, true)?;
     info!("{:#?}", options);
 
     //───────────────────────────────────────────────────────────────────────────────────
@@ -172,6 +172,7 @@ fn run() -> dnslib::error::Result<()> {
 
     // mode
     info.mode = options.transport.transport_mode.to_string();
+    info.netinfo.peer_s = info.netinfo.server();
 
     //───────────────────────────────────────────────────────────────────────────────────
     // final display to the user: either Lua code or Json or else
@@ -185,12 +186,12 @@ fn run() -> dnslib::error::Result<()> {
     //───────────────────────────────────────────────────────────────────────────────────
     // print out final results
     //───────────────────────────────────────────────────────────────────────────────────
-    if let Some(tpl) = &options.display.hb_tpl {
-        handlebars::render(&messages, &info, tpl);
-    } else {
-        messages.show_all(&mut options.display, info);
-    }
-    //messages.show_all(&options.display, info);
+    // if let Some(tpl) = &options.display.hb_tpl {
+    //     handlebars::render(&messages, &info, tpl);
+    // } else {
+    //     messages.show_all(&mut options.display, info);
+    // }
+    messages.show_all(&mut options.display, info);
 
     Ok(())
 }

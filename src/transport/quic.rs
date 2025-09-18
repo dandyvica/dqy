@@ -68,9 +68,8 @@ impl QuicProtocol {
                 recv: None,
             },
             netinfo: NetworkInfo {
-                sent: 0,
-                received: 0,
                 peer: Some(addr),
+                ..Default::default()
             },
         })
     }

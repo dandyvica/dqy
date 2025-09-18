@@ -55,9 +55,8 @@ impl TlsProtocol {
         Ok(Self {
             handle: tls_stream,
             netinfo: NetworkInfo {
-                sent: 0,
-                received: 0,
                 peer,
+                ..Default::default()
             },
         })
     }

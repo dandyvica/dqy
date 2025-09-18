@@ -66,7 +66,7 @@ impl FromStr for CliOptions {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let args: Vec<_> = s.split_ascii_whitespace().map(|a| a.to_string()).collect();
-        CliOptions::options(&args)
+        CliOptions::options(&args, true)
     }
 }
 
@@ -82,7 +82,15 @@ impl CliOptions {
         }
     }
 
-    pub fn options(args: &[String]) -> dnslib::error::Result<Self> {
+    // helper func to allow unit tests with the DQY_FLAGS envvar which, if set, is set for all threads
+    #[cfg(test)]
+    fn get_test_args(args: &str) -> dnslib::error::Result<Self> {
+        let args: Vec<_> = args.split_ascii_whitespace().map(|a| a.to_string()).collect();
+        CliOptions::options(&args, false)
+    }
+
+    // the check_var is used to deal with unit tests which share the same process and so the same var
+    pub fn options(args: &[String], check_var: bool) -> dnslib::error::Result<Self> {
         // save all cli options into a structure
         let mut options = CliOptions::default();
 
@@ -91,11 +99,13 @@ impl CliOptions {
 
         // check first if DQY_FLAGS is present
         if let Ok(env) = std::env::var(ENV_FLAGS) {
-            let env_args: Vec<String> = env.split_ascii_whitespace().map(|a| a.to_string()).collect();
+            if check_var {
+                let env_args: Vec<String> = env.split_ascii_whitespace().map(|a| a.to_string()).collect();
 
-            let (env_without_dash, env_with_dash) = Self::split_args(&env_args);
-            without_dash.to_mut().extend(env_without_dash.into_owned());
-            with_dash.to_mut().extend(env_with_dash.into_owned());
+                let (env_without_dash, env_with_dash) = Self::split_args(&env_args);
+                without_dash.to_mut().extend(env_without_dash.into_owned());
+                with_dash.to_mut().extend(env_with_dash.into_owned());
+            }
         }
 
         /*         println!("options without dash:{:?}", without_dash);
@@ -167,7 +177,7 @@ Supported query types: {}
             .literal(styling::AnsiColor::Blue.on_default().bold())
             .placeholder(styling::AnsiColor::Cyan.on_default());
 
-        let cmd = Command::new("A DNS query tool inspired by dig, drill and dog")
+        let mut cmd = Command::new("A DNS query tool inspired by dig, drill and dog")
             .version(crate_version!())
             .long_version(crate_version!())
             .styles(STYLES)
@@ -286,7 +296,7 @@ Supported query types: {}
                     .long("https-version")
                     .long_help("Sets the HTTPS version when using DNS over https (DoH).")
                     .action(ArgAction::Set)
-                    .value_name("https-version")
+                    .value_name("VERSION")
                     .value_parser(["v1", "v2", "v3"])
                     .default_value("v2")
                     .help_heading("Transport options")
@@ -589,16 +599,16 @@ Supported query types: {}
                     .value_name("STATS")
                     .help_heading("Display options")
             )
-            .arg(
-                Arg::new("tpl")
-                    .long("tpl")
-                    .hide(true)
-                    .long_help("Name of the handlebars template to render to display results.")
-                    .action(ArgAction::Set)
-                    .value_name("TEMPLATE")
-                    .value_parser(clap::value_parser!(PathBuf))
-                    .help_heading("Display options")
-            )
+            // .arg(
+            //     Arg::new("tpl")
+            //         .long("tpl")
+            //         .hide(true)
+            //         .long_help("Name of the handlebars template to render to display results.")
+            //         .action(ArgAction::Set)
+            //         .value_name("TEMPLATE")
+            //         .value_parser(clap::value_parser!(PathBuf))
+            //         .help_heading("Display options")
+            // )
             .arg(
                 Arg::new("verbose")
                     .short('v')
@@ -624,7 +634,7 @@ Supported query types: {}
                     .long("list-resolvers")
                     .long_help("Do not query but list host resolvers (with port number) found and try to connect to them.")
                     .action(ArgAction::SetTrue)
-                    .help_heading("Display options")
+                    .help_heading("Miscellaneous options")
             )
             .arg(
                 Arg::new("write-response")
@@ -648,16 +658,18 @@ Supported query types: {}
 
         // add Lua option if feature lua
         #[cfg(feature = "mlua")]
-        let cmd = cmd.arg(
-            Arg::new("lua")
-                .short('l')
-                .long("lua")
-                .long_help("Name of a lua script that will be called to display results.")
-                .action(ArgAction::Set)
-                .value_name("lua")
-                .value_parser(clap::value_parser!(PathBuf))
-                .help_heading("Display options"),
-        );
+        {
+            cmd = cmd.arg(
+                Arg::new("lua")
+                    .short('l')
+                    .long("lua")
+                    .long_help("Name of a lua script that will be called to display results.")
+                    .action(ArgAction::Set)
+                    .value_name("SCRIPT")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Miscellaneous options"),
+            );
+        }
 
         let matches = cmd.get_matches_from(with_dash.iter());
 
@@ -746,7 +758,7 @@ Supported query types: {}
                 let qtypes: Vec<_> = v.copied().collect();
                 options.protocol.qtype = qtypes;
             } else {
-                options.protocol.qtype = vec![QType::A];
+                options.protocol.qtype = vec![QType::NS];
             }
         }
 
@@ -888,11 +900,11 @@ Supported query types: {}
         options.display.puny = matches.get_flag("puny");
 
         // handlebars template
-        if let Some(path) = matches.get_one::<PathBuf>("tpl") {
-            // read handlebars file as a string
-            options.display.hb_tpl =
-                Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
-        }
+        // if let Some(path) = matches.get_one::<PathBuf>("tpl") {
+        //     // read handlebars file as a string
+        //     options.display.hb_tpl =
+        //         Some(std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?);
+        // }
 
         //───────────────────────────────────────────────────────────────────────────────────
         // manage misc. options
@@ -923,9 +935,7 @@ Supported query types: {}
             std::env::set_var("NO_COLOR", "1");
         }
 
-        // if let Some(fmt) = matches.get_one::<String>("fmt") {
-        //     options.display.fmt = fmt.to_string();
-        // }
+        // gather format string
         if let Some(v) = matches.get_many::<String>("fmt") {
             options.display.fmt = v.map(|f| f.to_string()).collect();
         }
@@ -960,7 +970,7 @@ Supported query types: {}
         #[cfg(feature = "mlua")]
         if let Some(path) = matches.get_one::<PathBuf>("lua") {
             // open Lua script and load code
-            let code = std::fs::read_to_string(path)?;
+            let code = std::fs::read_to_string(path).map_err(|e| Error::OpenFile(e, path.to_path_buf()))?;
             trace!("using Lua code from {}", path.display());
             options.display.lua_code = Some(code);
         }
@@ -1085,7 +1095,8 @@ fn ipv6_to_arpa(addr: Ipv6Addr) -> String {
 mod tests {
 
     use super::*;
-    use dnslib::{dns::rfc::domain::ROOT, transport::https::HttpsProtocol};
+    use dnslib::{dns::rfc::domain::ROOT};
+
 
     #[test]
     fn _split_args() {
@@ -1113,7 +1124,7 @@ mod tests {
 
     #[test]
     fn empty() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("")?;
+        let opts = CliOptions::get_test_args("")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::NS]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
@@ -1141,13 +1152,13 @@ mod tests {
     //───────────────────────────────────────────────────────────────────────────────────
     #[test]
     fn qtype() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("A aaaa MX")?;
+        let opts = CliOptions::get_test_args("A aaaa MX")?;
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
 
-        let opts = CliOptions::from_str("-t A,aaaa,MX")?;
+        let opts = CliOptions::get_test_args("-t A,aaaa,MX")?;
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
 
-        let opts = CliOptions::from_str("--type A,aaaa,MX")?;
+        let opts = CliOptions::get_test_args("--type A,aaaa,MX")?;
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
 
         Ok(())
@@ -1155,7 +1166,7 @@ mod tests {
 
     #[test]
     fn qclass() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-c CH")?;
+        let opts = CliOptions::get_test_args("-c CH")?;
         assert_eq!(opts.protocol.qclass, QClass::CH);
 
         Ok(())
@@ -1163,7 +1174,7 @@ mod tests {
 
     #[test]
     fn trace() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--trace")?;
+        let opts = CliOptions::get_test_args("--trace")?;
         assert!(opts.display.trace);
 
         Ok(())
@@ -1171,15 +1182,15 @@ mod tests {
 
     #[test]
     fn ptr() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--ptr 192.0.2.1")?;
+        let opts = CliOptions::get_test_args("--ptr 192.0.2.1")?;
         assert_eq!(opts.protocol.qtype, vec![QType::PTR]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
         assert_eq!(&opts.protocol.domain_string, "1.2.0.192.in-addr.arpa");
 
-        let opts = CliOptions::from_str("-x 192.0.2.1")?;
+        let opts = CliOptions::get_test_args("-x 192.0.2.1")?;
         assert_eq!(&opts.protocol.domain_string, "1.2.0.192.in-addr.arpa");
 
-        let opts = CliOptions::from_str("--ptr 2001:db8::567:89ab")?;
+        let opts = CliOptions::get_test_args("--ptr 2001:db8::567:89ab")?;
         assert_eq!(
             &opts.protocol.domain_string,
             "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
@@ -1193,10 +1204,10 @@ mod tests {
     //───────────────────────────────────────────────────────────────────────────────────
     #[test]
     fn ipv4() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-4")?;
+        let opts = CliOptions::get_test_args("-4")?;
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
 
-        let opts = CliOptions::from_str("--ipv4")?;
+        let opts = CliOptions::get_test_args("--ipv4")?;
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
 
         Ok(())
@@ -1204,10 +1215,10 @@ mod tests {
 
     #[test]
     fn ipv6() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-6")?;
+        let opts = CliOptions::get_test_args("-6")?;
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
 
-        let opts = CliOptions::from_str("--ipv6")?;
+        let opts = CliOptions::get_test_args("--ipv6")?;
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
 
         Ok(())
@@ -1215,10 +1226,10 @@ mod tests {
 
     #[test]
     fn tcp() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-T")?;
+        let opts = CliOptions::get_test_args("-T")?;
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
 
-        let opts = CliOptions::from_str("--tcp")?;
+        let opts = CliOptions::get_test_args("--tcp")?;
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
 
         Ok(())
@@ -1226,17 +1237,17 @@ mod tests {
 
     #[test]
     fn https() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-H")?;
+        let opts = CliOptions::get_test_args("-H")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoH);
         assert_eq!(opts.transport.https_version, Some(version::Version::HTTP_2));
 
-        let opts = CliOptions::from_str("--https")?;
+        let opts = CliOptions::get_test_args("--https")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoH);
 
-        let opts = CliOptions::from_str("--doh")?;
+        let opts = CliOptions::get_test_args("--doh")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoH);
 
-        let opts = CliOptions::from_str("--DoH")?;
+        let opts = CliOptions::get_test_args("--DoH")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoH);
 
         Ok(())
@@ -1244,13 +1255,13 @@ mod tests {
 
     #[test]
     fn https_version() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-H --https-version v1")?;
+        let opts = CliOptions::get_test_args("-H --https-version v1")?;
         assert_eq!(opts.transport.https_version, Some(version::Version::HTTP_11));
 
-        let opts = CliOptions::from_str("-H --https-version v2")?;
+        let opts = CliOptions::get_test_args("-H --https-version v2")?;
         assert_eq!(opts.transport.https_version, Some(version::Version::HTTP_2));
 
-        let opts = CliOptions::from_str("-H --https-version v3")?;
+        let opts = CliOptions::get_test_args("-H --https-version v3")?;
         assert_eq!(opts.transport.https_version, Some(version::Version::HTTP_3));
 
         Ok(())
@@ -1258,16 +1269,16 @@ mod tests {
 
     #[test]
     fn tls() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-S")?;
+        let opts = CliOptions::get_test_args("-S")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoT);
 
-        let opts = CliOptions::from_str("--tls")?;
+        let opts = CliOptions::get_test_args("--tls")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoT);
 
-        let opts = CliOptions::from_str("--dot")?;
+        let opts = CliOptions::get_test_args("--dot")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoT);
 
-        let opts = CliOptions::from_str("--DoT")?;
+        let opts = CliOptions::get_test_args("--DoT")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoT);
 
         Ok(())
@@ -1275,13 +1286,13 @@ mod tests {
 
     #[test]
     fn quic() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--doq")?;
+        let opts = CliOptions::get_test_args("--doq")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoQ);
 
-        let opts = CliOptions::from_str("--DoQ")?;
+        let opts = CliOptions::get_test_args("--DoQ")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoQ);
 
-        let opts = CliOptions::from_str("--quic")?;
+        let opts = CliOptions::get_test_args("--quic")?;
         assert_eq!(opts.transport.transport_mode, Protocol::DoQ);
 
         Ok(())
@@ -1289,7 +1300,7 @@ mod tests {
 
     #[test]
     fn alpn() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--alpn")?;
+        let opts = CliOptions::get_test_args("--alpn")?;
         assert!(opts.transport.alpn);
 
         Ok(())
@@ -1297,10 +1308,10 @@ mod tests {
 
     #[test]
     fn port() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-p 1000")?;
+        let opts = CliOptions::get_test_args("-p 1000")?;
         assert_eq!(opts.transport.port, 1000);
 
-        let opts = CliOptions::from_str("--port=1000")?;
+        let opts = CliOptions::get_test_args("--port=1000")?;
         assert_eq!(opts.transport.port, 1000);
 
         Ok(())
@@ -1308,7 +1319,7 @@ mod tests {
 
     #[test]
     fn no_recurse() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--no-recurse")?;
+        let opts = CliOptions::get_test_args("--no-recurse")?;
         assert!(!opts.flags.recursion_desired);
 
         Ok(())
@@ -1316,7 +1327,7 @@ mod tests {
 
     #[test]
     fn timeout() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--timeout=5000")?;
+        let opts = CliOptions::get_test_args("--timeout=5000")?;
         assert_eq!(opts.transport.timeout, Duration::from_millis(5000));
 
         Ok(())
@@ -1324,7 +1335,7 @@ mod tests {
 
     #[test]
     fn sni() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--sni www.foo.sni")?;
+        let opts = CliOptions::get_test_args("--sni www.foo.sni")?;
         assert_eq!(&opts.transport.endpoint.sni.unwrap(), "www.foo.sni");
 
         Ok(())
@@ -1332,7 +1343,7 @@ mod tests {
 
     #[test]
     fn set_flags() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--set aa,ad,cd,ra,rd,tc,z")?;
+        let opts = CliOptions::get_test_args("--set aa,ad,cd,ra,rd,tc,z")?;
 
         assert!(opts.flags.authorative_answer);
         assert!(opts.flags.authentic_data);
@@ -1347,7 +1358,7 @@ mod tests {
 
     #[test]
     fn unset_flags() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--unset aa,ad,cd,ra,rd,tc,z")?;
+        let opts = CliOptions::get_test_args("--unset aa,ad,cd,ra,rd,tc,z")?;
 
         assert!(!opts.flags.authorative_answer);
         assert!(!opts.flags.authentic_data);
@@ -1365,7 +1376,7 @@ mod tests {
     //───────────────────────────────────────────────────────────────────────────────────
     #[test]
     fn bufsize() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--bufsize 4096")?;
+        let opts = CliOptions::get_test_args("--bufsize 4096")?;
 
         assert_eq!(opts.transport.bufsize, 4096);
 
@@ -1374,13 +1385,13 @@ mod tests {
 
     #[test]
     fn cookie() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("")?;
+        let opts = CliOptions::get_test_args("")?;
         assert!(opts.edns.cookie.is_none());
 
-        let opts = CliOptions::from_str("--cookie")?;
+        let opts = CliOptions::get_test_args("--cookie")?;
         assert!(opts.edns.cookie.is_some());
 
-        let opts = CliOptions::from_str("--cookie=ABCDEF")?;
+        let opts = CliOptions::get_test_args("--cookie=ABCDEF")?;
         assert_eq!(opts.edns.cookie.unwrap(), "ABCDEF");
 
         Ok(())
@@ -1388,7 +1399,7 @@ mod tests {
 
     #[test]
     fn dnssec() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--dnssec")?;
+        let opts = CliOptions::get_test_args("--dnssec")?;
 
         assert!(opts.edns.dnssec);
 
@@ -1397,7 +1408,7 @@ mod tests {
 
     #[test]
     fn no_opt() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--no-opt")?;
+        let opts = CliOptions::get_test_args("--no-opt")?;
 
         assert!(opts.edns.no_opt);
 
@@ -1406,7 +1417,7 @@ mod tests {
 
     #[test]
     fn nsid() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--nsid")?;
+        let opts = CliOptions::get_test_args("--nsid")?;
 
         assert!(opts.edns.nsid);
 
@@ -1415,7 +1426,7 @@ mod tests {
 
     #[test]
     fn padding() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--padding 20")?;
+        let opts = CliOptions::get_test_args("--padding 20")?;
 
         assert_eq!(opts.edns.padding, Some(20));
 
@@ -1424,7 +1435,7 @@ mod tests {
 
     #[test]
     fn zoneversion() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--zoneversion")?;
+        let opts = CliOptions::get_test_args("--zoneversion")?;
 
         assert!(opts.edns.zoneversion);
 
@@ -1436,7 +1447,7 @@ mod tests {
     //───────────────────────────────────────────────────────────────────────────────────
     #[test]
     fn align() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--align")?;
+        let opts = CliOptions::get_test_args("--align")?;
 
         assert!(opts.display.align_names);
 
@@ -1445,7 +1456,7 @@ mod tests {
 
     #[test]
     fn format() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--fmt name,type,length,class,ttl,rdata,payload,extcode,version")?;
+        let opts = CliOptions::get_test_args("--fmt name,type,length,class,ttl,rdata,payload,extcode,version")?;
 
         assert_eq!(
             opts.display.fmt,
@@ -1457,7 +1468,7 @@ mod tests {
 
     #[test]
     fn header() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--headers")?;
+        let opts = CliOptions::get_test_args("--headers")?;
 
         assert!(opts.display.show_headers);
 
@@ -1466,7 +1477,7 @@ mod tests {
 
     #[test]
     fn puny() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--puny")?;
+        let opts = CliOptions::get_test_args("--puny")?;
 
         assert!(opts.display.puny);
 
@@ -1475,13 +1486,13 @@ mod tests {
 
     #[test]
     fn json() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--json")?;
+        let opts = CliOptions::get_test_args("--json")?;
         assert!(opts.display.json);
 
-        let opts = CliOptions::from_str("-j")?;
+        let opts = CliOptions::get_test_args("-j")?;
         assert!(opts.display.json);
 
-        let opts = CliOptions::from_str("--json-pretty")?;
+        let opts = CliOptions::get_test_args("--json-pretty")?;
         assert!(opts.display.json_pretty);
 
         Ok(())
@@ -1489,11 +1500,11 @@ mod tests {
 
     #[test]
     fn no_colors() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--no-colors")?;
+        let _ = CliOptions::get_test_args("--no-colors")?;
 
         match std::env::var("NO_COLOR") {
             Ok(val) => assert_eq!(&val, "1"),
-            Err(e) => assert!(false),
+            Err(_) => assert!(false),
         }
 
         Ok(())
@@ -1501,7 +1512,7 @@ mod tests {
 
     #[test]
     fn question() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--question")?;
+        let opts = CliOptions::get_test_args("--question")?;
 
         assert!(opts.display.show_question);
 
@@ -1510,7 +1521,7 @@ mod tests {
 
     #[test]
     fn raw_ttl() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--raw-ttl")?;
+        let opts = CliOptions::get_test_args("--raw-ttl")?;
 
         assert!(opts.display.raw_ttl);
 
@@ -1519,7 +1530,7 @@ mod tests {
 
     #[test]
     fn short() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--short")?;
+        let opts = CliOptions::get_test_args("--short")?;
 
         assert!(opts.display.short);
 
@@ -1528,7 +1539,7 @@ mod tests {
 
     #[test]
     fn stats() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("--stats")?;
+        let opts = CliOptions::get_test_args("--stats")?;
 
         assert!(opts.display.stats);
 
@@ -1537,7 +1548,7 @@ mod tests {
 
     #[test]
     fn with_class() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("-t AAAA -c CH -d www.google.com")?;
+        let opts = CliOptions::get_test_args("-t AAAA -c CH -d www.google.com")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::AAAA]);
         assert_eq!(opts.protocol.qclass, QClass::CH);
@@ -1551,7 +1562,7 @@ mod tests {
 
     #[test]
     fn with_no_dash() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("@1.1.1.1 A AAAA MX www.google.com")?;
+        let opts = CliOptions::get_test_args("@1.1.1.1 A AAAA MX www.google.com")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
@@ -1566,7 +1577,7 @@ mod tests {
 
     #[test]
     fn with_ipv6() -> dnslib::error::Result<()> {
-        let opts = CliOptions::from_str("@2606:4700:4700::1111 A AAAA MX www.google.com -6")?;
+        let opts = CliOptions::get_test_args("@2606:4700:4700::1111 A AAAA MX www.google.com -6")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
@@ -1580,10 +1591,8 @@ mod tests {
     }
 
     #[test]
-    fn with_tcp() {
-        let opts = CliOptions::from_str("@2606:4700:4700::1111 A AAAA MX www.google.com --tcp -6");
-        assert!(opts.is_ok());
-        let opts = opts.unwrap();
+    fn with_tcp() -> dnslib::error::Result<()> {
+        let opts = CliOptions::get_test_args("@2606:4700:4700::1111 A AAAA MX www.google.com --tcp -6")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::A, QType::AAAA, QType::MX]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
@@ -1591,13 +1600,13 @@ mod tests {
         assert_eq!(&opts.protocol.domain_string, "www.google.com");
         assert_eq!(opts.transport.ip_version, IPVersion::V6);
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
+
+        Ok(())
     }
 
     #[test]
-    fn with_ptr() {
-        let opts = CliOptions::from_str("@1.1.1.1 A AAAA MX www.google.com -4 --tcp -x 1.2.3.4");
-        assert!(opts.is_ok());
-        let opts = opts.unwrap();
+    fn with_ptr() -> dnslib::error::Result<()> {
+        let opts = CliOptions::get_test_args("@1.1.1.1 A AAAA MX www.google.com -4 --tcp -x 1.2.3.4")?;
 
         assert_eq!(opts.protocol.qtype, vec![QType::PTR]);
         assert_eq!(opts.protocol.qclass, QClass::IN);
@@ -1605,76 +1614,48 @@ mod tests {
         assert_eq!(&opts.protocol.domain_string, "4.3.2.1.in-addr.arpa");
         assert_eq!(opts.transport.ip_version, IPVersion::V4);
         assert_eq!(opts.transport.transport_mode, Protocol::Tcp);
+
+        Ok(())
     }
 
     #[test]
-    fn plus() {
-        let opts = CliOptions::from_str("@1.1.1.1 A www.google.com --dnssec --set cd --unset aa");
-        assert!(opts.is_ok());
-        let opts = opts.unwrap();
+    fn with_dnssec() -> dnslib::error::Result<()> {
+        let opts = CliOptions::get_test_args("@1.1.1.1 A www.google.com --dnssec --set cd --unset aa")?;
 
         assert!(opts.edns.dnssec);
         assert!(opts.flags.checking_disabled);
         assert!(!opts.flags.authorative_answer);
-    }
-
-    //#[test]
-    fn with_env() {
-        std::env::set_var("DQY_FLAGS", "@1.1.1.1 --dnssec");
-
-        let opts = CliOptions::from_str("www.google.com --set cd --unset aa");
-        assert!(opts.is_ok());
-        let opts = opts.unwrap();
-
-        assert_eq!(&opts.transport.endpoint.server_name, "1.1.1.1");
-
-        std::env::set_var("DQY_FLAGS", "");
-
-        // assert!(opts.edns.dnssec);
-        // assert!(opts.flags.checking_disabled);
-        // assert!(!opts.flags.authorative_answer);
-    }
-
-    /*     // a structure to test cli arguments using a YAML struct
-    #[derive(Debug, Deserialize)]
-    struct TestArg {
-        cli: String,
-        qtype: Vec<QType>,
-        qclass: QClass,
-        port: u16,
-        domain: String,
-        ip_version: IPVersion,
-        protocol: Protocol
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct TestArgs(Vec<TestArg>);
-
-    #[test]
-    fn test_all() -> dnslib::error::Result<()> {
-        let path = "./tests/args.yml";
-
-        let file = File::open(path).unwrap();
-        let reader = BufReader::new(file);
-
-        // Deserialize into Config struct
-        let args: TestArgs = serde_yaml::from_reader(reader).unwrap();
-
-        // now test each unit test
-        for t in &args.0 {
-            let opts = CliOptions::from_str(&t.cli)?;
-
-            assert_eq!(opts.protocol.qtype, t.qtype);
-            assert_eq!(opts.protocol.qclass, t.qclass);
-            assert_eq!(opts.protocol.domain_string, t.domain);
-
-            assert_eq!(opts.transport.port, t.port);
-            assert_eq!(opts.transport.ip_version, t.ip_version);
-            assert_eq!(opts.transport.transport_mode, t.protocol);
-        }
-
-        println!("args={:?}", args);
 
         Ok(())
-    } */
+    }
+
+    #[test]
+    fn with_env() -> dnslib::error::Result<()> {
+        std::env::set_var("DQY_FLAGS", "@1.1.1.1 --dnssec");
+
+        // in this case, due to envvar collision, we don't use from_str and set check_var to false
+        // to not check DQY_FLAGS
+        let args: Vec<_> = "www.google.com --set cd --unset aa"
+            .split_ascii_whitespace()
+            .map(|a| a.to_string())
+            .collect();
+        let opts = CliOptions::options(&args, true)?;
+
+        assert_eq!(&opts.transport.endpoint.server_name, "1.1.1.1");
+        assert!(opts.edns.dnssec);
+        assert!(opts.flags.checking_disabled);
+        assert!(!opts.flags.authorative_answer);
+
+        std::env::remove_var("DQY_FLAGS");        
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "mlua")]
+    fn lua() -> dnslib::error::Result<()> {
+        let opts = CliOptions::get_test_args("@1.1.1.1 A www.google.com --lua tests/sample.lua")?;
+
+        Ok(())        
+    }
 }
