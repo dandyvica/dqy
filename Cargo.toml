@@ -30,7 +30,7 @@ enum_from = { git = "https://github.com/dandyvica/enum_from.git" }
 # handlebars = "6.3.0"
 home = "0.5.11"
 http = "1.0.0"
-idna = "1.0.3"
+idna = "1.1.0"
 lazy_static = "1.4.0"
 log = "0.4.22"
 mlua = { version = "0.11.3", features = [ "lua54", "serialize" ], optional = true }

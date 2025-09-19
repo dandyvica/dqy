@@ -630,6 +630,15 @@ Supported query types: {}
                     .help_heading("Miscellaneous options")
             )
             .arg(
+                Arg::new("cfg")
+                    .long("config")
+                    .long_help("Get default arguments from CONFIG.")
+                    .action(ArgAction::Set)
+                    .value_name("CONFIG")
+                    .value_parser(clap::value_parser!(PathBuf))
+                    .help_heading("Miscellaneous options")
+            )            
+            .arg(
                 Arg::new("list-resolvers")
                     .long("list-resolvers")
                     .long_help("Do not query but list host resolvers (with port number) found and try to connect to them.")
@@ -674,8 +683,24 @@ Supported query types: {}
         let matches = cmd.get_matches_from(with_dash.iter());
 
         //───────────────────────────────────────────────────────────────────────────────────
-        // if no args without dash are provided, try to get the YAML config
+        // do we have a configuration file ?
         //───────────────────────────────────────────────────────────────────────────────────
+        if let Some(path) = matches.get_one::<PathBuf>("cfg") {
+            // read YAML
+            let cfg_data = read_yaml(path)?;
+
+            // set qtypes
+            options.protocol.qtype.extend(cfg_data.default_rrs);
+
+            // choose server to query
+
+
+
+        }        
+
+        //───────────────────────────────────────────────────────────────────────────────────
+        // if no args without dash are provided, try to get the YAML config
+        //───────────────────────────────────────────────────────────────────────────────────        
         /*         if options.protocol.qtype.is_empty() {
             // get config file from current dir or home dir
             if let Some(cfg) = get_config() {

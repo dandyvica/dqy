@@ -22,11 +22,14 @@ fn test_dqy_call(args: &str) {
 }
 
 macro_rules! test_dqy {
+    // fn_name: function name to create at compile time
+    // args: command line to pass to dqy
+    // is_ipv6: the test uses ipv6
     ($fn_name:ident, $args:literal, $is_ipv6:literal) => {
         #[test]
         fn $fn_name() {
             // don't use IPV6 on github action runners because it's not yet supported
-            if $is_ipv6 || std::env::var("GITHUB_REPOSITORY").is_err() {
+            if $is_ipv6 && std::env::var("DQY_DENY_IPV6").is_err() {
                 test_dqy_call($args);
             }
         }
@@ -63,11 +66,13 @@ test_dqy!(one_port6, "A www.google.com @one.one.one.one:53 -6", true);
 
 // IDNA
 test_dqy!(german, "A münchen.de", false);
+test_dqy!(french, "A www.nétim.fr", false);
 test_dqy!(cyrillic, "A россия.рф", false);
 test_dqy!(greek, "AAAA ουτοπία.δπθ.gr", false);
 test_dqy!(korean, "A 스타벅스코리아.com", false);
 test_dqy!(nordic, "A www.øl.com", false);
 test_dqy!(chinese, "A 香港.中國", false);
+test_dqy!(russian, "президентскиегранты.рф", false);
 
 // Misc
 test_dqy!(dropbox, "TXT dropbox.com", false);

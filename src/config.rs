@@ -1,6 +1,7 @@
 //! Module for managing YAML configuration
 use std::fs::File;
 use std::io::BufReader;
+use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 
 use home::home_dir;
@@ -16,8 +17,24 @@ const CONFIG_FILE: &'static str = "dqy.yml";
 // main struct is deserialized from YAML file
 #[derive(Debug, Deserialize)]
 pub struct YAMLConfig {
+    // list of DNS servers to query
+    pub servers: Servers,
+
     // list of RRs to query in case of no RR passed
     pub default_rrs: Vec<QType>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub enum QueryMode {
+    #[default]
+    plain,
+    random
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Servers {
+    addresses: Vec<IpAddr>,
+    mode : QueryMode
 }
 
 // load YAML data
